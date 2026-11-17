@@ -1,0 +1,910 @@
+{
+  "settings": {
+    "day_starts_at": "04:00",
+    "holiday": "saturday"
+  },
+  "blocks": {
+    "wake_up": {
+      "name": "Wake up",
+      "items": [
+        {
+          "title": "Wake-up, dress, toilet",
+          "duration": 5
+        }
+      ]
+    },
+    "morning_yoga": {
+      "name": "Morning yoga",
+      "items": [
+        {
+          "title": "Morning yoga",
+          "kind": "health",
+          "link": "https://example.com/notion/page-1",
+          "duration": 5
+        }
+      ]
+    },
+    "breakfast_review": {
+      "name": "Breakfast review",
+      "items": [
+        {
+          "title": "Breakfast, agenda & tasks review, finances, Goals",
+          "link": [
+            "https://calendar.google.com/calendar/u/0/r",
+            "https://example.com/notion/page-2"
+          ],
+          "duration": 5
+        }
+      ]
+    },
+    "news_pods": {
+      "name": "News pods",
+      "items": [
+        {
+          "title": "Daily news pods, Swedish news, Personal Development",
+          "kind": "growth",
+          "link": "https://example.com/notion/page-3",
+          "duration": 5
+        }
+      ]
+    },
+    "make_lunch": {
+      "name": "Make lunch",
+      "items": [
+        {
+          "title": "Make lunch",
+          "duration": 5
+        }
+      ]
+    },
+    "snack": {
+      "name": "Snack",
+      "items": [
+        {
+          "title": "Snack",
+          "duration": 5
+        }
+      ]
+    },
+    "shower_grooming": {
+      "name": "Shower grooming",
+      "items": [
+        {
+          "title": "Bathroom, shower + grooming",
+          "duration": 5
+        }
+      ]
+    },
+    "bathroom": {
+      "name": "Bathroom",
+      "items": [
+        {
+          "title": "Bathroom",
+          "duration": 5
+        }
+      ]
+    },
+    "shower": {
+      "name": "Shower",
+      "items": [
+        {
+          "title": "Shower",
+          "duration": 5
+        }
+      ]
+    },
+    "soda_mouthwash": {
+      "name": "Soda mouthwash",
+      "items": [
+        {
+          "title": "Soda mouthwash",
+          "duration": 5
+        }
+      ]
+    },
+    "brush_teeth": {
+      "name": "Brush teeth",
+      "items": [
+        {
+          "title": "Brush teeth",
+          "duration": 5
+        }
+      ]
+    },
+    "head_face_shaving": {
+      "name": "Head face shaving",
+      "items": [
+        {
+          "title": "Head & face shaving",
+          "duration": 5
+        }
+      ]
+    },
+    "beard_trim": {
+      "name": "Beard trim",
+      "items": [
+        {
+          "title": "Beard trimming 3 mm",
+          "duration": 5
+        }
+      ]
+    },
+    "back_shaving": {
+      "name": "Back shaving",
+      "items": [
+        {
+          "title": "Back shaving",
+          "duration": 5
+        }
+      ]
+    },
+    "beard_oil": {
+      "name": "Beard oil",
+      "items": [
+        {
+          "title": "Beard oil",
+          "duration": 5
+        }
+      ]
+    },
+    "lip_balm": {
+      "name": "Lip balm",
+      "items": [
+        {
+          "title": "Vaseline lip balm",
+          "duration": 5
+        }
+      ]
+    },
+    "skincare_am": {
+      "name": "Skincare am",
+      "items": [
+        {
+          "title": "Protective cream",
+          "note": "SPF face cream / winter cream",
+          "duration": 5
+        },
+        {
+          "use": "lip_balm"
+        },
+        {
+          "use": "beard_oil"
+        }
+      ]
+    },
+    "skincare_pm": {
+      "name": "Skincare pm",
+      "items": [
+        {
+          "title": "Face cleanser",
+          "duration": 5
+        },
+        {
+          "title": "Retinol + lotion",
+          "duration": 5
+        },
+        {
+          "use": "beard_oil"
+        },
+        {
+          "use": "lip_balm"
+        },
+        {
+          "title": "Body lotion",
+          "duration": 5
+        },
+        {
+          "title": "Foot cream",
+          "duration": 5
+        },
+        {
+          "title": "Hand file + repair cream",
+          "duration": 5
+        }
+      ]
+    },
+    "dance_practice": {
+      "name": "Dance practice",
+      "items": [
+        {
+          "title": "Dance practice",
+          "kind": "health",
+          "duration": 5
+        }
+      ]
+    },
+    "dance_class": {
+      "name": "Dance class",
+      "items": [
+        {
+          "title": "Dance class",
+          "kind": "health",
+          "duration": 5
+        }
+      ]
+    },
+    "gym_session": {
+      "name": "Gym session",
+      "items": [
+        {
+          "title": "Dress \u2014 go to gym \u2014 Strength training (55\u2032)",
+          "kind": "health",
+          "link": "https://example.com/notion/page-4",
+          "duration": 5
+        }
+      ]
+    },
+    "stretching": {
+      "name": "Stretching",
+      "items": [
+        {
+          "title": "Stretching (\u22485+5\u2032)",
+          "kind": "health",
+          "link": "https://example.com/notion/page-4",
+          "duration": 5
+        }
+      ]
+    },
+    "dress_go_home": {
+      "name": "Dress go home",
+      "items": [
+        {
+          "title": "Dress \u2014 go home",
+          "duration": 5
+        }
+      ]
+    },
+    "commute_home": {
+      "name": "Commute home",
+      "items": [
+        {
+          "title": "Commute home",
+          "duration": 5
+        }
+      ]
+    },
+    "gym_evening": {
+      "name": "Gym evening",
+      "items": [
+        {
+          "use": "dance_practice"
+        },
+        {
+          "use": "gym_session"
+        },
+        {
+          "use": "dress_go_home"
+        },
+        {
+          "use": "stretching"
+        },
+        {
+          "use": "shower"
+        }
+      ]
+    },
+    "ssd_workshop": {
+      "name": "Ssd workshop",
+      "items": [
+        {
+          "title": "Dinner",
+          "duration": 5
+        },
+        {
+          "title": "Commute to SSD",
+          "note": "Pendel at 18:24",
+          "duration": 5
+        },
+        {
+          "title": "Dance workshop + social",
+          "kind": "health",
+          "duration": 5
+        }
+      ]
+    },
+    "cook_dinner": {
+      "name": "Cook dinner",
+      "items": [
+        {
+          "title": "Cook dinner",
+          "duration": 5
+        }
+      ]
+    },
+    "dishes_log": {
+      "name": "Dishes log",
+      "items": [
+        {
+          "title": "Dishes, prepare tomorrow's food \u2014 Log",
+          "link": "https://example.com/notion/page-5",
+          "duration": 5
+        }
+      ]
+    },
+    "creative_writing": {
+      "name": "Creative writing",
+      "items": [
+        {
+          "title": "Creative writing",
+          "kind": "growth",
+          "link": "https://example.com/notion/page-6",
+          "duration": 5
+        }
+      ]
+    },
+    "light_reading": {
+      "name": "Light reading",
+      "items": [
+        {
+          "title": "Light reading",
+          "kind": "growth",
+          "link": [
+            "https://example.com/notion/page-7",
+            "https://example.com/notion/page-3"
+          ],
+          "duration": 5
+        }
+      ]
+    }
+  },
+  "days": {
+    "weekday": {
+      "on": [
+        "mon",
+        "tue",
+        "wed",
+        "thu"
+      ],
+      "theme": "Career + Personal Development",
+      "choices": {
+        "location": {
+          "options": {
+            "office": {},
+            "wfh": {
+              "label": "WFH"
+            }
+          },
+          "default": {
+            "mon": "office",
+            "tue": "office",
+            "wed": "wfh",
+            "thu": "office"
+          }
+        },
+        "evening": {
+          "active_when": {
+            "location": "office"
+          },
+          "options": {
+            "dance_class": {},
+            "gym": {},
+            "workshop": {
+              "only_on": [
+                "mon"
+              ]
+            }
+          },
+          "default": {
+            "mon": "dance_class",
+            "tue": "dance_class",
+            "wed": "dance_class",
+            "thu": "dance_class"
+          }
+        },
+        "gym": {
+          "type": "toggle",
+          "active_when": {
+            "location": "wfh"
+          },
+          "default": true
+        }
+      },
+      "items": [
+        {
+          "time": "06:50",
+          "use": "wake_up"
+        },
+        {
+          "time": "06:55",
+          "use": "morning_yoga"
+        },
+        {
+          "time": "07:00",
+          "use": "breakfast_review"
+        },
+        {
+          "when": {
+            "location": "office"
+          },
+          "items": [
+            {
+              "time": "07:20",
+              "title": "Get ready for work! Check train times & weather",
+              "kind": "alert",
+              "alert": true,
+              "link": "https://example.com/transit/departures",
+              "duration": 5
+            },
+            {
+              "title": "Bathroom, shower + grooming",
+              "time": "07:25",
+              "note": "Dress, pack\nSoda mouthwash\nBrush teeth\nHead & face shaving\nBeard trimming 3 mm\nBody trimming \u00b7 Legs 7 mm, upper body 7 mm, crotch 11 mm/min \u00b7 When: {\"days\": [\"tue\"]}\nBack trimming \u00b7 When: {\"days\": [\"tue\"]}\nNails \u00b7 When: {\"days\": [\"thu\"]}\nProtective cream \u00b7 SPF face cream / winter cream\nVaseline lip balm\nBeard oil",
+              "duration": 5
+            },
+            {
+              "time": "07:50",
+              "title": "Commute to office",
+              "note": "Pendel at 08:02",
+              "duration": 5
+            },
+            {
+              "time": "12:30",
+              "title": "Lunch",
+              "duration": 5
+            },
+            {
+              "time": "15:30",
+              "use": "snack"
+            }
+          ]
+        },
+        {
+          "when": {
+            "evening": "dance_class"
+          },
+          "items": [
+            {
+              "time": "17:00",
+              "title": "Commute to dance studio",
+              "duration": 5
+            },
+            {
+              "title": "Dance class",
+              "kind": "health",
+              "time": "17:40",
+              "duration": 60
+            },
+            {
+              "time": "19:00",
+              "title": "Commute home \u2014 undress",
+              "duration": 5
+            },
+            {
+              "time": "19:20",
+              "use": "shower"
+            }
+          ]
+        },
+        {
+          "when": {
+            "evening": "gym"
+          },
+          "items": [
+            {
+              "time": "16:00",
+              "use": "commute_home"
+            },
+            {
+              "use": "gym_evening"
+            }
+          ]
+        },
+        {
+          "when": {
+            "evening": "workshop"
+          },
+          "items": [
+            {
+              "time": "16:00",
+              "use": "commute_home"
+            },
+            {
+              "use": "ssd_workshop"
+            }
+          ]
+        },
+        {
+          "when": {
+            "location": "wfh"
+          },
+          "items": [
+            {
+              "time": "07:20",
+              "use": "news_pods"
+            },
+            {
+              "title": "Bathroom, shower + grooming",
+              "time": "08:00",
+              "note": "Soda mouthwash\nHead & face shaving\nFacial hair \u00b7 When: {\"days\": [\"wed\"]}",
+              "duration": 5
+            },
+            {
+              "time": "12:00",
+              "use": "make_lunch"
+            },
+            {
+              "time": "16:00",
+              "use": "snack"
+            }
+          ]
+        },
+        {
+          "when": {
+            "gym": true
+          },
+          "use": "gym_evening"
+        },
+        {
+          "when": {
+            "evening": {
+              "not": "workshop"
+            }
+          },
+          "items": [
+            {
+              "title": "Cook dinner",
+              "time": "19:30",
+              "note": "Dinner + videos",
+              "duration": 5
+            },
+            {
+              "time": "20:30",
+              "use": "dishes_log"
+            },
+            {
+              "title": "Dance practice",
+              "kind": "health",
+              "time": "20:40",
+              "note": "2 salsa songs, 2 bachata songs",
+              "duration": 5
+            },
+            {
+              "time": "21:00",
+              "title": "Learn music",
+              "kind": "growth",
+              "link": "https://example.com/notion/page-8",
+              "duration": 5
+            },
+            {
+              "time": "21:20",
+              "use": "creative_writing"
+            },
+            {
+              "time": "22:00",
+              "title": "Meditation",
+              "kind": "health",
+              "link": "https://example.com/notion/page-9",
+              "duration": 5
+            },
+            {
+              "title": "Bathroom",
+              "time": "22:20",
+              "note": "Flossing + gum cleaning\nBrush teeth\nFace cleanser\nRetinol + lotion\nBeard oil\nVaseline lip balm\nBody lotion\nFoot cream\nHand file + repair cream",
+              "duration": 5
+            },
+            {
+              "title": "Light reading",
+              "kind": "growth",
+              "link": [
+                "https://example.com/notion/page-7",
+                "https://example.com/notion/page-3"
+              ],
+              "time": "22:30",
+              "note": "Or Personal Development",
+              "duration": 5
+            }
+          ]
+        }
+      ]
+    },
+    "friday": {
+      "on": [
+        "fri"
+      ],
+      "choices": {
+        "evening": {
+          "options": {
+            "going_out": {},
+            "dance_workshop": {},
+            "none": {}
+          },
+          "default": "none"
+        }
+      },
+      "items": [
+        {
+          "time": "07:30",
+          "use": "wake_up"
+        },
+        {
+          "time": "07:40",
+          "use": "breakfast_review"
+        },
+        {
+          "title": "Bathroom, shower + grooming",
+          "time": "08:00",
+          "note": "Soda mouthwash\nHead & face shaving\nBeard trimming 3 mm",
+          "duration": 5
+        },
+        {
+          "time": "08:40",
+          "use": "news_pods"
+        },
+        {
+          "time": "12:00",
+          "use": "make_lunch"
+        },
+        {
+          "when": {
+            "evening": "going_out"
+          },
+          "items": [
+            {
+              "time": "15:30",
+              "use": "snack"
+            },
+            {
+              "time": "17:00",
+              "use": "gym_session"
+            },
+            {
+              "time": "18:10",
+              "use": "dress_go_home"
+            },
+            {
+              "time": "18:30",
+              "use": "stretching"
+            },
+            {
+              "title": "Cook dinner",
+              "time": "18:40",
+              "note": "Dinner + videos",
+              "duration": 5
+            },
+            {
+              "title": "Bathroom, shower + grooming",
+              "time": "19:40",
+              "note": "Back shaving",
+              "duration": 5
+            },
+            {
+              "time": "20:00",
+              "title": "Clothes",
+              "duration": 5
+            },
+            {
+              "time": "20:10",
+              "title": "Commute to city",
+              "note": "Pendel at 20:24",
+              "duration": 5
+            }
+          ]
+        },
+        {
+          "when": {
+            "evening": "dance_workshop"
+          },
+          "items": [
+            {
+              "title": "Bathroom, shower + grooming",
+              "time": "17:00",
+              "note": "Back shaving",
+              "duration": 5
+            },
+            {
+              "use": "ssd_workshop"
+            }
+          ]
+        }
+      ]
+    },
+    "saturday": {
+      "on": [
+        "sat"
+      ],
+      "theme": "Projects",
+      "choices": {
+        "going_out": {
+          "type": "toggle",
+          "default": false
+        }
+      },
+      "items": [
+        {
+          "time": "08:00",
+          "use": "wake_up"
+        },
+        {
+          "title": "Morning yoga",
+          "kind": "health",
+          "link": "https://example.com/notion/page-1",
+          "approx": true,
+          "duration": 5
+        },
+        {
+          "time": "08:30",
+          "use": "breakfast_review"
+        },
+        {
+          "approx": true,
+          "title": "Productivity",
+          "kind": "growth",
+          "duration": 5
+        },
+        {
+          "title": "Bathroom, shower + grooming",
+          "approx": true,
+          "note": "Dress\nSoda mouthwash\nHead & face shaving\nTake body measurements \u00b7 Weight, body fat %, muscles",
+          "duration": 5
+        },
+        {
+          "time": "11:40",
+          "title": "Cook lunch and protein bars",
+          "duration": 5
+        },
+        {
+          "time": "12:30",
+          "title": "Lunch + videos + learn languages",
+          "duration": 5
+        },
+        {
+          "time": "13:00",
+          "use": "dance_class"
+        },
+        {
+          "approx": true,
+          "title": "Groceries",
+          "duration": 5
+        },
+        {
+          "approx": true,
+          "title": "Home cleaning",
+          "duration": 5
+        },
+        {
+          "title": "Bathroom, shower + grooming",
+          "when": {
+            "going_out": true
+          },
+          "note": "Head shaving\nBack shaving\nBeard oil",
+          "duration": 5
+        },
+        {
+          "time": "19:00",
+          "use": "cook_dinner"
+        },
+        {
+          "time": "19:30",
+          "title": "Dinner + series",
+          "duration": 5
+        },
+        {
+          "time": "23:15",
+          "use": "bathroom"
+        },
+        {
+          "time": "02:00",
+          "title": "Lucid dreaming",
+          "kind": "night",
+          "link": "https://example.com/notion/page-10",
+          "duration": 5
+        }
+      ]
+    },
+    "sunday": {
+      "on": [
+        "sun"
+      ],
+      "theme": "Creative writing + Introspect",
+      "items": [
+        {
+          "time": "08:00",
+          "use": "wake_up"
+        },
+        {
+          "title": "Morning yoga",
+          "kind": "health",
+          "link": "https://example.com/notion/page-1",
+          "approx": true,
+          "duration": 5
+        },
+        {
+          "approx": true,
+          "title": "Breakfast + magazine articles",
+          "duration": 5
+        },
+        {
+          "title": "Personal Development",
+          "kind": "growth",
+          "link": "https://example.com/notion/page-3",
+          "duration": 5
+        },
+        {
+          "title": "Shower",
+          "time": "09:00",
+          "approx": true,
+          "duration": 5
+        },
+        {
+          "title": "Creative writing",
+          "kind": "growth",
+          "link": "https://example.com/notion/page-6",
+          "approx": true,
+          "note": "Poetry",
+          "duration": 5
+        },
+        {
+          "time": "12:00",
+          "approx": true,
+          "title": "Cook lunch",
+          "note": "Humanities talks",
+          "duration": 5
+        },
+        {
+          "time": "13:00",
+          "approx": true,
+          "title": "Lunch + movie",
+          "duration": 5
+        },
+        {
+          "time": "16:00",
+          "title": "Dessert",
+          "duration": 5
+        },
+        {
+          "time": "17:30",
+          "title": "Strength training (55\u2032)",
+          "kind": "health",
+          "duration": 5
+        },
+        {
+          "title": "Cook dinner",
+          "time": "19:20",
+          "note": "Humanities talks",
+          "duration": 5
+        },
+        {
+          "time": "20:00",
+          "title": "Dinner + videos",
+          "duration": 5
+        },
+        {
+          "title": "Dishes, prepare tomorrow's food \u2014 Log",
+          "link": "https://example.com/notion/page-5",
+          "time": "20:50",
+          "note": "Pods",
+          "duration": 5
+        },
+        {
+          "time": "21:30",
+          "approx": true,
+          "title": "\u00dcbermensch Review",
+          "kind": "growth",
+          "link": "https://example.com/notion/page-11",
+          "duration": 5
+        },
+        {
+          "time": "22:00",
+          "title": "Night yoga",
+          "kind": "health",
+          "link": "https://example.com/notion/page-1",
+          "duration": 5
+        },
+        {
+          "time": "22:20",
+          "use": "bathroom"
+        },
+        {
+          "title": "Light reading",
+          "kind": "growth",
+          "link": [
+            "https://example.com/notion/page-7",
+            "https://example.com/notion/page-3"
+          ],
+          "approx": true,
+          "duration": 5
+        }
+      ]
+    }
+  }
+}

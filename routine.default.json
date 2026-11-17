@@ -1,0 +1,11 @@
+{
+  "settings": {
+    "holiday": "daily"
+  },
+  "days": {
+    "daily": {
+      "on": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+      "items": []
+    }
+  }
+}

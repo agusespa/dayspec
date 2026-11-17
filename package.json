@@ -1,0 +1,12 @@
+{
+	"name": "dayspec-e2e",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"test:e2e": "playwright test",
+		"icons": "node scripts/icons.mjs"
+	},
+	"devDependencies": {
+		"@playwright/test": "^1.65.1"
+	}
+}

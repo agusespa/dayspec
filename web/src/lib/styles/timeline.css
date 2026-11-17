@@ -1,0 +1,222 @@
+/* The timeline shared by Today and Templates: time column, rail with a dot per item. */
+
+.timeline {
+	--time-col: 3.4rem;
+	--gap: 0.6rem;
+	--node: 14px;
+	/* Where the rail runs: through the middle of each item's dot. */
+	--rail-x: calc(0.5rem + var(--time-col) + var(--gap) + var(--node) / 2 - 1px);
+	--row-height: 52px;
+	--node-y: calc(0.25rem + var(--row-height) / 2);
+	list-style: none;
+	margin: 1.25rem -0.5rem 0;
+	padding: 0;
+}
+
+.item {
+	position: relative;
+	display: grid;
+	grid-template-columns: var(--time-col) 1fr;
+	gap: var(--gap);
+	padding: 0.25rem 0.5rem;
+	border-radius: var(--radius);
+	/* Keep the current item clear of the status band and the bottom bar when scrolled to. */
+	scroll-margin: calc(env(safe-area-inset-top) + 1rem) 0 5rem;
+}
+
+/* The rail: dotted ahead, solid accent for the part of the day that has passed. */
+.item::before,
+.item.current::after {
+	content: '';
+	position: absolute;
+	left: var(--rail-x);
+	width: 2px;
+	top: 0;
+	bottom: 0;
+	background: var(--rule);
+}
+
+.item.passed::before {
+	background: var(--accent);
+	opacity: 0.55;
+}
+
+.item.current::after {
+	bottom: auto;
+	height: var(--node-y);
+	background: var(--accent);
+	opacity: 0.55;
+}
+
+.item:first-child::before {
+	top: var(--node-y);
+}
+
+.item:last-child::before {
+	bottom: calc(100% - var(--node-y));
+}
+
+.item.current {
+	background: var(--now-wash);
+}
+
+.time {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	min-height: var(--row-height);
+	justify-content: center;
+	align-self: start;
+	padding: 0;
+	font-size: 0.82rem;
+	line-height: 1.25;
+	color: var(--muted);
+	white-space: nowrap;
+}
+
+.start {
+	color: var(--text);
+	font-weight: 500;
+}
+
+.end {
+	font-size: 0.72rem;
+}
+
+.passed .start {
+	color: var(--muted);
+}
+
+.current .start {
+	color: var(--accent);
+	font-weight: 700;
+}
+
+.badge {
+	margin-top: 0.3rem;
+	font-size: 0.62rem;
+	font-weight: 700;
+	letter-spacing: 0;
+	text-transform: none;
+	padding: 0.15rem 0.4rem;
+	border-radius: 4px;
+	background: var(--accent);
+	color: var(--accent-text);
+}
+
+.body {
+	position: relative;
+	min-width: 0;
+	/* Notes and links line up with the title, past the dot. */
+	--indent: calc(var(--node) + 0.75rem);
+}
+
+.row {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	min-height: var(--row-height);
+	padding: 0.35rem 0;
+}
+
+/* The item's dot on the rail, in its kind's colour; filled once the item has passed. */
+.dot {
+	flex: none;
+	width: var(--node);
+	height: var(--node);
+	border-radius: 999px;
+	border: 2px solid var(--kind);
+	background: var(--bg);
+	transition: background 0.2s;
+}
+
+.current .dot {
+	background: var(--paper);
+	box-shadow: 0 0 0 4px var(--now-wash);
+}
+
+.passed .dot {
+	background: var(--kind);
+}
+
+.kind-none .dot {
+	border-color: var(--muted);
+}
+
+.kind-none.passed .dot {
+	background: var(--muted);
+}
+
+.title {
+	overflow-wrap: anywhere;
+	font-weight: 500;
+	line-height: 1.3;
+}
+
+.current .body > .row .title {
+	font-weight: 650;
+}
+
+.alert {
+	display: inline-grid;
+	place-items: center;
+	width: 1.15rem;
+	height: 1.15rem;
+	margin-right: 0.4rem;
+	border-radius: 4px;
+	background: var(--kind-alert);
+	color: var(--bg);
+	font-family: var(--sans);
+	font-size: 0.75rem;
+	font-weight: 800;
+	vertical-align: 0.1em;
+}
+
+.meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.1rem 0.9rem;
+	margin: -0.35rem 0 0.55rem var(--indent);
+	font-size: 0.85rem;
+}
+
+.note {
+	color: var(--muted);
+}
+
+.meta a {
+	display: inline-flex;
+	align-items: center;
+	min-height: 32px;
+	font-family: var(--sans);
+	font-size: 0.75rem;
+	font-weight: 500;
+}
+
+.duration {
+	color: var(--muted);
+	font-size: 0.75rem;
+	font-variant-numeric: tabular-nums;
+}
+.badge {
+	border-radius: 6px;
+}
+.title {
+	letter-spacing: -0.01em;
+}
+
+.current .start {
+	color: var(--accent);
+}
+.badge {
+	background: var(--accent);
+	color: var(--accent-text);
+}
+.duration {
+	color: var(--tertiary);
+}
+
+.note {
+	white-space: pre-line;
+}

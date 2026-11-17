@@ -1,0 +1,28 @@
+# The app has no login of its own and the image contains your whole routine. It must only be
+# reachable through a Cloudflare Tunnel protected by Cloudflare Access (see README, "Install"),
+# so it publishes no port: cloudflared reaches it over this compose network. Never add a
+# "ports" section to dayspec.
+services:
+  dayspec:
+    image: ghcr.io/agusespa/dayspec:latest
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      ROUTINE_PATH: /app/data/routine.json
+    volumes:
+      - dayspec_data:/app/data
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.7
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      # From Zero Trust > Networks > Tunnels. In the tunnel's public
+      # hostname, point the service at http://dayspec:8080.
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    depends_on:
+      - dayspec
+
+# Editable templates survive image updates and container recreation.
+volumes:
+  dayspec_data:

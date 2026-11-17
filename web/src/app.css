@@ -1,0 +1,186 @@
+/* Sunset: coral actions, pink accents and gold highlights on a black canvas. */
+:root {
+	--bg: #000000;
+	--paper: #191112;
+	--surface: #191112;
+	--surface-hover: #342125;
+	--inset: #0b0809;
+	--text: #f1e8dc;
+	--muted: #b7aaa0;
+	--rule: #332923;
+	--accent: #ff8a65;
+	--accent-hover: #ffa180;
+	--secondary: #f5a3c7;
+	--tertiary: #ffd166;
+	--accent-text: #000000;
+	--now-wash: rgb(255 138 101 / 10%);
+	--danger: #ff8a91;
+	--radius: 12px;
+	--kind-maintenance: #ffd166;
+	--kind-health: #f6b98f;
+	--kind-growth: #ff8a65;
+	--kind-alert: #ff8a91;
+	--kind-night: #f5a3c7;
+	--kind-none: #9c8982;
+	--shadow: 0 12px 32px rgb(0 0 0 / 30%);
+	--sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+	--mono: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+	color-scheme: dark;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+/*
+ * In the home-screen app (black-translucent status bar), iOS lays out a page shorter than the screen
+ * against a viewport that leaves out the status bar, so fixed bars sit higher than on pages that
+ * scroll. Making every page at least screen tall keeps them in one place.
+ */
+html {
+	min-height: calc(100% + env(safe-area-inset-top));
+	min-height: calc(100% + env(safe-area-inset-top));
+}
+
+html,
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--text);
+	font-family: var(--sans);
+	-webkit-font-smoothing: antialiased;
+	/* Everything sized in rem scales from here; 16px reads comfortably on an iPhone. */
+	font-size: 16px;
+	-webkit-text-size-adjust: 100%;
+	-webkit-tap-highlight-color: transparent;
+}
+
+a {
+	color: var(--accent);
+	text-decoration: underline;
+	text-decoration-thickness: 1px;
+	text-underline-offset: 3px;
+}
+
+h1 {
+	margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+	font: inherit;
+	color: inherit;
+}
+
+button {
+	border: none;
+	border-radius: 10px;
+	padding: 0.5rem 0.9rem;
+	background: transparent;
+	cursor: pointer;
+	min-height: 44px;
+	font-weight: 550;
+	transition:
+		background 0.16s ease,
+		color 0.16s ease,
+		border-color 0.16s ease;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+summary:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+.muted {
+	color: var(--muted);
+}
+
+.mono {
+	font-family: var(--mono);
+	font-variant-numeric: tabular-nums;
+}
+
+::selection {
+	background: var(--accent);
+	color: #000000;
+}
+@media (hover: hover) {
+	button:not(:disabled):hover {
+		background-color: var(--surface);
+	}
+}
+button:disabled {
+	cursor: default;
+}
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		transition-duration: 0.01ms !important;
+		animation-duration: 0.01ms !important;
+	}
+}
+
+/* Tab switch (see +layout.svelte): the page slides toward the tapped tab. */
+::view-transition-old(tabbar) {
+	display: none;
+}
+
+::view-transition-new(tabbar) {
+	animation: none;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation-duration: 0.32s;
+	animation-timing-function: cubic-bezier(0.25, 0.8, 0.3, 1);
+}
+
+:root[data-tab-dir='forward']::view-transition-old(root) {
+	animation-name: tab-out-left;
+}
+:root[data-tab-dir='forward']::view-transition-new(root) {
+	animation-name: tab-in-right;
+}
+:root[data-tab-dir='back']::view-transition-old(root) {
+	animation-name: tab-out-right;
+}
+:root[data-tab-dir='back']::view-transition-new(root) {
+	animation-name: tab-in-left;
+}
+
+@keyframes tab-out-left {
+	to {
+		opacity: 0;
+		transform: translateX(-12%);
+	}
+}
+@keyframes tab-in-right {
+	from {
+		opacity: 0;
+		transform: translateX(12%);
+	}
+}
+@keyframes tab-out-right {
+	to {
+		opacity: 0;
+		transform: translateX(12%);
+	}
+}
+@keyframes tab-in-left {
+	from {
+		opacity: 0;
+		transform: translateX(-12%);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	::view-transition-group(*) {
+		animation-duration: 0s;
+	}
+}

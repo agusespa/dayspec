@@ -1,0 +1,423 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dayspec.local/routine.schema.json",
+  "title": "dayspec routine",
+  "description": "The template library and shared settings for Dayspec.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "days"
+  ],
+  "properties": {
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "day_starts_at": {
+          "$ref": "#/$defs/time",
+          "description": "Before this time the app still shows the previous day; earlier times sort last. Default 04:00."
+        },
+        "holiday": {
+          "$ref": "#/$defs/id",
+          "description": "Template used on holidays. Without a selection, use the regular weekday template."
+        },
+        "automatic_swedish_holidays": {
+          "type": "boolean",
+          "description": "Use the Swedish public holiday calendar for dates without a manual override. Default true."
+        }
+      }
+    },
+    "blocks": {
+      "type": "object",
+      "description": "Shared blocks, keyed by stable ID.",
+      "propertyNames": {
+        "$ref": "#/$defs/id"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "items"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/entry"
+            }
+          }
+        }
+      }
+    },
+    "days": {
+      "type": "object",
+      "description": "Day templates, keyed by day type.",
+      "propertyNames": {
+        "$ref": "#/$defs/id"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/day"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "url": {
+      "type": "string",
+      "pattern": "^https?://"
+    },
+    "time": {
+      "type": "string",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+    },
+    "weekday": {
+      "enum": [
+        "mon",
+        "tue",
+        "wed",
+        "thu",
+        "fri",
+        "sat",
+        "sun"
+      ]
+    },
+    "weekdays": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/weekday"
+      }
+    },
+    "kind": {
+      "enum": [
+        "maintenance",
+        "health",
+        "growth",
+        "alert",
+        "night"
+      ],
+      "description": "Sets the item's colour."
+    },
+    "link": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/url"
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/url"
+          }
+        }
+      ]
+    },
+    "when": {
+      "type": "object",
+      "description": "All conditions must hold. `days` lists weekdays; any other key is a choice of the day template.",
+      "propertyNames": {
+        "$ref": "#/$defs/id"
+      },
+      "properties": {
+        "days": {
+          "$ref": "#/$defs/weekdays"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/condition"
+      }
+    },
+    "condition": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "The choice has this value."
+        },
+        {
+          "type": "boolean",
+          "description": "A toggle is on (true) or off (false)."
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          },
+          "description": "The choice has any of these values."
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "not"
+          ],
+          "properties": {
+            "not": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
+            }
+          },
+          "description": "The choice has none of these values, or is not active."
+        }
+      ]
+    },
+    "item": {
+      "type": "object",
+      "description": "A new item.",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "duration"
+      ],
+      "properties": {
+        "duration": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440,
+          "description": "Duration in minutes."
+        },
+        "time": {
+          "$ref": "#/$defs/time"
+        },
+        "approx": {
+          "type": "boolean",
+          "description": "Show the time as approximate (\u2248)."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "$ref": "#/$defs/kind"
+        },
+        "alert": {
+          "type": "boolean",
+          "description": "Can't be delayed."
+        },
+        "link": {
+          "$ref": "#/$defs/link"
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        },
+        "when": {
+          "$ref": "#/$defs/when"
+        }
+      }
+    },
+    "use": {
+      "type": "object",
+      "description": "Places a shared block at a start time.",
+      "additionalProperties": false,
+      "required": [
+        "use"
+      ],
+      "properties": {
+        "use": {
+          "$ref": "#/$defs/id"
+        },
+        "time": {
+          "$ref": "#/$defs/time"
+        },
+        "when": {
+          "$ref": "#/$defs/when"
+        }
+      }
+    },
+    "group": {
+      "type": "object",
+      "description": "Entries that share one `when`.",
+      "additionalProperties": false,
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "when": {
+          "$ref": "#/$defs/when"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/entry"
+          }
+        }
+      }
+    },
+    "entry": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/item"
+        },
+        {
+          "$ref": "#/$defs/use"
+        },
+        {
+          "$ref": "#/$defs/group"
+        }
+      ]
+    },
+    "option": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "only_on": {
+          "$ref": "#/$defs/weekdays"
+        }
+      }
+    },
+    "choice": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "enum": [
+            "select",
+            "toggle"
+          ],
+          "default": "select"
+        },
+        "options": {
+          "type": "object",
+          "minProperties": 2,
+          "propertyNames": {
+            "$ref": "#/$defs/id"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/option"
+          }
+        },
+        "default": true,
+        "active_when": {
+          "$ref": "#/$defs/when"
+        }
+      },
+      "if": {
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "const": "toggle"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "default"
+        ],
+        "not": {
+          "required": [
+            "options"
+          ]
+        },
+        "properties": {
+          "default": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "object",
+                "propertyNames": {
+                  "$ref": "#/$defs/weekday"
+                },
+                "additionalProperties": {
+                  "type": "boolean"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "else": {
+        "required": [
+          "options",
+          "default"
+        ],
+        "properties": {
+          "default": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/id"
+              },
+              {
+                "type": "object",
+                "propertyNames": {
+                  "$ref": "#/$defs/weekday"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/id"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "day": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "on",
+        "items"
+      ],
+      "properties": {
+        "on": {
+          "$ref": "#/$defs/weekdays"
+        },
+        "theme": {
+          "type": "string",
+          "minLength": 1
+        },
+        "choices": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/id",
+            "not": {
+              "const": "days"
+            }
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/choice"
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/entry"
+          }
+        }
+      }
+    }
+  }
+}

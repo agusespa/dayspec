@@ -1,0 +1,390 @@
+/* Page chrome shared by Today and Templates: the bottom bar, the masthead and the choice rows. */
+
+.kind-none {
+	--kind: var(--kind-none);
+}
+.kind-maintenance {
+	--kind: var(--kind-maintenance);
+}
+.kind-health {
+	--kind: var(--kind-health);
+}
+.kind-growth {
+	--kind: var(--kind-growth);
+}
+.kind-alert {
+	--kind: var(--kind-alert);
+}
+.kind-night {
+	--kind: var(--kind-night);
+}
+
+/* ---- Bottom bar ---- */
+
+:root {
+	--nav-bottom: calc(max(env(safe-area-inset-bottom), 24px) + 8px);
+	--nav-height: 54px;
+	--floating-bg: rgba(28, 28, 30, 0.58);
+	--floating-filter: saturate(200%) blur(28px);
+	--floating-shadow:
+		inset 0 0.5px 0 rgba(255, 255, 255, 0.16), 0 8px 28px rgba(0, 0, 0, 0.6),
+		0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* Navigation sits at the bottom: in the home-screen app iOS blurs whatever is under the status bar. */
+.bottombar {
+	position: fixed;
+	left: 50%;
+	bottom: var(--nav-bottom);
+	transform: translateX(-50%);
+	z-index: 5;
+	view-transition-name: tabbar;
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	align-items: center;
+	gap: 0;
+	width: min(calc(100% - 24px), 324px);
+	padding: 3px;
+	/* Gympass dark-mode glass settings. */
+	--nav-active: rgba(0, 0, 0, 0.75);
+	background: var(--floating-bg);
+	-webkit-backdrop-filter: var(--floating-filter);
+	backdrop-filter: var(--floating-filter);
+	border-radius: 999px;
+	box-shadow: var(--floating-shadow);
+}
+
+.bar-center {
+	flex: 1;
+	display: flex;
+	justify-content: center;
+}
+
+.bar-label {
+	font-family: var(--sans);
+	font-size: 0.78rem;
+	font-weight: 600;
+	letter-spacing: 0;
+	text-transform: none;
+}
+
+.bar-pill {
+	background: var(--text);
+	color: var(--bg);
+	font-family: var(--sans);
+	font-size: 0.78rem;
+	font-weight: 600;
+	letter-spacing: 0;
+	text-transform: none;
+}
+
+.bar-divider {
+	width: 1px;
+	height: 24px;
+	background: var(--rule);
+}
+
+.nav {
+	flex: none;
+	width: 44px;
+	height: 44px;
+	padding: 0;
+	border-radius: 12px;
+	color: var(--text);
+	display: grid;
+	place-items: center;
+}
+
+.nav:active {
+	background: var(--rule);
+}
+
+.nav svg {
+	width: 22px;
+	height: 22px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 2;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+/* Room at the end of a page so the bottom bar doesn't cover it. */
+.bar-room {
+	height: 6rem;
+}
+
+/* ---- Masthead ---- */
+
+.masthead {
+	padding: calc(env(safe-area-inset-top) + 1.25rem) 0 0;
+}
+
+.eyebrow {
+	margin: 0;
+	font-family: var(--sans);
+	font-size: 0.78rem;
+	font-weight: 500;
+	letter-spacing: 0.02em;
+	text-transform: none;
+	color: var(--muted);
+}
+
+.masthead h1 {
+	font-family: var(--sans);
+
+	font-size: clamp(2rem, 5vw, 2.5rem);
+	font-weight: 700;
+	line-height: 1.15;
+	letter-spacing: -0.03em;
+	margin: 0.35rem 0 0;
+}
+
+.theme {
+	margin: 0.5rem 0 0;
+	font-family: var(--sans);
+	font-style: normal;
+	font-size: 1rem;
+	line-height: 1.25;
+	color: var(--muted);
+}
+
+/* Choice controls */
+
+.choices {
+	margin-top: 1.25rem;
+	border-top: 1px solid var(--rule);
+}
+
+.choice {
+	display: grid;
+	grid-template-columns: 4.75rem 1fr;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.45rem 0;
+	border-bottom: 1px solid var(--rule);
+}
+
+.choice-label {
+	font-family: var(--sans);
+	font-size: 0.68rem;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	text-transform: none;
+	color: var(--muted);
+}
+
+.options {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+}
+
+.options button {
+	min-height: 36px;
+	padding: 0.3rem 0.8rem;
+	border: 1px solid var(--rule);
+	font-size: 0.9rem;
+	transition:
+		background 0.15s,
+		color 0.15s;
+}
+
+.options button[aria-checked='true'] {
+	background: var(--now-wash);
+	border-color: var(--accent);
+	color: var(--accent);
+	font-weight: 600;
+}
+
+.section-label {
+	margin: 1.75rem 0 0;
+	font-family: var(--sans);
+	font-size: 0.68rem;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	text-transform: none;
+	color: var(--muted);
+}
+
+.empty-state {
+	margin: 1.5rem 0;
+	padding: 1.5rem;
+	border: 1px solid var(--rule);
+	border-radius: var(--radius);
+	background: var(--paper);
+}
+.empty-state h2 {
+	font-family: var(--sans);
+	font-size: 1.2rem;
+	margin: 0 0 0.6rem;
+}
+.empty-state p {
+	color: var(--muted);
+	line-height: 1.6;
+	font-size: 0.9rem;
+}
+.empty-state a {
+	display: inline-block;
+	padding: 0.75rem 0;
+}
+
+/* Navigation destinations stay labelled; day controls retain their compact arrows. */
+.bottombar .nav-destination {
+	width: auto;
+	min-width: 0;
+	min-height: 48px;
+	gap: 2px;
+	padding: 4px 6px;
+	font-size: 0.65rem;
+	font-weight: 600;
+	line-height: 1.2;
+	text-decoration: none;
+	border-radius: 999px;
+}
+
+.bottombar .nav-destination[aria-current='page'] {
+	color: var(--accent);
+}
+.day-navigation {
+	display: flex;
+	align-items: center;
+	min-width: 0;
+	min-height: 48px;
+	border-radius: 999px;
+	color: var(--accent);
+}
+.day-navigation .nav {
+	width: 44px;
+	color: inherit;
+}
+.day-navigation .bar-center {
+	min-width: 0;
+}
+.day-label {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 3px;
+	padding: 0;
+	font-size: 0.65rem;
+	font-weight: 600;
+	line-height: 1.2;
+	white-space: nowrap;
+}
+.day-label small {
+	font-size: 0.6rem;
+	font-weight: 500;
+	color: var(--muted);
+}
+@media (max-width: 360px) {
+	.day-navigation .nav {
+		width: 44px;
+	}
+}
+.eyebrow {
+	color: var(--tertiary);
+}
+.bar-label {
+	color: var(--accent);
+}
+.bar-pill {
+	background: var(--accent);
+	color: var(--accent-text);
+}
+.theme {
+	color: var(--secondary);
+}
+
+/* The named selection pill glides between the fixed-size tab slots. */
+.nav-indicator {
+	position: absolute;
+	top: 3px;
+	bottom: 3px;
+	left: calc(3px + var(--tab-start) * (100% - 6px));
+	width: calc(var(--tab-size) * (100% - 6px));
+	border-radius: 999px;
+	background: var(--nav-active);
+	view-transition-name: nav-indicator;
+	pointer-events: none;
+}
+.bottombar > :not(.nav-indicator) {
+	position: relative;
+	z-index: 1;
+}
+::view-transition-group(nav-indicator) {
+	animation-duration: 0.38s;
+	animation-timing-function: cubic-bezier(0.3, 1.3, 0.5, 1);
+}
+
+/* View-transition snapshots have their own stacking order, independent of the live DOM. */
+.bottombar .day-navigation,
+.bottombar > a[href='/'] {
+	view-transition-name: nav-daily;
+}
+.bottombar > a[href='/templates'] {
+	view-transition-name: nav-templates;
+}
+::view-transition-group(tabbar) {
+	z-index: 1;
+}
+::view-transition-group(nav-indicator) {
+	z-index: 2;
+}
+::view-transition-group(nav-daily),
+::view-transition-group(nav-templates),
+::view-transition-group(nav-profile) {
+	z-index: 3;
+	animation-duration: 0.15s;
+}
+
+.bottombar > a[href='/profile'] {
+	view-transition-name: nav-profile;
+}
+.bottombar .nav-destination svg {
+	width: 20px;
+	height: 20px;
+}
+
+/* Keep the hit areas generous while the hover circle hugs the icon. */
+.bottombar .nav {
+	position: relative;
+	isolation: isolate;
+}
+.day-navigation .nav::before {
+	content: '';
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 38px;
+	height: 38px;
+	transform: translate(-50%, -50%);
+	border-radius: 50%;
+	background: rgb(255 255 255 / 6%);
+	opacity: 0;
+	z-index: -1;
+	transition: opacity 0.15s;
+}
+.bottombar .nav:hover,
+.bottombar .nav:active {
+	background: transparent;
+}
+.day-navigation .nav:active::before {
+	opacity: 1;
+}
+@media (hover: hover) {
+	.day-navigation .nav:hover::before {
+		opacity: 1;
+	}
+}
+
+.bottombar.daily-expanded {
+	grid-template-columns: minmax(0, 46fr) repeat(2, minmax(0, 27fr));
+}
+::view-transition-group(nav-daily),
+::view-transition-group(nav-templates),
+::view-transition-group(nav-profile) {
+	animation-duration: 0.38s;
+	animation-timing-function: cubic-bezier(0.3, 1.3, 0.5, 1);
+}
