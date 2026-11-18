@@ -47,7 +47,9 @@
 				data-testid="TimelineItem-alert"
 				viewBox="0 0 24 24"
 				><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16Z" /><path d="M10 20.5a2 2 0 0 0 4 0" /></svg
-			>{/if}{item.title}{#if item.duration}<span class="duration">{item.duration} min</span>{/if}
+			>{/if}<span class="title-text">{item.title}</span>{#if item.duration}<span class="duration"
+				>{item.duration} min</span
+			>{/if}
 	</span>
 {/snippet}
 

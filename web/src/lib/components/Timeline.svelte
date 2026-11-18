@@ -77,8 +77,9 @@
 						<span class="body"
 							><span class="row"
 								><span class="dot" aria-hidden="true"></span><span class="title"
-									>{group.name}{#if duration}<span class="duration" data-testid="Timeline-block-total"
-											>{duration} min</span
+									><span class="title-text">{group.name}</span>{#if duration}<span
+											class="duration"
+											data-testid="Timeline-block-total">{duration} min</span
 										>{/if}</span
 								><svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg
 								></span
@@ -246,7 +247,14 @@
 		margin-left: auto;
 	}
 	.contents-title {
+		min-width: 0;
 		color: var(--text);
+		overflow-wrap: anywhere;
+	}
+	button.contents-row[aria-expanded='false'] .contents-title {
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
 	}
 	.block-contents :global(.details) {
 		margin: 0 0 0.25rem;

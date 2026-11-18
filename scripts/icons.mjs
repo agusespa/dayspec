@@ -3,7 +3,7 @@
 import { writeFileSync } from 'node:fs';
 import { chromium } from '@playwright/test';
 
-// An open day arc around three aligned timeline bars. The mark fits inside the
+// A centered sunrise arc around three aligned timeline bars. The mark fits inside the
 // maskable safe zone (a circle of radius 204 centred on the 512px canvas).
 const DEFS = `<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#211619"/><stop offset="1" stop-color="#080607"/></linearGradient>
 <linearGradient id="frame" x1="0" y1="0" x2="0.8" y2="1"><stop stop-color="#ffb18c"/><stop offset="1" stop-color="#ff8a65"/></linearGradient>`;
@@ -13,13 +13,15 @@ function svg(rounded) {
 	return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
 <defs>${DEFS}</defs>
 <rect width="512" height="512"${rounded ? ' rx="112"' : ''} fill="url(#bg)"/>
-<path d="M 149.934 358.066 A 150 150 0 0 1 106.091 257.235 M 151.801 144.099 A 150 150 0 0 1 362.066 358.066"
-  fill="none" stroke="url(#frame)" stroke-width="30" stroke-linecap="round"/>
-<circle cx="116.923" cy="195.809" r="28" fill="#ffd166"/>
-<g fill="none" stroke="#f5a3c7" stroke-linecap="round" stroke-width="30">
-  <path d="M 206 232 H 294"/>
-  <path d="M 206 295.033 H 270"/>
-  <path d="M 206 358.066 H 306"/>
+<g transform="translate(0 32)">
+<path d="M 149.934 358.066 A 150 150 0 0 1 200 116.807 M 312 116.807 A 150 150 0 0 1 362.066 358.066"
+  fill="none" stroke="url(#frame)" stroke-width="28" stroke-linecap="round"/>
+<circle cx="256" cy="106" r="29" fill="#ffd166"/>
+<g fill="none" stroke="#f5a3c7" stroke-linecap="round" stroke-width="28">
+  <path d="M 210 232 H 302"/>
+  <path d="M 210 295 H 278"/>
+  <path d="M 210 358 H 302"/>
+</g>
 </g>
 </svg>
 `;

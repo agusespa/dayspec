@@ -2,7 +2,7 @@
 
 .template-editor {
 	/* Same height as the page mastheads, clear of the iOS status bar blur. */
-	padding-top: calc(env(safe-area-inset-top) + 1.6rem);
+	padding-top: var(--page-top);
 	padding-bottom: 7rem;
 }
 .editor-heading {
@@ -189,7 +189,7 @@
 
 .template-editor .entry {
 	/* Room under the status bar when an edit link scrolls an entry to the top. */
-	scroll-margin-top: calc(env(safe-area-inset-top) + 1rem);
+	scroll-margin-top: var(--page-top);
 	background: var(--paper);
 	border: 1px solid var(--rule);
 	border-radius: var(--radius);

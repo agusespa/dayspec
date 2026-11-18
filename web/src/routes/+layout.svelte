@@ -116,6 +116,6 @@
 		border: 1px solid var(--danger);
 		border-radius: var(--radius);
 		padding: 0.75rem;
-		margin-top: calc(env(safe-area-inset-top) + 1.6rem);
+		margin-top: var(--page-top);
 	}
 </style>

@@ -16,12 +16,12 @@
 .item {
 	position: relative;
 	display: grid;
-	grid-template-columns: var(--time-col) 1fr;
+	grid-template-columns: var(--time-col) minmax(0, 1fr);
 	gap: var(--gap);
 	padding: 0.25rem 0.5rem;
 	border-radius: var(--radius);
 	/* Keep the current item clear of the status bar and the bottom bar when scrolled to. */
-	scroll-margin: calc(env(safe-area-inset-top) + 1rem) 0 5rem;
+	scroll-margin: var(--page-top) 0 5rem;
 }
 
 /* The rail: dotted ahead, solid accent for the part of the day that has passed. */
@@ -163,10 +163,24 @@ button.row {
 }
 
 .title {
-	overflow-wrap: anywhere;
+	display: flex;
+	align-items: center;
+	min-width: 0;
 	font-weight: 500;
 	line-height: 1.3;
 	letter-spacing: -0.01em;
+}
+
+.title-text {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+button.row[aria-expanded='false'] .title-text,
+.timeline details:not([open]) > summary .title-text {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
 }
 
 .current .body > .row .title {
@@ -175,6 +189,7 @@ button.row {
 
 /* A bell before the title of items marked Alert. */
 .alert {
+	flex: none;
 	width: 1.05em;
 	height: 1.05em;
 	margin-right: 0.35rem;
@@ -188,6 +203,7 @@ button.row {
 
 /* Every duration sits right after its title text, in the same style. */
 .duration {
+	flex: none;
 	margin-left: 0.5rem;
 	font-weight: 500;
 	letter-spacing: 0;
