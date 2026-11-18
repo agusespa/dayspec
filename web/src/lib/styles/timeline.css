@@ -1,6 +1,7 @@
 /* The timeline shared by Today and Templates: time column, rail with a dot per item. */
 
-.timeline {
+.timeline,
+.template-flow {
 	--time-col: 3.4rem;
 	--gap: 0.6rem;
 	--node: 14px;
@@ -8,6 +9,9 @@
 	--rail-x: calc(0.5rem + var(--time-col) + var(--gap) + var(--node) / 2 - 1px);
 	--row-height: 52px;
 	--node-y: calc(0.25rem + var(--row-height) / 2);
+}
+
+.timeline {
 	list-style: none;
 	margin: 1.25rem -0.5rem 0;
 	padding: 0;

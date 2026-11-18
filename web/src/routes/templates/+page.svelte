@@ -7,9 +7,8 @@
 	import '#lib/styles/editor.css';
 	import { goto, replaceState } from '$app/navigation';
 	import { page } from '$app/state';
-	import { outlineDay, weekdayLabel, type OutlineOption } from '#lib/routine/outline.ts';
-	import Timeline from '#lib/components/Timeline.svelte';
-	import TimelineItem from '#lib/components/TimelineItem.svelte';
+	import { outlineDay, weekdayLabel } from '#lib/routine/outline.ts';
+	import TemplateTimeline from '#lib/components/TemplateTimeline.svelte';
 	// An item's edit link on Today lands here with ?t= or ?block= plus the entry position in ?edit=.
 	const linked = untrack(() => {
 		const params = page.url.searchParams;
@@ -40,22 +39,7 @@
 		key = key === next ? '' : next;
 		replaceState(key ? `?t=${key}` : '/templates', {});
 	}
-	function optionNote(option: OutlineOption, count: number): string {
-		const notes: string[] = [];
-		if (option.defaultOn.length === count) notes.push('default');
-		else if (option.defaultOn.length) notes.push(`default ${option.defaultOn.map(weekdayLabel).join(', ')}`);
-		if (option.onlyOn) notes.push(`only ${option.onlyOn.map(weekdayLabel).join(', ')}`);
-		return notes.join(' · ');
-	}
 </script>
-
-{#snippet tags(conditions: string[])}
-	{#if conditions.length}
-		<div class="tags">
-			{#each conditions as condition (condition)}<span class="tag">{condition}</span>{/each}
-		</div>
-	{/if}
-{/snippet}
 
 {#if editing}
 	<TemplateEditor
@@ -122,38 +106,13 @@
 				</header>
 				{#if key === k}
 					<div class="template-preview" id={`preview-${k}`}>
-						{#if day.choices.length}
-							<h2 class="section-label">Choices</h2>
-							<section class="choices rules">
-								{#each day.choices as choice (choice.name)}
-									<div class="choice">
-										<span class="choice-label">{choice.label}</span>
-										<div>
-											<ul class="option-list">
-												{#each choice.options as option (option.label)}<li>
-														<span class="option" class:default={option.defaultOn.length}>{option.label}</span
-														>{#if optionNote(option, day.on.length)}<span class="option-note"
-																>{optionNote(option, day.on.length)}</span
-															>{/if}
-													</li>{/each}
-											</ul>
-											{#if choice.activeWhen.length}<p class="active-when">
-													Only when {choice.activeWhen.join(' + ')}
-												</p>{/if}
-										</div>
-									</div>
-								{/each}
-							</section>
-						{/if}
 						{#if !day.items.length}<p class="empty-preview" data-testid="Templates-empty">
 								No routine items yet.
 							</p>{/if}
-						<h2 class="section-label">Timeline · {day.items.length} items</h2>
-						<Timeline items={day.items}>
-							{#snippet row(item)}<TimelineItem {item} showConditions={false}>
-									{@render tags(item.conditions)}
-								</TimelineItem>{/snippet}
-						</Timeline>
+						<h2 class="section-label template-section-title timeline-heading">
+							Timeline <span class="template-section-count">{day.items.length} items</span>
+						</h2>
+						<TemplateTimeline {routine} template={k} />
 					</div>
 				{/if}
 			</article>
@@ -339,61 +298,5 @@
 	.saved-note {
 		color: var(--accent);
 		font-size: var(--text-xs);
-	}
-
-	.tags {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.3rem;
-		margin: -0.3rem 0 0.5rem var(--indent);
-	}
-	.tag {
-		padding: 0.1rem 0.4rem;
-		border-radius: 4px;
-		background: var(--now-wash);
-		color: var(--accent);
-		font-family: var(--sans);
-		font-size: var(--text-2xs);
-		font-weight: 600;
-		letter-spacing: 0.02em;
-	}
-
-	.rules .choice {
-		align-items: start;
-		padding: 0.7rem 0;
-	}
-	.rules .choice-label {
-		padding-top: 0.2rem;
-	}
-	.option-list {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 0.3rem;
-	}
-	.option-list li {
-		display: flex;
-		align-items: baseline;
-		flex-wrap: wrap;
-		gap: 0 0.5rem;
-	}
-	.option {
-		color: var(--muted);
-	}
-	.option.default {
-		color: var(--text);
-		font-weight: 600;
-	}
-	.option-note,
-	.active-when {
-		font-family: var(--sans);
-		font-size: var(--text-2xs);
-		color: var(--muted);
-	}
-	.active-when {
-		margin: 0.4rem 0 0;
-		color: var(--accent);
 	}
 </style>

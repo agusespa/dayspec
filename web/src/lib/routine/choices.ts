@@ -30,7 +30,7 @@ export function addChoice(routine: Routine, template: string): Routine {
 	let key = 'choice';
 	for (let n = 2; Object.hasOwn(choices, key); n++) key = `choice_${n}`;
 	choices[key] = {
-		label: 'New choice',
+		label: 'New alternative',
 		type: 'select',
 		options: { option: { label: 'Option 1' }, option_2: { label: 'Option 2' } },
 		default: 'option'
@@ -39,7 +39,8 @@ export function addChoice(routine: Routine, template: string): Routine {
 }
 
 export function removeChoice(routine: Routine, template: string, name: string): Routine {
-	if (choiceUsed(routine, template, name)) throw new Error('Remove the conditions using this choice first.');
+	if (choiceUsed(routine, template, name))
+		throw new Error('Remove the conditions using this alternative first.');
 	const next = cloneRoutine(routine);
 	delete next.days[template].choices?.[name];
 	return next;
@@ -52,7 +53,7 @@ export function changeChoiceType(
 	type: 'toggle' | 'select'
 ): Routine {
 	if (choiceUsed(routine, template, name))
-		throw new Error('Remove the conditions using this choice before changing its type.');
+		throw new Error('Remove the conditions using this alternative before changing its type.');
 	const next = cloneRoutine(routine);
 	const choice = next.days[template].choices![name];
 	choice.type = type;

@@ -10,6 +10,7 @@ import {
 	categoryOf,
 	dayStartsAt,
 	describeWhen,
+	matches,
 	humanize,
 	resolveLinks,
 	withCategory,
@@ -111,7 +112,8 @@ function toOutline(
 	routine: Routine,
 	choices: Record<string, Choice>,
 	used: Set<string>,
-	sortKey: number
+	sortKey: number,
+	explainedChoices: Record<string, ChoiceValue>
 ): OutlineItem {
 	const base = `${def.time ?? ''}-${slug(def.title)}`;
 	let id = base;
@@ -130,7 +132,19 @@ function toOutline(
 		alert: def.alert ?? false,
 		links: resolveLinks(def.link, routine),
 		note: def.note,
-		conditions: whens.flatMap((w) => describeWhen(w, choices)),
+		conditions: whens.flatMap((when) =>
+			describeWhen(
+				Object.fromEntries(
+					Object.entries(when).filter(
+						([key, condition]) =>
+							key === 'days' ||
+							!Object.hasOwn(explainedChoices, key) ||
+							!matches({ [key]: condition }, explainedChoices, 'mon')
+					)
+				),
+				choices
+			)
+		),
 		sortKey
 	};
 }
@@ -172,7 +186,12 @@ function outlineChoice(
 	};
 }
 
-export function outlineDay(routine: Routine, key: string): OutlineDay {
+/** Explained choices only hide redundant labels; they never filter or change the activities. */
+export function outlineDay(
+	routine: Routine,
+	key: string,
+	explainedChoices: Record<string, ChoiceValue> = {}
+): OutlineDay {
 	const template = routine.days[key];
 	const choices = template.choices ?? {};
 	const start = dayStartsAt(routine);
@@ -181,7 +200,7 @@ export function outlineDay(routine: Routine, key: string): OutlineDay {
 	const items = placeAll(template.items, routine, []).map((placed) => {
 		const sortKey = placed.def.time ? dayMinutes(placed.def.time, start) : previous;
 		previous = sortKey;
-		return toOutline(placed, routine, choices, used, sortKey);
+		return toOutline(placed, routine, choices, used, sortKey, explainedChoices);
 	});
 	items.sort((a, b) => a.sortKey - b.sortKey);
 	return {

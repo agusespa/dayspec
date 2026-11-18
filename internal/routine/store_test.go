@@ -361,3 +361,18 @@ func TestCalendarPreference(t *testing.T) {
 		})
 	}
 }
+
+func TestEmptyAlternativePersists(t *testing.T) {
+	s, schema := testStore(t)
+	raw := []byte(`{"days":{"saturday":{"on":["mon"],"choices":{"gym":{"type":"toggle","default":false}},"items":[{"when":{"gym":true},"items":[{"title":"Lift","duration":45}]},{"when":{"gym":false},"items":[]}]}}}`)
+	if _, err := s.Save(raw, s.Get().Revision); err != nil {
+		t.Fatal(err)
+	}
+	reopened, err := Open(s.path, []byte(minimal), schema)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(reopened.Get().Routine) != string(raw) {
+		t.Fatal("empty alternative was not preserved")
+	}
+}

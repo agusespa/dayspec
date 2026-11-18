@@ -60,3 +60,38 @@ describe('outlineDay', () => {
 		]);
 	});
 });
+
+describe('conditions explained by an enclosing branch', () => {
+	const routine: Routine = {
+		blocks: {
+			morning: {
+				name: 'Morning',
+				items: [
+					{ title: 'Exercise', duration: 10, when: { place: ['office', 'wfh'], gym: true, days: ['mon'] } },
+					{ title: 'Office only', duration: 10, when: { place: 'office' } },
+					{ title: 'Not office', duration: 10, when: { place: { not: 'office' } } }
+				]
+			}
+		},
+		days: {
+			day: {
+				on: ['mon'],
+				choices,
+				items: [{ when: { place: 'wfh' }, items: [{ use: 'morning', time: '08:00' }] }]
+			}
+		}
+	};
+	it('omits inherited and matching nested conditions while retaining unrelated and conflicting ones', () => {
+		const before = structuredClone(routine);
+		const items = outlineDay(routine, 'day', { place: 'wfh' }).items;
+		expect(items.map((i) => i.conditions)).toEqual([['Gym on', 'Mon'], ['Place: Office'], []]);
+		expect(items.map((i) => i.title)).toEqual(['Exercise', 'Office only', 'Not office']);
+		expect(routine).toEqual(before);
+	});
+	it('preserves all labels when no enclosing choice is provided', () => {
+		expect(outlineDay(routine, 'day').items[0].conditions).toContain('Place: WFH');
+	});
+	it('also omits a toggle already explained by the selected branch', () => {
+		expect(outlineDay(routine, 'day', { place: 'wfh', gym: true }).items[0].conditions).toEqual(['Mon']);
+	});
+});

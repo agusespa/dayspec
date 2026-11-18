@@ -288,7 +288,7 @@
     },
     "group": {
       "type": "object",
-      "description": "Entries that share one `when`.",
+      "description": "Entries that share one `when`. An empty group continues the routine without adding activities.",
       "additionalProperties": false,
       "required": [
         "items"
@@ -299,7 +299,6 @@
         },
         "items": {
           "type": "array",
-          "minItems": 1,
           "items": {
             "$ref": "#/$defs/entry"
           }

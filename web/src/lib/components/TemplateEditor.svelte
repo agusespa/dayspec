@@ -261,7 +261,7 @@
 					</div>
 
 					<ChoiceEditor bind:routine={draft} template={key} />
-					<h2>Timeline</h2>
+					<h2 class="template-section-title timeline-heading">Timeline</h2>
 					<EntryEditor
 						bind:entries={draft.days[key].items}
 						routine={draft}

@@ -1,16 +1,26 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import type { ChoiceValue } from '#lib/routine/types.ts';
 	import { isGroup, isUse, type Entry, type Routine, type Choice, type When } from '#lib/routine/types.ts';
 	import { moveEntry, newEntry } from '#lib/routine/edit.ts';
 	import EntryEditor from './EntryEditor.svelte';
 	import ConditionsEditor from './ConditionsEditor.svelte';
+	import BranchSection from './BranchSection.svelte';
+	import {
+		timelineSections,
+		branchOptions,
+		inBranch,
+		newBranch,
+		moveSection
+	} from '#lib/routine/branches.ts';
 	import { describeWhen } from '#lib/routine/outline.ts';
 	let {
 		entries = $bindable(),
 		routine,
 		shared = false,
 		choices = {},
-		focus
+		focus,
+		excluded = []
 	}: {
 		entries: Entry[];
 		routine: Routine;
@@ -18,7 +28,18 @@
 		choices?: Record<string, Choice>;
 		/** Entry position to open and scroll to on arrival, e.g. from an item's edit link on Today. */
 		focus?: number[];
+		excluded?: string[];
 	} = $props();
+	const sections = $derived(timelineSections(entries, choices, excluded));
+	let addChoice = $state('');
+	let active = $state<number>();
+	let conditionsOpen = $state<Record<number, boolean>>({});
+	function addInside(indices: number[], key: string, value: ChoiceValue, use?: string) {
+		const item: Entry = { ...(use ? { use } : newEntry()), ...(shared ? {} : { time: '08:00' }) };
+		item.when = { [key]: value };
+		const end = indices.at(-1)! + 1;
+		entries = [...entries.slice(0, end), item, ...entries.slice(end)];
+	}
 	/**
 	 * Opens an entry on the way to the focused one, once on arrival; the target is also scrolled to.
 	 * Set on the element rather than as an `open` attribute, which would close entries the user opened.
@@ -39,15 +60,30 @@
 	}
 </script>
 
-<div class="entries">
-	{#each entries as entry, i}
-		{@const focused = focus?.[0] === i}
+{#snippet row(i: number, branch?: string)}
+	{@const entry = entries[i]}
+	{@const target = focus?.[0] === i}
+	{@const focused = target || active === i}
+	{#if branch && isGroup(entry) && Object.keys(entry.when ?? {}).length === 1}
+		<EntryEditor
+			bind:entries={entry.items}
+			{routine}
+			{shared}
+			{choices}
+			excluded={[...excluded, branch]}
+			focus={target ? focus!.slice(1) : undefined}
+		/>
+	{:else}
 		<details
 			class="entry"
 			data-testid="EntryEditor-entry"
-			data-focused={focused && focus!.length === 1 ? '' : undefined}
+			ontoggle={(event) => {
+				if (event.currentTarget.open) active = i;
+				else if (active === i) active = undefined;
+			}}
+			data-focused={focused && (!target || focus!.length === 1) ? '' : undefined}
 			{@attach (node) => {
-				if (focused) untrack(() => reveal(node, focus!.length === 1));
+				if (focused) untrack(() => reveal(node, !target || focus!.length === 1));
 			}}
 		>
 			<summary data-testid="EntryEditor-open"
@@ -57,6 +93,11 @@
 				>{#if !shared && !isGroup(entry) && entry.time}<span class="summary-time mono">{entry.time}</span
 					>{/if}{#if isGroup(entry)}<span class="badge">Group</span>{:else if isUse(entry)}<span class="badge"
 						>Shared</span
+					>{/if}{#if entry.when && !isGroup(entry)}<span class="entry-condition"
+						>{describeWhen(
+							Object.fromEntries(Object.entries(entry.when).filter(([key]) => key !== branch)),
+							choices
+						).join(' · ')}</span
 					>{/if}<svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg
 				></summary
 			>
@@ -67,7 +108,8 @@
 						{routine}
 						{shared}
 						{choices}
-						focus={focused ? focus!.slice(1) : undefined}
+						excluded={branch ? [...excluded, branch] : excluded}
+						focus={target ? focus!.slice(1) : undefined}
 					/>
 				{:else}
 					{#if isUse(entry)}
@@ -168,7 +210,11 @@
 						>
 					{/if}
 				{/if}
-				<ConditionsEditor bind:when={entry.when} {choices} />
+				<ConditionsEditor
+					bind:when={entry.when}
+					bind:open={() => conditionsOpen[i] ?? false, (value) => (conditionsOpen[i] = value)}
+					{choices}
+				/>
 				<div class="entry-tools">
 					<button
 						type="button"
@@ -193,6 +239,71 @@
 				</div>
 			</div>
 		</details>
+	{/if}
+{/snippet}
+
+<div class="entries">
+	{#if !entries.length && excluded.length}<p class="branch-empty">Continue routine</p>{/if}
+	{#each sections as section (section.start)}
+		{#if section.choice}
+			{@const name = section.choice}
+			{@const choice = choices[name]}
+			{@const focusedIndex = active ?? focus?.[0]}
+			{@const preferred =
+				focusedIndex !== undefined && section.indices.includes(focusedIndex)
+					? branchOptions(choice).find((o) => inBranch(entries[focusedIndex], name, o.value))?.value
+					: undefined}
+			<BranchSection {name} {choice} {preferred}>
+				{#snippet children(value)}
+					{#each section.indices.filter((i) => inBranch(entries[i], name, value)) as i (i)}
+						{@render row(i, name)}
+					{:else}<p class="branch-empty">Continue routine</p>{/each}
+					<div
+						class="entry-tools branch-add"
+						class:branch-add-hidden={section.indices.some(
+							(i) =>
+								inBranch(entries[i], name, value) &&
+								isGroup(entries[i]) &&
+								Object.keys(entries[i].when ?? {}).length === 1
+						)}
+					>
+						<button type="button" class="add" onclick={() => addInside(section.indices, name, value)}
+							>+ Add activity</button
+						>
+						{#if Object.keys(routine.blocks ?? {}).length}<button
+								type="button"
+								class="add"
+								onclick={() => addInside(section.indices, name, value, Object.keys(routine.blocks!)[0])}
+								>+ Use shared block</button
+							>{/if}
+					</div>
+				{/snippet}
+			</BranchSection>
+			<div class="entry-tools branch-tools">
+				<button
+					type="button"
+					aria-label="Move branch up"
+					disabled={sections[0] === section}
+					onclick={() => (entries = moveSection(entries, sections, section.start, -1))}>↑</button
+				>
+				<button
+					type="button"
+					aria-label="Move branch down"
+					disabled={sections.at(-1) === section}
+					onclick={() => (entries = moveSection(entries, sections, section.start, 1))}>↓</button
+				>
+				<button
+					type="button"
+					class="danger"
+					onclick={() => {
+						if (confirm('Remove this branch and its activities?'))
+							entries = entries.filter((_, i) => !section.indices.includes(i));
+					}}>Remove section</button
+				>
+			</div>
+		{:else}
+			{#each section.indices as i (i)}{@render row(i)}{/each}
+		{/if}
 	{/each}
 	<div class="entry-tools">
 		<button
@@ -213,4 +324,23 @@
 					])}>+ Use shared block</button
 			>{/if}
 	</div>
+	{#if !shared && Object.keys(choices).some((key) => !excluded.includes(key))}
+		<div class="branch-create">
+			<select aria-label="Alternative for new branch" bind:value={addChoice}>
+				<option value="">Select an alternative…</option>
+				{#each Object.entries(choices).filter(([key]) => !excluded.includes(key)) as [key, choice]}<option
+						value={key}>{choice.label ?? key}</option
+					>{/each}
+			</select>
+			<button
+				type="button"
+				class="add"
+				disabled={!addChoice}
+				onclick={() => {
+					entries = [...entries, ...newBranch(addChoice, choices[addChoice])];
+					addChoice = '';
+				}}>+ Add branch</button
+			>
+		</div>
+	{/if}
 </div>

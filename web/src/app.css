@@ -204,3 +204,210 @@ button:disabled {
 		animation-duration: 0s;
 	}
 }
+
+/* Alternative paths keep the timeline's split and join visible. */
+.branch-section {
+	position: relative;
+	min-width: 0;
+	margin: 1.4rem 0;
+	padding: 1rem 0.85rem 0;
+	border: 1px solid color-mix(in srgb, var(--secondary) 38%, var(--rule));
+	border-radius: 18px;
+	background: color-mix(in srgb, var(--secondary) 3%, var(--paper));
+}
+.branch-section::before,
+.branch-section::after {
+	content: '';
+	position: absolute;
+	left: 50%;
+	width: 2px;
+	height: 0.75rem;
+	background: var(--secondary);
+	opacity: 0.45;
+}
+.branch-section::before {
+	top: -0.8rem;
+}
+.branch-section::after {
+	bottom: -0.8rem;
+}
+.branch-heading {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	font-size: var(--text-md);
+	font-weight: 650;
+}
+.branch-heading svg {
+	width: 22px;
+	height: 22px;
+	flex: none;
+	color: var(--secondary);
+}
+.branch-options {
+	display: flex;
+	gap: 0.3rem;
+	margin: 0.85rem 0;
+	padding: 4px;
+	border-radius: 12px;
+	background: var(--inset);
+	flex-wrap: wrap;
+}
+.branch-options button {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 0.5rem;
+	flex: 1 1 auto;
+	min-height: 42px;
+	min-width: 0;
+	border-radius: 9px;
+	font-size: var(--text-sm);
+	color: var(--muted);
+	overflow-wrap: anywhere;
+}
+.branch-options button.chosen {
+	background: color-mix(in srgb, var(--secondary) 16%, var(--paper));
+	color: var(--text);
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--secondary) 35%, transparent);
+}
+.branch-content {
+	min-width: 0;
+}
+.branch-empty {
+	padding: 1rem 0;
+	color: var(--muted);
+	font-size: var(--text-sm);
+	text-align: center;
+}
+.branch-join {
+	display: flex;
+	justify-content: center;
+	height: 1rem;
+	margin: 0.75rem 20% 0;
+	border: 1px solid var(--rule);
+	border-top: 0;
+	border-radius: 0 0 10px 10px;
+}
+.branch-join span {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--secondary);
+	align-self: end;
+	transform: translateY(3px);
+}
+
+/* One time column and rail for common activities and alternative paths. */
+.template-flow {
+	display: flow-root;
+	position: relative;
+	--flow-rail-x: calc(var(--time-col) + var(--gap) + var(--node) / 2);
+}
+.template-flow::before {
+	content: '';
+	position: absolute;
+	left: calc(var(--flow-rail-x) - 1px);
+	top: calc(1.25rem + var(--node-y));
+	bottom: var(--node-y);
+	width: 2px;
+	background: var(--rule);
+}
+.template-flow .branch-section {
+	padding-inline: 0;
+	padding-bottom: 0.5rem;
+}
+.template-flow .branch-section::before {
+	left: calc(var(--flow-rail-x) - 2px);
+	top: 0;
+	bottom: 0;
+	height: auto;
+	background: var(--rule);
+	opacity: 1;
+}
+.template-flow .branch-section::after,
+.template-flow .branch-join {
+	display: none;
+}
+.template-flow .branch-heading {
+	position: relative;
+	margin-left: calc(var(--flow-rail-x) - 12px);
+	margin-right: 0.85rem;
+}
+.template-flow .branch-heading svg {
+	background: color-mix(in srgb, var(--secondary) 3%, var(--paper));
+	border-radius: 50%;
+}
+.template-flow .branch-options {
+	margin-left: calc(var(--time-col) + var(--gap) + var(--node) + 0.75rem - 1px);
+	margin-right: 0.85rem;
+}
+.template-flow .branch-content {
+	/* Cancel the card's border so times and circles share the outer timeline's columns. */
+	margin-inline: -1px;
+}
+
+/* Section labels sit above the named branches, rather than competing with them. */
+.template-section-title,
+.template-editor h2.template-section-title {
+	display: flex;
+	align-items: center;
+	gap: 0.85rem;
+	margin: 1.75rem 0 0.85rem;
+	color: var(--muted);
+	font-family: var(--sans);
+	font-size: var(--text-xs);
+	font-weight: 650;
+	letter-spacing: 0.12em;
+	line-height: 1.5;
+	text-transform: uppercase;
+}
+.template-editor .choice-editor .summary-title {
+	font-size: var(--text-md);
+	font-weight: 600;
+	letter-spacing: -0.01em;
+}
+
+.template-section-title.timeline-heading,
+.template-editor h2.timeline-heading {
+	align-items: baseline;
+	color: var(--text);
+	font-size: var(--text-lg);
+	letter-spacing: -0.02em;
+	text-transform: none;
+}
+.template-section-count {
+	color: var(--muted);
+	font-size: var(--text-xs);
+	font-weight: 500;
+	letter-spacing: 0;
+}
+
+.template-flow .branch-details {
+	margin: 0.25rem 0.85rem 0 calc(var(--time-col) + var(--gap) + var(--node) + 0.75rem - 1px);
+	color: var(--muted);
+	font-size: var(--text-xs);
+	line-height: 1.5;
+	overflow-wrap: anywhere;
+}
+
+.template-flow .branch-content > .branch-section {
+	margin: 1.1rem 0 0;
+	border-inline: 0;
+	border-bottom: 1px solid var(--rule);
+	border-radius: 0;
+	background: transparent;
+}
+
+.template-flow .branch-content > .branch-section > .branch-content {
+	margin-inline: 0;
+}
+.template-flow .branch-content > .branch-section::before {
+	left: calc(var(--flow-rail-x) - 1px);
+}
+.template-flow .branch-content > .branch-section > .branch-heading {
+	margin-left: calc(var(--flow-rail-x) - 11px);
+}
+.template-flow .branch-content > .branch-section > :is(.branch-options, .branch-details) {
+	margin-left: calc(var(--time-col) + var(--gap) + var(--node) + 0.75rem);
+}

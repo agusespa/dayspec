@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { WEEKDAYS, type Choice, type When, type Condition, type Weekday } from '#lib/routine/types.ts';
 	import { weekdayLabel } from '#lib/routine/outline.ts';
-	let { when = $bindable(), choices = {} }: { when?: When; choices?: Record<string, Choice> } = $props();
+	let {
+		when = $bindable(),
+		choices = {},
+		open = $bindable(false)
+	}: { when?: When; choices?: Record<string, Choice>; open?: boolean } = $props();
 	function set(key: string, value: Condition | undefined) {
 		const next = { ...when };
 		if (value === undefined) delete next[key];
@@ -49,7 +53,7 @@
 	}
 </script>
 
-<details class="conditions-editor" data-testid="ConditionsEditor">
+<details bind:open class="conditions-editor" data-testid="ConditionsEditor">
 	<summary data-testid="ConditionsEditor-open"
 		><span class="summary-title">Show when{when ? ' · Conditional' : ''}</span><svg
 			class="chevron"

@@ -36,7 +36,7 @@
 </script>
 
 <section class="choice-editor" data-testid="ChoiceEditor">
-	<h2>Choices</h2>
+	<h2 class="template-section-title">Alternatives</h2>
 	{#each Object.entries(routine.days[template].choices ?? {}) as [name, choice], index}
 		<details class="entry" data-testid={`ChoiceEditor-${name}`}>
 			<summary data-testid="ChoiceEditor-open"
@@ -135,7 +135,7 @@
 					class="danger"
 					data-testid="ChoiceEditor-remove"
 					onclick={() => apply(() => removeChoice($state.snapshot(routine), template, name))}
-					>Remove choice</button
+					>Remove alternative</button
 				>
 			</div>
 		</details>
@@ -144,7 +144,7 @@
 		type="button"
 		class="add"
 		data-testid="ChoiceEditor-add"
-		onclick={() => apply(() => addChoice($state.snapshot(routine), template))}>+ Add choice</button
+		onclick={() => apply(() => addChoice($state.snapshot(routine), template))}>+ Add alternative</button
 	>
 	{#if error}<p role="alert" data-testid="ChoiceEditor-error">{error}</p>{/if}
 </section>

@@ -446,3 +446,35 @@
 	color: var(--muted);
 	opacity: 1;
 }
+
+.template-editor .branch-content > .entries {
+	margin-left: 0;
+	padding-left: 0;
+	border: 0;
+}
+.template-editor .branch-create {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-top: 0.75rem;
+}
+.template-editor .branch-create select {
+	flex: 1;
+	width: auto;
+}
+.template-editor .branch-add {
+	margin-top: 0.6rem;
+}
+.template-editor .branch-add-hidden {
+	display: none;
+}
+.template-editor .entry-condition {
+	font-size: var(--text-2xs);
+	color: var(--tertiary);
+	max-width: 40%;
+}
+
+.template-editor .branch-tools {
+	margin: -0.7rem 0 1.5rem;
+	justify-content: flex-end;
+}
