@@ -6,6 +6,7 @@
 	import '#lib/styles/chrome.css';
 	import '#lib/styles/timeline.css';
 	import favicon from '#lib/assets/favicon.svg';
+	import PullToRefresh from '#lib/components/PullToRefresh.svelte';
 	import type { LayoutProps } from './$types';
 
 	onMount(startRoutineRefresh);
@@ -48,6 +49,8 @@
 		{@render children()}
 	{/if}
 </main>
+
+<PullToRefresh />
 
 {#if $routineState.message}
 	<aside class="sync-toast" data-testid="RoutineSync-toast" aria-label="Routine update failed">
