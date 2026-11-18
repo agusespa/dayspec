@@ -4,17 +4,18 @@ import { mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from 
 import { createHash } from 'node:crypto';
 import { chromium } from '@playwright/test';
 
-// A centered sunrise arc around three aligned timeline bars. The mark fits inside the
-// maskable safe zone (a circle of radius 204 centred on the 512px canvas).
+// A centered sunrise arc around three aligned timeline bars.
+// Maskable icons keep the mark inside the central 80% safe circle.
 const DEFS = `<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#211619"/><stop offset="1" stop-color="#080607"/></linearGradient>
 <linearGradient id="frame" x1="0" y1="0" x2="0.8" y2="1"><stop stop-color="#ffb18c"/><stop offset="1" stop-color="#ff8a65"/></linearGradient>`;
 
 /** rounded: transparent corners (favicon, manifest "any"); otherwise a full square (iOS, maskable). */
-function svg(rounded) {
+function svg(rounded, maskable = false) {
+	const scale = maskable ? 1.1 : 1.2;
 	return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
 <defs>${DEFS}</defs>
 <rect width="512" height="512"${rounded ? ' rx="112"' : ''} fill="url(#bg)"/>
-<g transform="translate(0 32)">
+<g transform="translate(256 256) scale(${scale}) translate(-256 -224)">
 <path d="M 149.934 358.066 A 150 150 0 0 1 200 116.807 M 312 116.807 A 150 150 0 0 1 362.066 358.066"
   fill="none" stroke="url(#frame)" stroke-width="28" stroke-linecap="round"/>
 <circle cx="256" cy="106" r="29" fill="#ffd166"/>
@@ -29,7 +30,10 @@ function svg(rounded) {
 }
 
 // New artwork gets new URLs, including the icon Safari saves during installation.
-const hash = createHash('sha256').update(svg(false)).digest('hex').slice(0, 12);
+const hash = createHash('sha256')
+	.update(svg(false) + svg(false, true))
+	.digest('hex')
+	.slice(0, 12);
 const directory = 'web/static/icons';
 mkdirSync(directory, { recursive: true });
 for (const file of readdirSync(directory)) {
@@ -42,7 +46,7 @@ const outputs = [
 	{ file: `${directory}/${name('favicon')}`, size: 32, rounded: true },
 	{ file: `${directory}/${name('icon-192')}`, size: 192, rounded: true },
 	{ file: `${directory}/${name('icon-512')}`, size: 512, rounded: true },
-	{ file: `${directory}/${name('icon-maskable-512')}`, size: 512, rounded: false },
+	{ file: `${directory}/${name('icon-maskable-512')}`, size: 512, rounded: false, maskable: true },
 	{ file: `${directory}/${name('apple-touch-icon')}`, size: 180, rounded: false }
 ];
 
@@ -78,11 +82,11 @@ writeFileSync(manifestPath, JSON.stringify(manifest, null, '\t') + '\n');
 
 const browser = await chromium.launch();
 try {
-	for (const { file, size, rounded } of outputs) {
+	for (const { file, size, rounded, maskable } of outputs) {
 		const page = await browser.newPage({
 			viewport: { width: size, height: size }
 		});
-		const img = svg(rounded).replace('<svg ', `<svg width="${size}" height="${size}" `);
+		const img = svg(rounded, maskable).replace('<svg ', `<svg width="${size}" height="${size}" `);
 		await page.setContent(
 			`<style>html,body{margin:0;background:transparent}svg{display:block}</style>${img}`
 		);
