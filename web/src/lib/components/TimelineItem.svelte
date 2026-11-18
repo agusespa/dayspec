@@ -3,22 +3,21 @@
 	import type { ResolvedItem } from '#lib/routine/resolve.ts';
 
 	/** What a row shows; resolved days and template outlines both have it. */
-	export type TimelineEntry = Pick<
-		ResolvedItem,
-		'time' | 'end' | 'approx' | 'title' | 'kind' | 'alert' | 'links' | 'note'
-	> & { duration?: number };
+	export type TimelineEntry = ResolvedItem;
 
 	export { itemTitle, itemMeta };
 </script>
 
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import CalendarLink from './CalendarLink.svelte';
 
 	let {
 		item,
 		current,
 		passed = false,
-		children
+		children,
+		calendarDate
 	}: {
 		item: TimelineEntry;
 		/** Marks the item happening now, or the next one when nothing has started yet. */
@@ -26,6 +25,7 @@
 		passed?: boolean;
 		/** Extra content under the title, e.g. template condition labels. */
 		children?: Snippet;
+		calendarDate?: string;
 	} = $props();
 </script>
 
@@ -64,6 +64,7 @@
 		<div class="row">
 			<span class="dot" aria-hidden="true"></span>
 			{@render itemTitle(item)}
+			{#if calendarDate}<CalendarLink date={calendarDate} items={[item]} title={item.title} />{/if}
 		</div>
 		{@render itemMeta(item)}
 		{@render children?.()}

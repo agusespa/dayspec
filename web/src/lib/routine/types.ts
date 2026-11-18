@@ -65,7 +65,12 @@ export interface DayTemplate {
 }
 
 export interface Routine {
-	settings?: { day_starts_at?: string; holiday?: string; automatic_swedish_holidays?: boolean };
+	settings?: {
+		day_starts_at?: string;
+		holiday?: string;
+		automatic_swedish_holidays?: boolean;
+		calendar?: 'google';
+	};
 	blocks?: Record<string, Block>;
 	days: Record<string, DayTemplate>;
 }

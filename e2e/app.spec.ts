@@ -111,3 +111,11 @@ test("automatic holidays support quiet persistent overrides", async ({
   await expect(holiday).toBeChecked();
   await expect(source).toHaveCount(0);
 });
+test("opens Today at the top without scrolling to the current item", async ({
+  page,
+}) => {
+  await openAt(page, "2026-11-17T21:02:00");
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 100)));
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  await expect(page.getByRole("heading", { level: 1 })).toBeInViewport();
+});

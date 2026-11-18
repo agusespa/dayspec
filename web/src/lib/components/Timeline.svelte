@@ -2,8 +2,14 @@
 	import type { Snippet } from 'svelte';
 	import type { ResolvedItem } from '#lib/routine/resolve.ts';
 	import { groupTimeline, timelineDuration, timelineGaps } from '#lib/routine/timeline.ts';
+	import CalendarLink from './CalendarLink.svelte';
 	import { itemMeta } from './TimelineItem.svelte';
-	let { items, row, currentId }: { items: T[]; row: Snippet<[T]>; currentId?: string } = $props();
+	let {
+		items,
+		row,
+		currentId,
+		calendarDate
+	}: { items: T[]; row: Snippet<[T]>; currentId?: string; calendarDate?: string } = $props();
 	const currentIndex = $derived(items.findIndex((item) => item.id === currentId));
 	const groups = $derived(groupTimeline(items));
 	const gaps = $derived(timelineGaps(groups));
@@ -18,6 +24,7 @@
 							class="duration"
 							data-testid="Timeline-block-duration">{item.duration} min</span
 						>{/if}
+					{#if calendarDate}<CalendarLink date={calendarDate} items={[item]} title={item.title} />{/if}
 				</div>
 				{@render itemMeta(item)}
 			</li>
@@ -49,7 +56,11 @@
 											>{duration} min</span
 										>{/if}</span
 								><svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg
-								></span
+								>{#if calendarDate}<CalendarLink
+										date={calendarDate}
+										items={group.items}
+										title={group.name}
+									/>{/if}</span
 							></span
 						>
 					</summary>

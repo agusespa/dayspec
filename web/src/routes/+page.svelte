@@ -46,9 +46,15 @@
 		persist();
 	}
 
+	/** Brings the current item into view, leaving the page alone when its row is already visible. */
 	async function scrollToCurrent(behavior: ScrollBehavior) {
 		await tick();
-		document.querySelector('[data-current]')?.scrollIntoView({ block: 'center', behavior });
+		const current = document.querySelector('[data-current]');
+		if (!current) return;
+		const row = (current.querySelector('.row') ?? current).getBoundingClientRect();
+		const barTop = document.querySelector('.bottombar')?.getBoundingClientRect().top ?? innerHeight;
+		if (row.top >= 0 && row.bottom <= barTop) return;
+		current.scrollIntoView({ block: 'center', behavior });
 	}
 
 	function goToday() {
@@ -57,8 +63,6 @@
 	}
 
 	onMount(() => {
-		// A task later: on start-up SvelteKit restores the saved scroll position after mounting.
-		const initialScroll = setTimeout(() => scrollToCurrent('instant'));
 		// Keep the highlight on the clock, and follow today across midnight (or a phone left asleep).
 		const refresh = () => {
 			const wasToday = date === today;
@@ -71,7 +75,6 @@
 		};
 		document.addEventListener('visibilitychange', onVisible);
 		return () => {
-			clearTimeout(initialScroll);
 			clearInterval(interval);
 			document.removeEventListener('visibilitychange', onVisible);
 		};
@@ -149,12 +152,13 @@
 		<a href="/templates" data-testid="Day-create">Open templates</a>
 	</section>
 {/if}
-<Timeline items={day.items} currentId={day.items[current.index]?.id}>
+<Timeline items={day.items} calendarDate={date} currentId={day.items[current.index]?.id}>
 	{#snippet row(item)}
 		{@const i = day.items.indexOf(item)}
 		{@const isCurrent = i === current.index}
 		<TimelineItem
 			{item}
+			calendarDate={date}
 			current={isCurrent ? (current.upcoming ? 'Next' : 'Now') : undefined}
 			passed={i < passed}
 		/>

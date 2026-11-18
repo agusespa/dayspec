@@ -263,3 +263,13 @@ it('requires durations and rejects fixed start times inside shared blocks', () =
 		).join(' ')
 	).toContain('set the start time');
 });
+
+describe('calendar preference', () => {
+	it('accepts Google or an omitted preference and rejects unsupported providers', () => {
+		expect(validateRoutine({ days: {}, settings: { calendar: 'google' } }, schema)).toEqual([]);
+		expect(validateRoutine({ days: {}, settings: {} }, schema)).toEqual([]);
+		expect(
+			validateRoutine({ days: {}, settings: { calendar: 'unsupported' } }, schema).length
+		).toBeGreaterThan(0);
+	});
+});

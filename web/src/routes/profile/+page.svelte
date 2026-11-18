@@ -7,6 +7,7 @@
 	let error = $state('');
 	let pending = $state(true);
 	let pendingHoliday = $state('');
+	const calendar = $derived($routineState.routine.settings?.calendar ?? 'google');
 	const automatic = $derived($routineState.routine.settings?.automatic_swedish_holidays !== false);
 	// SvelteKit's build version is the build's timestamp; it tells two builds of one release apart.
 	const builtMs = Number(version);
@@ -56,6 +57,20 @@
 			saving = false;
 		}
 	}
+	async function setCalendar() {
+		pending = automatic;
+		pendingHoliday = $routineState.routine.settings?.holiday ?? '';
+		const { routine, revision } = $routineState;
+		saving = true;
+		error = '';
+		try {
+			await saveRoutine({ ...routine, settings: { ...routine.settings, calendar: 'google' } }, revision);
+		} catch (cause) {
+			error = cause instanceof Error ? cause.message : 'Could not save settings.';
+		} finally {
+			saving = false;
+		}
+	}
 </script>
 
 <section class="masthead">
@@ -86,6 +101,14 @@
 			>{#each Object.entries($routineState.routine.days) as [id, day]}<option value={id}
 					>{templateName(day.on)}</option
 				>{/each}</select
+		></label
+	>
+	<label class="setting"
+		><span>Calendar</span><select
+			data-testid="Profile-calendar"
+			disabled={saving || !$routineState.online}
+			value={calendar}
+			onchange={setCalendar}><option value="google">Google Calendar</option></select
 		></label
 	>
 	{#if saving}<p role="status">Saving…</p>{/if}

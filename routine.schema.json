@@ -24,6 +24,13 @@
         "automatic_swedish_holidays": {
           "type": "boolean",
           "description": "Use the Swedish public holiday calendar for dates without a manual override. Default true."
+        },
+        "calendar": {
+          "type": "string",
+          "enum": [
+            "google"
+          ],
+          "description": "Calendar used when adding an activity or block. Default google."
         }
       }
     },

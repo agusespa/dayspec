@@ -81,7 +81,7 @@ test("edits choices, conditional activities, durations and Notion links, then se
       "15 min",
     );
     await expect(
-      page.getByTestId("TimelineItem").first().locator("a"),
+      page.getByTestId("TimelineItem").first().getByRole("link", { name: /www\.notion\.so/ }),
     ).toHaveAttribute("href", "https://www.notion.so/routine");
     await page.reload();
     await expect(page.getByTestId("TimelineItem")).toHaveCount(2);

@@ -336,3 +336,15 @@ func TestCanonicalModels(t *testing.T) {
 		}
 	}
 }
+
+func TestCalendarPreference(t *testing.T) {
+	s, _ := testStore(t)
+	for _, provider := range []string{"google", "apple", "unsupported"} {
+		t.Run(provider, func(t *testing.T) {
+			data := []byte(fmt.Sprintf(`{"days":{},"settings":{"calendar":%q}}`, provider))
+			if err := s.Validate(data); (err == nil) != (provider == "google") {
+				t.Fatalf("Validate error = %v for calendar %q", err, provider)
+			}
+		})
+	}
+}
