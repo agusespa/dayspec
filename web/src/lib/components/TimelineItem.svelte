@@ -51,7 +51,7 @@
 
 <li
 	data-testid="TimelineItem"
-	class="item kind-{item.kind ?? 'none'}"
+	class="item tone-{item.color ?? 'none'}"
 	class:current={!!current}
 	class:passed
 	data-current={current ? '' : undefined}

@@ -118,6 +118,11 @@ func TestValidation(t *testing.T) {
 		{"overlapping weekdays", `{"days":{"saturday":{"on":["mon"],"items":[]},"other":{"on":["mon"],"items":[]}},"settings":{"holiday":"saturday"}}`, "more than one template"},
 		{"holiday", `{"settings":{"holiday":"absent"}}`, "unknown template"},
 		{"block", `{"items":[{"use":"absent"}]}`, "unknown block"},
+		{"category", `{"categories":{"chores":{"name":"Chores","color":"orange"}},"items":[{"title":"Wake","category":"absent","duration":5}]}`, "unknown category"},
+		{"category in block", `{"blocks":{"b":{"name":"b","items":[{"title":"Wash","category":"absent","duration":5}]}}}`, "unknown category"},
+		{"block category", `{"blocks":{"b":{"name":"b","category":"absent","items":[{"title":"Wash","duration":5}]}}}`, "unknown category"},
+		{"category colour", `{"categories":{"chores":{"name":"Chores","color":"#ff0000"}}}`, "categories"},
+		{"legacy kind", `{"items":[{"title":"Wake","kind":"maintenance","duration":5}]}`, "additional properties"},
 		{"link", `{"items":[{"title":"Wake","link":"absent","duration":5}]}`, "pattern"},
 		{"choice", `{"items":[{"title":"Wake","when":{"place":"home"},"duration":5}]}`, "unknown or later choice"},
 		{"option", `{"choices":{"place":{"options":{"home":{},"office":{}},"default":"home"}},"items":[{"title":"Wake","when":{"place":"beach"},"duration":5}]}`, "unknown option"},
@@ -304,6 +309,14 @@ func TestActivityNotes(t *testing.T) {
 	}
 	if err := s.Validate([]byte(`{"blocks":{"morning":{"name":"Morning","items":[{"title":"Wash","duration":5}]}},"days":{"daily":{"on":["mon"],"items":[{"use":"morning","children":[{"title":"Water","duration":5}]}]}}}`)); err == nil {
 		t.Fatal("accepted checklist override")
+	}
+}
+
+func TestCategories(t *testing.T) {
+	s, _ := testStore(t)
+	raw := []byte(`{"categories":{"chores":{"name":"Chores","color":"orange"}},"blocks":{"b":{"name":"b","category":"chores","items":[{"title":"Wash","category":"chores","duration":5}]}},"days":{"daily":{"on":["mon"],"items":[{"title":"Laundry","category":"chores","duration":5},{"use":"b"}]}}}`)
+	if _, err := s.Save(raw, s.Get().Revision); err != nil {
+		t.Fatal(err)
 	}
 }
 

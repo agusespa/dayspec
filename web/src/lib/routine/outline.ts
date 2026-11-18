@@ -5,7 +5,16 @@ import { templateName } from './edit.ts';
  * with the conditions under which it shows, and every choice with its defaults per weekday.
  */
 import { dayMinutes } from './date.ts';
-import { dayStartsAt, humanize, resolveLinks, slug, type ResolvedItem, type SharedBlock } from './resolve.ts';
+import {
+	categoryColor,
+	dayStartsAt,
+	humanize,
+	resolveLinks,
+	withCategory,
+	slug,
+	type ResolvedItem,
+	type SharedBlock
+} from './resolve.ts';
 import {
 	isGroup,
 	isUse,
@@ -76,17 +85,23 @@ interface Placed {
 }
 
 /** Like the resolver's collect, but keeps every entry and the `when`s it sits under. */
-function placeAll(entries: Entry[], routine: Routine, outer: When[], path = 'root'): Placed[] {
+function placeAll(
+	entries: Entry[],
+	routine: Routine,
+	outer: When[],
+	path = 'root',
+	inherited?: string
+): Placed[] {
 	const out: Placed[] = [];
 	for (const [index, entry] of entries.entries()) {
 		const location = `${path}/${index}`;
 		const whens = entry.when ? [...outer, entry.when] : outer;
 		if (isGroup(entry)) {
-			out.push(...placeAll(entry.items, routine, whens, location));
+			out.push(...placeAll(entry.items, routine, whens, location, inherited));
 		} else if (isUse(entry)) {
 			const block = routine.blocks?.[entry.use];
 			if (!block) throw new Error(`Unknown block "${entry.use}"`);
-			const placed = placeAll(block.items, routine, whens, location);
+			const placed = placeAll(block.items, routine, whens, location, block.category ?? inherited);
 			const scheduled = scheduleBlock(
 				placed.map((item) => item.def),
 				entry.time
@@ -95,11 +110,11 @@ function placeAll(entries: Entry[], routine: Routine, outer: When[], path = 'roo
 				...placed.map((item, i) => ({
 					...item,
 					def: scheduled[i],
-					sharedBlock: { id: location, name: block.name }
+					sharedBlock: { id: location, name: block.name, color: categoryColor(routine, block.category) }
 				}))
 			);
 		} else {
-			out.push({ def: entry, whens });
+			out.push({ def: withCategory(entry, inherited), whens });
 		}
 	}
 	return out;
@@ -124,7 +139,7 @@ function toOutline(
 		duration: def.duration,
 		approx: def.approx ?? false,
 		title: def.title,
-		kind: def.kind,
+		color: categoryColor(routine, def.category),
 		alert: def.alert ?? false,
 		links: resolveLinks(def.link, routine),
 		note: def.note,

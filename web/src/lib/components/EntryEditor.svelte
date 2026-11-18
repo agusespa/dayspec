@@ -91,11 +91,12 @@
 					{#if !isUse(entry)}
 						<label
 							>Category<select
-								value={entry.kind ?? ''}
-								onchange={(e) => set(i, 'kind', e.currentTarget.value)}
-								><option value="">None</option
-								>{#each ['maintenance', 'health', 'growth', 'alert', 'night'] as kind}<option value={kind}
-										>{kind}</option
+								data-testid="EntryEditor-category"
+								value={entry.category ?? ''}
+								onchange={(e) => set(i, 'category', e.currentTarget.value)}
+								><option value="">{shared ? 'Same as block' : 'None'}</option
+								>{#each Object.entries(routine.categories ?? {}) as [id, category] (id)}<option value={id}
+										>{category.name}</option
 									>{/each}</select
 							></label
 						>

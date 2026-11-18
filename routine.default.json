@@ -2,6 +2,13 @@
   "settings": {
     "holiday": "daily"
   },
+  "categories": {
+    "chores": { "name": "Chores", "color": "orange" },
+    "productivity": { "name": "Productivity", "color": "violet" },
+    "health": { "name": "Health & Fitness", "color": "green" },
+    "social": { "name": "Social & Leisure", "color": "pink" },
+    "rest": { "name": "Rest & Sleep", "color": "indigo" }
+  },
   "days": {
     "daily": {
       "on": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],

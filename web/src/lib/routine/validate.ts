@@ -50,7 +50,10 @@ export function checkReferences(routine: Routine): string[] {
 	if (routine.settings?.holiday && !routine.days[holiday])
 		errors.add(`settings.holiday: there is no day template "${holiday}"`);
 
-	const checkLinks = (item: ItemDef, where: string) => {
+	const categories = routine.categories ?? {};
+	const checkItem = (item: ItemDef, where: string) => {
+		if (item.category !== undefined && !Object.hasOwn(categories, item.category))
+			errors.add(`${where}: unknown category "${item.category}"`);
 		for (const ref of item.link === undefined ? [] : Array.isArray(item.link) ? item.link : [item.link]) {
 			try {
 				const url = new URL(ref);
@@ -121,7 +124,7 @@ export function checkReferences(routine: Routine): string[] {
 				walk(block.items, choices, `blocks.${entry.use}`, inner, depth + 1);
 				return;
 			}
-			checkLinks(entry, at);
+			checkItem(entry, at);
 		});
 	};
 
@@ -160,6 +163,8 @@ export function checkReferences(routine: Routine): string[] {
 	// Unused blocks still need valid links, references, and nesting. Choice conditions
 	// are checked in each consuming template, where the available choices are known.
 	for (const [name, block] of Object.entries(blocks)) {
+		if (block.category !== undefined && !Object.hasOwn(categories, block.category))
+			errors.add(`blocks.${name}: unknown category "${block.category}"`);
 		const relative = (entries: Entry[]) => {
 			for (const entry of entries) {
 				if ('time' in entry)

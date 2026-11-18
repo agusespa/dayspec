@@ -12,7 +12,7 @@ import {
 	type ChoiceValue,
 	type Entry,
 	type ItemDef,
-	type Kind,
+	type CategoryColor,
 	type Routine,
 	type UseEntry,
 	type Weekday,
@@ -45,6 +45,8 @@ export interface ResolvedLink {
 export interface SharedBlock {
 	id: string;
 	name: string;
+	/** The block's own category colour; its items may differ. */
+	color?: CategoryColor;
 }
 
 export interface ResolvedItem {
@@ -56,7 +58,8 @@ export interface ResolvedItem {
 	end?: string;
 	approx: boolean;
 	title: string;
-	kind?: Kind;
+	/** The palette colour of the item's category; none when it has no category. */
+	color?: CategoryColor;
 	alert: boolean;
 	links: ResolvedLink[];
 	note?: string;
@@ -162,24 +165,33 @@ interface Context {
 /** Expands groups and blocks into the item definitions whose `when` holds, in file order. */
 type CollectedItem = ItemDef & { sharedBlock?: SharedBlock };
 
-function collect(entries: Entry[], ctx: Context, path = 'root'): CollectedItem[] {
+/** Items without a category take the one of the block they sit in. */
+export function withCategory(item: ItemDef, inherited: string | undefined): ItemDef {
+	return inherited && !item.category ? { ...item, category: inherited } : item;
+}
+
+function collect(entries: Entry[], ctx: Context, path = 'root', inherited?: string): CollectedItem[] {
 	const out: CollectedItem[] = [];
 	for (const [index, entry] of entries.entries()) {
 		const location = `${path}/${index}`;
 		if (!matches(entry.when, ctx.values, ctx.weekday)) continue;
 		if (isGroup(entry)) {
-			out.push(...collect(entry.items, ctx, location));
+			out.push(...collect(entry.items, ctx, location, inherited));
 		} else if (isUse(entry)) {
 			const block = ctx.routine.blocks?.[entry.use];
 			if (!block) throw new Error(`Unknown block "${entry.use}"`);
+			const sharedBlock = {
+				id: location,
+				name: block.name,
+				color: categoryColor(ctx.routine, block.category)
+			};
 			out.push(
-				...scheduleBlock(collect(block.items, ctx, location), entry.time).map((item) => ({
-					...item,
-					sharedBlock: { id: location, name: block.name }
-				}))
+				...scheduleBlock(collect(block.items, ctx, location, block.category ?? inherited), entry.time).map(
+					(item) => ({ ...item, sharedBlock })
+				)
 			);
 		} else {
-			out.push(entry);
+			out.push(withCategory(entry, inherited));
 		}
 	}
 	return out;
@@ -191,6 +203,12 @@ export function slug(text: string): string {
 		.toLowerCase()
 		.replace(/[^a-z0-9]+/g, '-')
 		.replace(/^-|-$/g, '');
+}
+
+export function categoryColor(routine: Routine, key: string | undefined): CategoryColor | undefined {
+	return key && routine.categories && Object.hasOwn(routine.categories, key)
+		? routine.categories[key].color
+		: undefined;
 }
 
 export function resolveLinks(link: string | string[] | undefined, _routine?: Routine): ResolvedLink[] {
@@ -211,7 +229,7 @@ function toResolved(def: CollectedItem, ctx: Context, used: Set<string>, sortKey
 		duration: def.duration,
 		approx: def.approx ?? false,
 		title: def.title,
-		kind: def.kind,
+		color: categoryColor(ctx.routine, def.category),
 		alert: def.alert ?? false,
 		links: resolveLinks(def.link, ctx.routine),
 		note: def.note,

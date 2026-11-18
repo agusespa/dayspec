@@ -1,4 +1,11 @@
-import { WEEKDAYS, type Weekday, type Entry, type Routine } from './types.ts';
+import {
+	CATEGORY_COLORS,
+	WEEKDAYS,
+	type CategoryColor,
+	type Weekday,
+	type Entry,
+	type Routine
+} from './types.ts';
 
 /** A detached draft so cancel and failed saves never mutate the active routine. */
 export function cloneRoutine(routine: Routine): Routine {
@@ -111,5 +118,58 @@ export function renameBlock(routine: Routine, key: string, name: string): Routin
 	if (!name.trim()) throw new Error('Enter a block name.');
 	const next = cloneRoutine(routine);
 	next.blocks![key].name = name.trim();
+	return next;
+}
+
+/** Names of the items and shared blocks in a category, each once, so the editor can say what still uses it. */
+export function categoryReferences(routine: Routine, key: string): string[] {
+	const titles = new Set<string>();
+	const visit = (entries: Entry[]) => {
+		for (const entry of entries) {
+			if ('items' in entry) visit(entry.items);
+			else if ('title' in entry && entry.category === key) titles.add(entry.title);
+		}
+	};
+	for (const day of Object.values(routine.days)) visit(day.items);
+	for (const block of Object.values(routine.blocks ?? {})) {
+		if (block.category === key) titles.add(block.name);
+		visit(block.items);
+	}
+	return [...titles];
+}
+
+/** A new category takes the first palette colour no other category has yet. */
+export function createCategory(routine: Routine): { routine: Routine; key: string } {
+	const categories = routine.categories ?? {};
+	let key = 'category';
+	for (let n = 2; Object.hasOwn(categories, key); n++) key = `category_${n}`;
+	const taken = new Set(Object.values(categories).map((category) => category.color));
+	const color = CATEGORY_COLORS.find((c) => !taken.has(c)) ?? 'gray';
+	const next = cloneRoutine(routine);
+	next.categories = { ...next.categories, [key]: { name: 'New category', color } };
+	return { routine: next, key };
+}
+
+export function updateCategory(
+	routine: Routine,
+	key: string,
+	change: { name?: string; color?: CategoryColor }
+): Routine {
+	if (!Object.hasOwn(routine.categories ?? {}, key)) throw new Error('Category does not exist.');
+	if (change.name !== undefined && !change.name.trim()) throw new Error('Enter a category name.');
+	const next = cloneRoutine(routine);
+	const category = next.categories![key];
+	if (change.name !== undefined) category.name = change.name.trim();
+	if (change.color !== undefined) category.color = change.color;
+	return next;
+}
+
+export function removeCategory(routine: Routine, key: string): Routine {
+	const references = categoryReferences(routine, key);
+	if (references.length)
+		throw new Error(`This category is used by ${references.join(', ')}. Change their category first.`);
+	const next = cloneRoutine(routine);
+	if (next.categories) delete next.categories[key];
+	if (next.categories && !Object.keys(next.categories).length) delete next.categories;
 	return next;
 }

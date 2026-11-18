@@ -1,22 +1,37 @@
-/* Page chrome shared by every page: kind colours, the bottom bar, the masthead, choice rows and switches. */
+/* Page chrome shared by every page: category colours, the bottom bar, the masthead, choice rows and switches. */
 
-.kind-none {
-	--kind: var(--kind-none);
+.tone-none {
+	--tone: var(--tone-none);
 }
-.kind-maintenance {
-	--kind: var(--kind-maintenance);
+.tone-orange {
+	--tone: var(--tone-orange);
 }
-.kind-health {
-	--kind: var(--kind-health);
+.tone-yellow {
+	--tone: var(--tone-yellow);
 }
-.kind-growth {
-	--kind: var(--kind-growth);
+.tone-green {
+	--tone: var(--tone-green);
 }
-.kind-alert {
-	--kind: var(--kind-alert);
+.tone-teal {
+	--tone: var(--tone-teal);
 }
-.kind-night {
-	--kind: var(--kind-night);
+.tone-blue {
+	--tone: var(--tone-blue);
+}
+.tone-indigo {
+	--tone: var(--tone-indigo);
+}
+.tone-violet {
+	--tone: var(--tone-violet);
+}
+.tone-pink {
+	--tone: var(--tone-pink);
+}
+.tone-red {
+	--tone: var(--tone-red);
+}
+.tone-gray {
+	--tone: var(--tone-gray);
 }
 
 /* ---- Bottom bar ---- */

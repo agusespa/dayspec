@@ -22,12 +22,18 @@
 	--text-md: 1rem;
 	--text-lg: 1.2rem;
 	--text-title: clamp(2rem, 5vw, 2.5rem);
-	--kind-maintenance: #ffd166;
-	--kind-health: #f6b98f;
-	--kind-growth: #ff8a65;
-	--kind-alert: #ff8a91;
-	--kind-night: #f5a3c7;
-	--kind-none: #9c8982;
+	/* Category palette: one step of lightness so every colour reads the same on black. */
+	--tone-orange: #d9935f;
+	--tone-yellow: #ffd166;
+	--tone-green: #7fd49a;
+	--tone-teal: #5fd0c5;
+	--tone-blue: #74b4ff;
+	--tone-indigo: #8f9bff;
+	--tone-violet: #b99cff;
+	--tone-pink: #f5a3c7;
+	--tone-red: #ff7b7b;
+	--tone-gray: #a39c96;
+	--tone-none: #9c8982;
 	--shadow: 0 12px 32px rgb(0 0 0 / 30%);
 	--sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 	--mono: ui-monospace, 'SFMono-Regular', Consolas, monospace;

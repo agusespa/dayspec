@@ -34,6 +34,42 @@ describe('validateRoutine', () => {
 			'days.saturday.items[1].when: "place" is not a choice of this day'
 		]);
 	});
+	it('requires item categories to exist, in templates and blocks', () => {
+		const categories = { chores: { name: 'Chores', color: 'orange' } };
+		expect(
+			validateRoutine(
+				withDay({ items: [{ title: 'A', duration: 5, category: 'chores' }] }, { categories }),
+				schema
+			)
+		).toEqual([]);
+		expect(
+			validateRoutine(
+				withDay(
+					{ items: [{ title: 'A', duration: 5, category: 'gone' }] },
+					{ categories, blocks: { b: { name: 'B', items: [{ title: 'C', duration: 5, category: 'gone' }] } } }
+				),
+				schema
+			)
+		).toEqual(['days.saturday.items[0]: unknown category "gone"', 'blocks.b[0]: unknown category "gone"']);
+		expect(
+			validateRoutine(
+				withDay(
+					{ items: [] },
+					{ categories, blocks: { b: { name: 'B', category: 'gone', items: [{ title: 'C', duration: 5 }] } } }
+				),
+				schema
+			)
+		).toEqual(['blocks.b: unknown category "gone"']);
+	});
+	it('only takes palette colours and no longer accepts kind', () => {
+		expect(
+			validateRoutine(withDay({ items: [] }, { categories: { x: { name: 'X', color: '#ff0000' } } }), schema)
+				.length
+		).toBeGreaterThan(0);
+		expect(
+			validateRoutine(withDay({ items: [{ title: 'A', duration: 5, kind: 'maintenance' }] }), schema)
+		).toContain('days.saturday.items.0: must NOT have additional properties "kind"');
+	});
 	it('rejects malformed activity URLs', () => {
 		for (const link of ['missing', 'https://', 'javascript:alert(1)'])
 			expect(

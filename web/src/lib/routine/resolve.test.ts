@@ -28,6 +28,66 @@ describe('matches', () => {
 	});
 });
 describe('resolveDay', () => {
+	it("gives each item its category's colour", () => {
+		const day = resolveDay(
+			routine({
+				categories: { rest: { name: 'Rest', color: 'indigo' } },
+				days: {
+					all: {
+						on: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+						items: [
+							{ title: 'Nap', duration: 20, category: 'rest' },
+							{ title: 'Walk', duration: 20 }
+						]
+					}
+				}
+			}),
+			MON
+		);
+		expect(day.items.map((item) => item.color)).toEqual(['indigo', undefined]);
+	});
+	it("gives a block its own colour and its items the block's category unless they set one", () => {
+		const day = resolveDay(
+			routine({
+				categories: {
+					health: { name: 'Health', color: 'green' },
+					chores: { name: 'Chores', color: 'orange' },
+					rest: { name: 'Rest', color: 'indigo' }
+				},
+				blocks: {
+					morning: {
+						name: 'Morning',
+						category: 'health',
+						items: [
+							{ title: 'Stretch', duration: 5 },
+							{ title: 'Make bed', duration: 5, category: 'chores' },
+							{ items: [{ title: 'Yoga', duration: 5 }] },
+							{ use: 'plain' }
+						]
+					},
+					plain: { name: 'Plain', items: [{ title: 'Water', duration: 5 }] },
+					loose: { name: 'Loose', items: [{ title: 'Read', duration: 5 }] }
+				},
+				days: {
+					all: {
+						on: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+						items: [
+							{ use: 'morning', time: '07:00' },
+							{ use: 'loose', time: '21:00' }
+						]
+					}
+				}
+			}),
+			MON
+		);
+		expect(day.items.map((item) => [item.title, item.color, item.sharedBlock?.color])).toEqual([
+			['Stretch', 'green', 'green'],
+			['Make bed', 'orange', 'green'],
+			['Yoga', 'green', 'green'],
+			['Water', 'green', 'green'],
+			['Read', undefined, undefined]
+		]);
+	});
 	it('expands blocks at their occurrence start and sorts by time', () => {
 		const r = routine({
 			blocks: {

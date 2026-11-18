@@ -3,6 +3,28 @@
     "day_starts_at": "04:00",
     "holiday": "saturday"
   },
+  "categories": {
+    "chores": {
+      "name": "Chores",
+      "color": "orange"
+    },
+    "productivity": {
+      "name": "Productivity",
+      "color": "violet"
+    },
+    "health": {
+      "name": "Health & Fitness",
+      "color": "green"
+    },
+    "social": {
+      "name": "Social & Leisure",
+      "color": "pink"
+    },
+    "rest": {
+      "name": "Rest & Sleep",
+      "color": "indigo"
+    }
+  },
   "blocks": {
     "wake_up": {
       "name": "Wake up",
@@ -18,7 +40,7 @@
       "items": [
         {
           "title": "Morning yoga",
-          "kind": "health",
+          "category": "health",
           "link": "https://example.com/notion/page-1",
           "duration": 5
         }
@@ -42,7 +64,7 @@
       "items": [
         {
           "title": "Daily news pods, Swedish news, Personal Development",
-          "kind": "growth",
+          "category": "productivity",
           "link": "https://example.com/notion/page-3",
           "duration": 5
         }
@@ -208,7 +230,7 @@
       "items": [
         {
           "title": "Dance practice",
-          "kind": "health",
+          "category": "health",
           "duration": 5
         }
       ]
@@ -218,7 +240,7 @@
       "items": [
         {
           "title": "Dance class",
-          "kind": "health",
+          "category": "health",
           "duration": 5
         }
       ]
@@ -228,7 +250,7 @@
       "items": [
         {
           "title": "Dress \u2014 go to gym \u2014 Strength training (55\u2032)",
-          "kind": "health",
+          "category": "health",
           "link": "https://example.com/notion/page-4",
           "duration": 5
         }
@@ -239,7 +261,7 @@
       "items": [
         {
           "title": "Stretching (\u22485+5\u2032)",
-          "kind": "health",
+          "category": "health",
           "link": "https://example.com/notion/page-4",
           "duration": 5
         }
@@ -297,7 +319,7 @@
         },
         {
           "title": "Dance workshop + social",
-          "kind": "health",
+          "category": "health",
           "duration": 5
         }
       ]
@@ -326,7 +348,7 @@
       "items": [
         {
           "title": "Creative writing",
-          "kind": "growth",
+          "category": "productivity",
           "link": "https://example.com/notion/page-6",
           "duration": 5
         }
@@ -337,7 +359,7 @@
       "items": [
         {
           "title": "Light reading",
-          "kind": "growth",
+          "category": "productivity",
           "link": [
             "https://example.com/notion/page-7",
             "https://example.com/notion/page-3"
@@ -420,7 +442,6 @@
             {
               "time": "07:20",
               "title": "Get ready for work! Check train times & weather",
-              "kind": "alert",
               "alert": true,
               "link": "https://example.com/transit/departures",
               "duration": 5
@@ -460,7 +481,7 @@
             },
             {
               "title": "Dance class",
-              "kind": "health",
+              "category": "health",
               "time": "17:40",
               "duration": 60
             },
@@ -553,7 +574,7 @@
             },
             {
               "title": "Dance practice",
-              "kind": "health",
+              "category": "health",
               "time": "20:40",
               "note": "2 salsa songs, 2 bachata songs",
               "duration": 5
@@ -561,7 +582,7 @@
             {
               "time": "21:00",
               "title": "Learn music",
-              "kind": "growth",
+              "category": "productivity",
               "link": "https://example.com/notion/page-8",
               "duration": 5
             },
@@ -572,7 +593,7 @@
             {
               "time": "22:00",
               "title": "Meditation",
-              "kind": "health",
+              "category": "health",
               "link": "https://example.com/notion/page-9",
               "duration": 5
             },
@@ -584,7 +605,7 @@
             },
             {
               "title": "Light reading",
-              "kind": "growth",
+              "category": "productivity",
               "link": [
                 "https://example.com/notion/page-7",
                 "https://example.com/notion/page-3"
@@ -716,7 +737,7 @@
         },
         {
           "title": "Morning yoga",
-          "kind": "health",
+          "category": "health",
           "link": "https://example.com/notion/page-1",
           "approx": true,
           "duration": 5
@@ -728,7 +749,7 @@
         {
           "approx": true,
           "title": "Productivity",
-          "kind": "growth",
+          "category": "productivity",
           "duration": 5
         },
         {
@@ -785,7 +806,7 @@
         {
           "time": "02:00",
           "title": "Lucid dreaming",
-          "kind": "night",
+          "category": "rest",
           "link": "https://example.com/notion/page-10",
           "duration": 5
         }
@@ -803,7 +824,7 @@
         },
         {
           "title": "Morning yoga",
-          "kind": "health",
+          "category": "health",
           "link": "https://example.com/notion/page-1",
           "approx": true,
           "duration": 5
@@ -815,7 +836,7 @@
         },
         {
           "title": "Personal Development",
-          "kind": "growth",
+          "category": "productivity",
           "link": "https://example.com/notion/page-3",
           "duration": 5
         },
@@ -827,7 +848,7 @@
         },
         {
           "title": "Creative writing",
-          "kind": "growth",
+          "category": "productivity",
           "link": "https://example.com/notion/page-6",
           "approx": true,
           "note": "Poetry",
@@ -854,7 +875,7 @@
         {
           "time": "17:30",
           "title": "Strength training (55\u2032)",
-          "kind": "health",
+          "category": "health",
           "duration": 5
         },
         {
@@ -879,14 +900,14 @@
           "time": "21:30",
           "approx": true,
           "title": "\u00dcbermensch Review",
-          "kind": "growth",
+          "category": "productivity",
           "link": "https://example.com/notion/page-11",
           "duration": 5
         },
         {
           "time": "22:00",
           "title": "Night yoga",
-          "kind": "health",
+          "category": "health",
           "link": "https://example.com/notion/page-1",
           "duration": 5
         },
@@ -896,7 +917,7 @@
         },
         {
           "title": "Light reading",
-          "kind": "growth",
+          "category": "productivity",
           "link": [
             "https://example.com/notion/page-7",
             "https://example.com/notion/page-3"

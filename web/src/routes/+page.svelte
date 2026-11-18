@@ -89,7 +89,7 @@
 	{/if}
 	<div class="strip" aria-hidden="true">
 		{#each day.items as item, i (item.id)}
-			<span class="seg kind-{item.kind ?? 'none'}" class:passed={i < passed} class:now={i === current.index}
+			<span class="seg tone-{item.color ?? 'none'}" class:passed={i < passed} class:now={i === current.index}
 			></span>
 		{/each}
 	</div>
@@ -200,7 +200,7 @@
 	.seg {
 		flex: 1;
 		border-radius: 2px;
-		background: var(--kind);
+		background: var(--tone);
 		opacity: 0.22;
 		transition: opacity 0.2s;
 	}

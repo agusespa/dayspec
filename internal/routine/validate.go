@@ -18,7 +18,7 @@ func has(values any, value any) bool { return slices.Contains(list(values), valu
 
 // Schema validation runs first, so this only checks relationships between valid shapes.
 func checkReferences(root map[string]any, raw []byte) error {
-	days, blocks := object(root["days"]), object(root["blocks"])
+	days, blocks, categories := object(root["days"]), object(root["blocks"]), object(root["categories"])
 	var problems []string
 	add := func(where, message string) { problems = append(problems, where+": "+message) }
 	for _, wd := range weekdays {
@@ -125,6 +125,9 @@ func checkReferences(root map[string]any, raw []byte) error {
 				walk(list(object(block)["items"]), choices, "blocks."+name, next, depth+1)
 			} else {
 				checkLinks(e, at)
+				if key, ok := e["category"].(string); ok && categories[key] == nil {
+					add(at, "unknown category "+key)
+				}
 			}
 		}
 	}
@@ -168,6 +171,9 @@ func checkReferences(root map[string]any, raw []byte) error {
 	}
 	// Blocks store relative durations; start times belong to template occurrences.
 	for name, block := range blocks {
+		if key, ok := object(block)["category"].(string); ok && categories[key] == nil {
+			add("blocks."+name, "unknown category "+key)
+		}
 		var relative func([]any)
 		relative = func(entries []any) {
 			for _, value := range entries {

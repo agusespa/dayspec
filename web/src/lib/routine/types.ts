@@ -3,7 +3,25 @@
 export const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 export type Weekday = (typeof WEEKDAYS)[number];
 
-export type Kind = 'maintenance' | 'health' | 'growth' | 'alert' | 'night';
+/** The palette categories pick from; each is tuned for the dark theme in app.css. */
+export const CATEGORY_COLORS = [
+	'orange',
+	'yellow',
+	'green',
+	'teal',
+	'blue',
+	'indigo',
+	'violet',
+	'pink',
+	'red',
+	'gray'
+] as const;
+export type CategoryColor = (typeof CATEGORY_COLORS)[number];
+
+export interface Category {
+	name: string;
+	color: CategoryColor;
+}
 
 export type ChoiceValue = string | boolean;
 
@@ -19,7 +37,7 @@ export interface ItemDef {
 	time?: string;
 	approx?: boolean;
 	title: string;
-	kind?: Kind;
+	category?: string;
 	alert?: boolean;
 	link?: string | string[];
 	note?: string;
@@ -41,6 +59,8 @@ export type Entry = ItemDef | UseEntry | Group;
 
 export interface Block {
 	name: string;
+	/** The block's colour, and the category of its items that don't set their own. */
+	category?: string;
 	items: Entry[];
 }
 
@@ -71,6 +91,7 @@ export interface Routine {
 		automatic_swedish_holidays?: boolean;
 		calendar?: 'google';
 	};
+	categories?: Record<string, Category>;
 	blocks?: Record<string, Block>;
 	days: Record<string, DayTemplate>;
 }

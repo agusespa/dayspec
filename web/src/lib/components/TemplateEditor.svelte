@@ -271,6 +271,22 @@
 							placeholder="e.g. Morning routine"
 						/></label
 					>
+					<label
+						>Category<select
+							data-testid="TemplateEditor-block-category"
+							value={draft.blocks[blockKey].category ?? ''}
+							onchange={(e) => {
+								const block = draft.blocks![blockKey];
+								if (e.currentTarget.value) block.category = e.currentTarget.value;
+								else delete block.category;
+							}}
+							><option value="">None</option
+							>{#each Object.entries(draft.categories ?? {}) as [id, category] (id)}<option value={id}
+									>{category.name}</option
+								>{/each}</select
+						><span class="help">Colours the block, and every activity in it that doesn't set its own.</span
+						></label
+					>
 					<h2 class="block-items-heading">Activities</h2>
 					{#key blockKey}
 						<EntryEditor

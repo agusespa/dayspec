@@ -29,6 +29,7 @@
 }
 .template-editor .help {
 	font-size: var(--text-xs);
+	font-weight: 400;
 	color: var(--muted);
 	line-height: 1.6;
 	overflow-wrap: anywhere;

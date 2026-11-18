@@ -18,7 +18,7 @@
 {#snippet contents(entries: ResolvedItem[])}
 	<ul class="contents-list">
 		{#each entries as item (item.id)}
-			<li data-testid="Timeline-block-entry">
+			<li class="tone-{item.color ?? 'none'}" data-testid="Timeline-block-entry">
 				<div class="contents-row">
 					<span class="contents-title">{item.title}</span>{#if item.duration}<span
 							class="duration"
@@ -38,7 +38,7 @@
 			{@const duration = timelineDuration(group.items)}
 			{@const containsCurrent = group.items.some((item) => item.id === currentId)}
 			<li
-				class="item shared-block kind-{group.items[0].kind ?? 'none'}"
+				class="item shared-block tone-{group.color ?? 'none'}"
 				class:current={containsCurrent}
 				class:passed={currentIndex > items.indexOf(group.items.at(-1)!)}
 				data-testid="Timeline-block"
@@ -156,6 +156,11 @@
 		padding-left: 1rem;
 		list-style: disc;
 		color: var(--muted);
+	}
+	/* Each entry's bullet shows its own category, which may differ from the block's. */
+	.contents-list li::marker {
+		color: var(--tone);
+		font-size: 1.3em;
 	}
 	.contents-list li {
 		padding: 0.3rem 0;

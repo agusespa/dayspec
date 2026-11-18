@@ -34,6 +34,30 @@
         }
       }
     },
+    "categories": {
+      "type": "object",
+      "description": "Item categories, keyed by stable ID, in the order the editor lists them.",
+      "propertyNames": {
+        "$ref": "#/$defs/id"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "color"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "color": {
+            "$ref": "#/$defs/color"
+          }
+        }
+      }
+    },
     "blocks": {
       "type": "object",
       "description": "Shared blocks, keyed by stable ID.",
@@ -51,6 +75,10 @@
           "name": {
             "type": "string",
             "minLength": 1
+          },
+          "category": {
+            "$ref": "#/$defs/id",
+            "description": "Key of a category in `categories`; the block's colour and the default for its items."
           },
           "items": {
             "type": "array",
@@ -105,15 +133,20 @@
         "$ref": "#/$defs/weekday"
       }
     },
-    "kind": {
+    "color": {
       "enum": [
-        "maintenance",
-        "health",
-        "growth",
-        "alert",
-        "night"
+        "orange",
+        "yellow",
+        "green",
+        "teal",
+        "blue",
+        "indigo",
+        "violet",
+        "pink",
+        "red",
+        "gray"
       ],
-      "description": "Sets the item's colour."
+      "description": "A colour from the app's palette, tuned for its dark theme."
     },
     "link": {
       "oneOf": [
@@ -214,8 +247,9 @@
           "type": "string",
           "minLength": 1
         },
-        "kind": {
-          "$ref": "#/$defs/kind"
+        "category": {
+          "$ref": "#/$defs/id",
+          "description": "Key of a category in `categories`; sets the item's colour."
         },
         "alert": {
           "type": "boolean",

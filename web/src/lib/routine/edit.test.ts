@@ -12,7 +12,11 @@ import {
 	createBlock,
 	removeBlock,
 	blockReferences,
-	renameBlock
+	renameBlock,
+	categoryReferences,
+	createCategory,
+	updateCategory,
+	removeCategory
 } from './edit.ts';
 import type { Entry, Routine } from './types.ts';
 const routine: Routine = {
@@ -198,5 +202,70 @@ describe('template library order', () => {
 	});
 	it('handles an empty library', () => {
 		expect(templateKeys({ days: {} })).toEqual([]);
+	});
+});
+
+describe('categories', () => {
+	const withCategories: Routine = {
+		categories: {
+			chores: { name: 'Chores', color: 'orange' },
+			rest: { name: 'Rest', color: 'indigo' }
+		},
+		blocks: { evening: { name: 'Evening', items: [{ title: 'Dishes', duration: 10, category: 'chores' }] } },
+		days: {
+			daily: {
+				on: ['mon'],
+				items: [
+					{ title: 'Laundry', duration: 30, category: 'chores' },
+					{ items: [{ title: 'Laundry', duration: 30, category: 'chores' }] },
+					{ title: 'Nap', duration: 20, category: 'rest' }
+				]
+			}
+		}
+	};
+
+	it('lists each item title that uses a category once, across templates, groups and blocks', () => {
+		expect(categoryReferences(withCategories, 'chores')).toEqual(['Laundry', 'Dishes']);
+		expect(categoryReferences(withCategories, 'absent')).toEqual([]);
+		const blockInRest = {
+			...withCategories,
+			blocks: { evening: { ...withCategories.blocks!.evening, category: 'rest' } }
+		};
+		expect(categoryReferences(blockInRest, 'rest')).toEqual(['Nap', 'Evening']);
+		expect(() => removeCategory(blockInRest, 'rest')).toThrow('Nap, Evening');
+	});
+
+	it('creates a category with a fresh key and the first unused colour', () => {
+		const { routine: next, key } = createCategory(withCategories);
+		expect(key).toBe('category');
+		expect(next.categories?.category).toEqual({ name: 'New category', color: 'yellow' });
+		expect(createCategory(next).key).toBe('category_2');
+		expect(createCategory({ days: {} }).routine.categories).toEqual({
+			category: { name: 'New category', color: 'orange' }
+		});
+		expect(withCategories.categories?.category).toBeUndefined();
+	});
+
+	it('renames and recolours without touching the key', () => {
+		const next = updateCategory(withCategories, 'rest', { name: '  Rest & Sleep ', color: 'blue' });
+		expect(next.categories?.rest).toEqual({ name: 'Rest & Sleep', color: 'blue' });
+		expect(withCategories.categories?.rest.name).toBe('Rest');
+		expect(() => updateCategory(withCategories, 'rest', { name: ' ' })).toThrow('Enter a category name.');
+		expect(() => updateCategory(withCategories, 'absent', { color: 'red' })).toThrow();
+	});
+
+	it('only removes a category nothing uses', () => {
+		expect(() => removeCategory(withCategories, 'chores')).toThrow('Laundry, Dishes');
+		const unused = removeCategory(
+			{
+				...withCategories,
+				categories: { ...withCategories.categories, spare: { name: 'Spare', color: 'gray' } }
+			},
+			'spare'
+		);
+		expect(Object.keys(unused.categories ?? {})).toEqual(['chores', 'rest']);
+		expect(
+			removeCategory({ categories: { only: { name: 'Only', color: 'red' } }, days: {} }, 'only').categories
+		).toBeUndefined();
 	});
 });

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { templateName } from '#lib/routine/edit.ts';
 	import BottomNav from '#lib/components/BottomNav.svelte';
+	import CategoriesEditor from '#lib/components/CategoriesEditor.svelte';
 	import { routineState, saveRoutine } from '#lib/routine/client.ts';
 	import { version } from '$app/env';
 	let saving = $state(false);
@@ -114,6 +115,7 @@
 	{#if saving}<p role="status">Saving…</p>{/if}
 	{#if error}<p class="error" role="alert" data-testid="Profile-error">{error}</p>{/if}
 </section>
+<CategoriesEditor />
 <p class="version" data-testid="Profile-version">
 	Version {__APP_VERSION__}{#if builtAt}<br />Built {builtAt}{/if}
 </p>
