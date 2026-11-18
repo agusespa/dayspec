@@ -61,6 +61,8 @@ test("collapses shared blocks in Daily and template previews without losing thei
     await expect(items.first()).toContainText("Wash");
     await expect(items.nth(1)).toContainText("Breakfast");
     await expect(items.nth(1)).toContainText("20 min");
+    await expect(items.first().getByTestId("Activity-note")).toHaveCount(0);
+    await items.first().getByTestId("Timeline-block-entry-toggle").click();
     await expect(items.first().getByTestId("Activity-note")).toHaveText(
       "Vitamins",
     );

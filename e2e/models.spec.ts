@@ -80,6 +80,7 @@ test("edits choices, conditional activities, durations and Notion links, then se
     await expect(page.getByTestId("TimelineItem").first()).toContainText(
       "15 min",
     );
+    await page.getByTestId("TimelineItem").first().getByTestId("TimelineItem-toggle").click();
     await expect(
       page.getByTestId("TimelineItem").first().getByRole("link", { name: /www\.notion\.so/ }),
     ).toHaveAttribute("href", "https://www.notion.so/routine");

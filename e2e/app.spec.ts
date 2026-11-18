@@ -49,6 +49,9 @@ test("shows activity notes without completion controls", async ({
     ).ok(),
   ).toBeTruthy();
   await openAt(page, "2026-11-17T09:00:00");
+  // Notes stay folded away until the row is tapped.
+  await expect(page.getByTestId("Activity-note")).toHaveCount(0);
+  await page.getByTestId("TimelineItem-toggle").click();
   await expect(page.getByTestId("Activity-note")).toHaveText(
     "Water\nWash face",
   );
@@ -56,6 +59,7 @@ test("shows activity notes without completion controls", async ({
     page.getByTestId("TimelineItem").getByRole("checkbox"),
   ).toHaveCount(0);
   await page.reload();
+  await page.getByTestId("TimelineItem-toggle").click();
   await expect(page.getByTestId("Activity-note")).toHaveText(
     "Water\nWash face",
   );
@@ -64,6 +68,7 @@ test("shows activity notes without completion controls", async ({
     .getByTestId("Templates-row-daily")
     .getByTestId("Templates-open")
     .click();
+  await page.getByTestId("TimelineItem-toggle").click();
   await expect(page.getByTestId("Activity-note")).toHaveText(
     "Water\nWash face",
   );

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { isGroup, isUse, type Entry, type Routine, type Choice, type When } from '#lib/routine/types.ts';
 	import { moveEntry, newEntry } from '#lib/routine/edit.ts';
 	import EntryEditor from './EntryEditor.svelte';
@@ -8,8 +9,24 @@
 		entries = $bindable(),
 		routine,
 		shared = false,
-		choices = {}
-	}: { entries: Entry[]; routine: Routine; shared?: boolean; choices?: Record<string, Choice> } = $props();
+		choices = {},
+		focus
+	}: {
+		entries: Entry[];
+		routine: Routine;
+		shared?: boolean;
+		choices?: Record<string, Choice>;
+		/** Entry position to open and scroll to on arrival, e.g. from an item's edit link on Today. */
+		focus?: number[];
+	} = $props();
+	/**
+	 * Opens an entry on the way to the focused one, once on arrival; the target is also scrolled to.
+	 * Set on the element rather than as an `open` attribute, which would close entries the user opened.
+	 */
+	function reveal(node: HTMLDetailsElement, target: boolean) {
+		node.open = true;
+		if (target) requestAnimationFrame(() => node.scrollIntoView({ block: 'start' }));
+	}
 	/** A group is named by the conditions it shows under, e.g. "When Gym on · Mon, Tue". */
 	function groupLabel(when: When | undefined): string {
 		const conditions = describeWhen(when, choices);
@@ -24,7 +41,15 @@
 
 <div class="entries">
 	{#each entries as entry, i}
-		<details class="entry" data-testid="EntryEditor-entry">
+		{@const focused = focus?.[0] === i}
+		<details
+			class="entry"
+			data-testid="EntryEditor-entry"
+			data-focused={focused && focus!.length === 1 ? '' : undefined}
+			{@attach (node) => {
+				if (focused) untrack(() => reveal(node, focus!.length === 1));
+			}}
+		>
 			<summary data-testid="EntryEditor-open"
 				><span class="summary-index">{i + 1}</span><span class="summary-title"
 					>{#if isGroup(entry)}{groupLabel(entry.when)}{:else if isUse(entry)}{routine.blocks?.[entry.use]
@@ -37,7 +62,13 @@
 			>
 			<div class="entry-body shared">
 				{#if isGroup(entry)}
-					<EntryEditor bind:entries={entry.items} {routine} {shared} {choices} />
+					<EntryEditor
+						bind:entries={entry.items}
+						{routine}
+						{shared}
+						{choices}
+						focus={focused ? focus!.slice(1) : undefined}
+					/>
 				{:else}
 					{#if isUse(entry)}
 						<label
@@ -105,7 +136,7 @@
 								type="checkbox"
 								checked={entry.alert ?? false}
 								onchange={(e) => set(i, 'alert', e.currentTarget.checked || undefined)}
-							/>Can’t be delayed</label
+							/>Alert</label
 						>
 						{#if !shared}<label class="check"
 								><input

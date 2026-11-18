@@ -253,7 +253,7 @@
         },
         "alert": {
           "type": "boolean",
-          "description": "Can't be delayed."
+          "description": "Marks the item with a bell on the timeline."
         },
         "link": {
           "$ref": "#/$defs/link"

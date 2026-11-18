@@ -220,6 +220,11 @@ test("edits activity notes and reorders entries without losing details", async (
     { title: "First", note: "Water\nWash face", duration: 5 },
   ]);
   await page.reload();
+  await page
+    .getByTestId("TimelineItem")
+    .filter({ hasText: "First" })
+    .getByTestId("TimelineItem-toggle")
+    .click();
   await expect(page.getByTestId("Activity-note")).toHaveText(
     "Water\nWash face",
   );

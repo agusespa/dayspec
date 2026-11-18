@@ -26,25 +26,31 @@
 		templateKey,
 		startCreating = false,
 		manageBlocks = false,
+		startBlock = '',
+		focus,
 		onclose
 	}: {
 		routine: Routine;
 		templateKey: string;
 		startCreating?: boolean;
 		manageBlocks?: boolean;
+		/** Opens this shared block straight away (with `manageBlocks`). */
+		startBlock?: string;
+		/** Entry position to open and scroll to, in the template or in `startBlock`. */
+		focus?: number[];
 		onclose: (key: string, saved: boolean) => void;
 	} = $props();
 	let draft = $state(cloneRoutine(untrack(() => routine)));
 	let key = $state(untrack(() => templateKey));
 	let revision = $state(untrack(() => $routineState.revision));
 	let baseline = $state(untrack(() => JSON.stringify(draft)));
-	let blockKey = $state('');
+	let blockKey = $state(untrack(() => (startBlock && routine.blocks?.[startBlock] ? startBlock : '')));
 	let pendingBlock = $state('');
 	let errors = $state<string[]>([]);
 	let saving = $state(false);
 	let creating = $state(untrack(() => startCreating));
 	let newDays = $state<Weekday[]>([]);
-	let blockName = $state('');
+	let blockName = $state(untrack(() => routine.blocks?.[blockKey]?.name ?? ''));
 	const references = $derived(blockKey ? blockReferences(draft, blockKey) : []);
 	function addBlock() {
 		const name = 'New shared block';
@@ -260,6 +266,7 @@
 						bind:entries={draft.days[key].items}
 						routine={draft}
 						choices={draft.days[key].choices ?? {}}
+						focus={key === templateKey ? focus : undefined}
 					/>
 				{/if}
 			{:else}
@@ -294,6 +301,7 @@
 							shared
 							bind:entries={draft.blocks[blockKey].items}
 							choices={Object.assign({}, ...Object.values(draft.days).map((day) => day.choices ?? {}))}
+							focus={blockKey === startBlock ? focus : undefined}
 						/>
 					{/key}
 					{#if !pendingBlock}

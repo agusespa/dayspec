@@ -5,14 +5,23 @@
 	import { untrack } from 'svelte';
 	import TemplateEditor from '#lib/components/TemplateEditor.svelte';
 	import '#lib/styles/editor.css';
-	import { replaceState } from '$app/navigation';
+	import { goto, replaceState } from '$app/navigation';
 	import { page } from '$app/state';
 	import { outlineDay, weekdayLabel, type OutlineOption } from '#lib/routine/outline.ts';
 	import Timeline from '#lib/components/Timeline.svelte';
 	import TimelineItem from '#lib/components/TimelineItem.svelte';
-	let editing = $state(false);
+	// An item's edit link on Today lands here with ?t= or ?block= plus the entry position in ?edit=.
+	const linked = untrack(() => {
+		const params = page.url.searchParams;
+		const edit = params.get('edit');
+		const block = params.get('block') ?? '';
+		const path = edit ? edit.split('.').map(Number) : [];
+		if (!(edit || block) || !path.every((n) => Number.isInteger(n) && n >= 0)) return undefined;
+		return { block, path };
+	});
+	let editing = $state(!!linked);
 	let creating = $state(false);
-	let managingBlocks = $state(false);
+	let managingBlocks = $state(!!linked?.block);
 	let saved = $state(false);
 	const routine = $derived($routineState.routine);
 	const keys = $derived(templateKeys(routine));
@@ -54,7 +63,11 @@
 		templateKey={selectedKey}
 		startCreating={creating}
 		manageBlocks={managingBlocks}
+		startBlock={linked?.block}
+		focus={linked?.path}
 		onclose={(next, didSave) => {
+			// Back to Today when the editor was opened from one of its items.
+			if (linked) return void goto('/');
 			key = next;
 			editing = false;
 			saved = didSave;
@@ -137,7 +150,7 @@
 							</p>{/if}
 						<h2 class="section-label">Timeline · {day.items.length} items</h2>
 						<Timeline items={day.items}>
-							{#snippet row(item)}<TimelineItem {item}>
+							{#snippet row(item)}<TimelineItem {item} showConditions={false}>
 									{@render tags(item.conditions)}
 								</TimelineItem>{/snippet}
 						</Timeline>

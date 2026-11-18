@@ -12,7 +12,7 @@
 		target="_blank"
 		rel="noopener noreferrer"
 		aria-label={`Add ${title} to Google Calendar`}
-		title={`Add to Google Calendar`}
+		title="Add to Google Calendar"
 		onclick={(event) => event.stopPropagation()}
 	>
 		<svg
@@ -32,19 +32,15 @@
 
 <style>
 	.calendar-link {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
+		display: inline-grid;
+		place-items: center;
 		flex: none;
-		width: 40px;
-		height: 40px;
-		margin-left: auto;
+		width: 36px;
+		height: 36px;
 		border-radius: 50%;
-		color: var(--muted);
-		text-decoration: none;
+		color: var(--accent);
 	}
 	.calendar-link:hover {
-		color: var(--secondary);
 		background: var(--surface-hover);
 	}
 	svg {

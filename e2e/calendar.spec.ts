@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('adds selected-day activities and shared blocks to Calendar without opening the block', async ({
+test('adds activities and shared blocks to Calendar from their details', async ({
 	page,
 	request,
 	context
@@ -41,6 +41,9 @@ test('adds selected-day activities and shared blocks to Calendar without opening
 		await page.goto('/');
 		const block = page.getByTestId('Timeline-block');
 		const link = page.getByRole('link', { name: 'Add Morning to Google Calendar', exact: true });
+		// Calendar links stay folded away until the block or row is opened.
+		await expect(link).toHaveCount(0);
+		await block.getByTestId('Timeline-block-toggle').click();
 		await expect(link).toBeVisible();
 		const url = new URL((await link.getAttribute('href'))!);
 		expect(url.searchParams.get('text')).toBe('Morning');
@@ -53,15 +56,16 @@ test('adds selected-day activities and shared blocks to Calendar without opening
 		const popup = page.waitForEvent('popup');
 		await link.click();
 		await (await popup).close();
-		await expect(block.locator('details')).not.toHaveAttribute('open', '');
-		await block.getByTestId('Timeline-block-toggle').click();
+		await block.getByTestId('Timeline-block-entry-toggle').first().click();
 		await expect(
 			page.getByRole('link', { name: 'Add Breakfast to Google Calendar', exact: true })
 		).toBeVisible();
+		// Nothing to show for an untimed activity without notes or links, so it doesn't open.
 		await expect(
-			page.getByRole('link', { name: 'Add Unscheduled to Google Calendar', exact: true })
+			page.getByTestId('TimelineItem').filter({ hasText: 'Unscheduled' }).getByTestId('TimelineItem-toggle')
 		).toHaveCount(0);
 		await page.getByRole('button', { name: 'Next day', exact: true }).click();
+		await page.getByTestId('TimelineItem').filter({ hasText: 'Work' }).getByTestId('TimelineItem-toggle').click();
 		const work = page.getByRole('link', { name: 'Add Work to Google Calendar', exact: true });
 		expect(new URL((await work.getAttribute('href'))!).searchParams.get('dates')).toBe(
 			'20261119T090000/20261119T100000'

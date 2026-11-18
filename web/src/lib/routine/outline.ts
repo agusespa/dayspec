@@ -7,7 +7,9 @@ import { templateName } from './edit.ts';
 import { dayMinutes } from './date.ts';
 import {
 	categoryColor,
+	categoryOf,
 	dayStartsAt,
+	describeWhen,
 	humanize,
 	resolveLinks,
 	withCategory,
@@ -15,6 +17,8 @@ import {
 	type ResolvedItem,
 	type SharedBlock
 } from './resolve.ts';
+
+export { describeWhen, weekdayLabel } from './resolve.ts';
 import {
 	isGroup,
 	isUse,
@@ -27,10 +31,7 @@ import {
 	type When
 } from './types.ts';
 
-export interface OutlineItem extends ResolvedItem {
-	/** When the item shows, e.g. "Location: Office" or "Tue"; empty when it always does. */
-	conditions: string[];
-}
+export type OutlineItem = ResolvedItem;
 
 export interface OutlineOption {
 	label: string;
@@ -55,27 +56,6 @@ export interface OutlineDay {
 	theme?: string;
 	choices: OutlineChoice[];
 	items: OutlineItem[];
-}
-
-export function weekdayLabel(day: Weekday): string {
-	return day.charAt(0).toUpperCase() + day.slice(1);
-}
-
-/** A `when` as short labels, using the template's own choice and option labels. */
-export function describeWhen(when: When | undefined, choices: Record<string, Choice>): string[] {
-	if (!when) return [];
-	return Object.entries(when).flatMap(([key, cond]) => {
-		if (cond === undefined) return [];
-		if (key === 'days') return [(cond as Weekday[]).map(weekdayLabel).join(', ')];
-		const choice = choices[key];
-		const label = choice?.label ?? humanize(key);
-		if (typeof cond === 'boolean') return [`${label} ${cond ? 'on' : 'off'}`];
-		const option = (value: string) => choice?.options?.[value]?.label ?? humanize(value);
-		if (typeof cond === 'string') return [`${label}: ${option(cond)}`];
-		if (Array.isArray(cond)) return [`${label}: ${cond.map(option).join(' or ')}`];
-		const excluded = Array.isArray(cond.not) ? cond.not : [cond.not];
-		return [`${label}: not ${excluded.map(option).join(' or ')}`];
-	});
 }
 
 interface Placed {
@@ -110,7 +90,13 @@ function placeAll(
 				...placed.map((item, i) => ({
 					...item,
 					def: scheduled[i],
-					sharedBlock: { id: location, name: block.name, color: categoryColor(routine, block.category) }
+					sharedBlock: {
+						id: location,
+						key: entry.use,
+						name: block.name,
+						color: categoryColor(routine, block.category),
+						categoryName: categoryOf(routine, block.category)?.name
+					}
 				}))
 			);
 		} else {
@@ -140,6 +126,7 @@ function toOutline(
 		approx: def.approx ?? false,
 		title: def.title,
 		color: categoryColor(routine, def.category),
+		categoryName: categoryOf(routine, def.category)?.name,
 		alert: def.alert ?? false,
 		links: resolveLinks(def.link, routine),
 		note: def.note,

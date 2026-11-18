@@ -3,30 +3,55 @@
 	import type { ResolvedItem } from '#lib/routine/resolve.ts';
 	import { groupTimeline, timelineDuration, timelineGaps } from '#lib/routine/timeline.ts';
 	import CalendarLink from './CalendarLink.svelte';
-	import { itemMeta } from './TimelineItem.svelte';
+	import EditLink from './EditLink.svelte';
+	import ItemDetails, { hasDetails, timeRange } from './ItemDetails.svelte';
 	let {
 		items,
 		row,
 		currentId,
-		calendarDate
-	}: { items: T[]; row: Snippet<[T]>; currentId?: string; calendarDate?: string } = $props();
+		calendarDate,
+		editTemplate
+	}: {
+		items: T[];
+		row: Snippet<[T]>;
+		currentId?: string;
+		calendarDate?: string;
+		/** The day's template; with it opened rows and blocks get edit links. */
+		editTemplate?: string;
+	} = $props();
 	const currentIndex = $derived(items.findIndex((item) => item.id === currentId));
 	const groups = $derived(groupTimeline(items));
 	const gaps = $derived(timelineGaps(groups));
+	/** Activities inside an open block whose details are showing, by item ID. */
+	let openEntries = $state<Record<string, boolean>>({});
 </script>
 
 {#snippet contents(entries: ResolvedItem[])}
 	<ul class="contents-list">
 		{#each entries as item (item.id)}
 			<li class="tone-{item.color ?? 'none'}" data-testid="Timeline-block-entry">
-				<div class="contents-row">
-					<span class="contents-title">{item.title}</span>{#if item.duration}<span
-							class="duration"
-							data-testid="Timeline-block-duration">{item.duration} min</span
-						>{/if}
-					{#if calendarDate}<CalendarLink date={calendarDate} items={[item]} title={item.title} />{/if}
-				</div>
-				{@render itemMeta(item)}
+				{#if hasDetails(item, calendarDate)}
+					<button
+						type="button"
+						class="contents-row"
+						data-testid="Timeline-block-entry-toggle"
+						aria-expanded={!!openEntries[item.id]}
+						onclick={() => (openEntries[item.id] = !openEntries[item.id])}
+						><span class="contents-title">{item.title}</span>{#if item.duration}<span
+								class="duration"
+								data-testid="Timeline-block-duration">{item.duration} min</span
+							>{/if}<svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg
+						></button
+					>
+					{#if openEntries[item.id]}<ItemDetails {item} {calendarDate} {editTemplate} />{/if}
+				{:else}
+					<div class="contents-row">
+						<span class="contents-title">{item.title}</span>{#if item.duration}<span
+								class="duration"
+								data-testid="Timeline-block-duration">{item.duration} min</span
+							>{/if}
+					</div>
+				{/if}
 			</li>
 		{/each}
 	</ul>
@@ -56,15 +81,32 @@
 											>{duration} min</span
 										>{/if}</span
 								><svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg
-								>{#if calendarDate}<CalendarLink
-										date={calendarDate}
-										items={group.items}
-										title={group.name}
-									/>{/if}</span
+								></span
 							></span
 						>
 					</summary>
 					<div class="block-contents" data-testid="Timeline-block-contents">
+						<div class="block-facts" data-testid="Timeline-block-facts">
+							{#if timeRange(group.items[0].time, group.items.at(-1)!.end)}<span class="mono range"
+									>{timeRange(group.items[0].time, group.items.at(-1)!.end)}</span
+								>{/if}
+							{#if group.categoryName}<span class="category"
+									><span class="swatch" aria-hidden="true"></span><span class="name"
+										>{group.categoryName}</span
+									></span
+								>{/if}
+							<span class="actions">
+								{#if editTemplate}<EditLink
+										source={{ block: group.items[0].sharedBlock!.key, path: [] }}
+										label={`Edit ${group.name}`}
+									/>{/if}
+								{#if calendarDate}<CalendarLink
+										date={calendarDate}
+										items={group.items}
+										title={group.name}
+									/>{/if}
+							</span>
+						</div>
 						{@render contents(group.items)}
 					</div>
 				</details>
@@ -131,22 +173,6 @@
 		outline: 2px solid var(--accent);
 		outline-offset: 3px;
 	}
-	.chevron {
-		flex: none;
-		width: 20px;
-		height: 20px;
-		margin-left: -0.35rem;
-		fill: none;
-		stroke: currentColor;
-		stroke-width: 2;
-		stroke-linecap: round;
-		stroke-linejoin: round;
-		color: var(--secondary);
-		transition: transform 0.15s;
-	}
-	details[open] .chevron {
-		transform: rotate(180deg);
-	}
 	.block-contents {
 		margin: 0 0 0.75rem calc(var(--time-col) + var(--gap) + var(--node) + 0.75rem);
 		--indent: 0px;
@@ -169,16 +195,61 @@
 	}
 	.contents-row {
 		display: flex;
-		align-items: baseline;
+		align-items: center;
 		justify-content: flex-start;
 		gap: 0.5rem;
+	}
+	button.contents-row {
+		width: 100%;
+		min-height: 36px;
+		padding: 0;
+		border-radius: 0;
+		background: none;
+		font-weight: inherit;
+		text-align: left;
+	}
+	/* The open block's own time range, category and calendar link, above its activities. */
+	.block-facts {
+		display: flex;
+		align-items: center;
+		gap: 0.9rem;
+		min-height: 36px;
+		color: var(--muted);
+		font-size: var(--text-xs);
+	}
+	.block-facts .range {
+		color: var(--text);
+	}
+	.block-facts .range {
+		flex: none;
+	}
+	.block-facts .category {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		min-width: 0;
+	}
+	.block-facts .name {
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+	.block-facts .swatch {
+		flex: none;
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--tone);
+	}
+	.block-facts .actions {
+		display: flex;
+		margin-left: auto;
 	}
 	.contents-title {
 		color: var(--text);
 	}
-	.block-contents :global(.meta) {
-		margin: 0.15rem 0 0;
-		font-size: var(--text-xs);
+	.block-contents :global(.details) {
+		margin: 0 0 0.25rem;
 	}
 	.contents-row :global(.duration) {
 		margin-left: 0;

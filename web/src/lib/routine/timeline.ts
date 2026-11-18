@@ -4,8 +4,9 @@ import type { CategoryColor } from './types.ts';
 export interface TimelineGroup<T> {
 	id: string;
 	name?: string;
-	/** A block's own category colour. */
+	/** A block's own category. */
 	color?: CategoryColor;
+	categoryName?: string;
 	items: T[];
 }
 
@@ -21,7 +22,13 @@ export function groupTimeline<T extends ResolvedItem>(items: T[]): TimelineGroup
 		}
 		let group = blocks.get(block.id);
 		if (!group) {
-			group = { id: `block:${block.id}`, name: block.name, color: block.color, items: [] };
+			group = {
+				id: `block:${block.id}`,
+				name: block.name,
+				color: block.color,
+				categoryName: block.categoryName,
+				items: []
+			};
 			blocks.set(block.id, group);
 			groups.push(group);
 		}

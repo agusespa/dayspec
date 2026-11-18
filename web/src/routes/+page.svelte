@@ -152,13 +152,19 @@
 		<a href="/templates" data-testid="Day-create">Open templates</a>
 	</section>
 {/if}
-<Timeline items={day.items} calendarDate={date} currentId={day.items[current.index]?.id}>
+<Timeline
+	items={day.items}
+	calendarDate={date}
+	editTemplate={day.template}
+	currentId={day.items[current.index]?.id}
+>
 	{#snippet row(item)}
 		{@const i = day.items.indexOf(item)}
 		{@const isCurrent = i === current.index}
 		<TimelineItem
 			{item}
 			calendarDate={date}
+			editTemplate={day.template}
 			current={isCurrent ? (current.upcoming ? 'Next' : 'Now') : undefined}
 			passed={i < passed}
 		/>

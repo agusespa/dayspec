@@ -103,6 +103,37 @@
 	padding: 0.35rem 0;
 }
 
+/* A row with details is a button: tapping it shows the note, links and calendar link. */
+button.row {
+	width: 100%;
+	border-radius: 0;
+	background: none;
+	font-weight: inherit;
+	text-align: left;
+}
+.timeline button:hover {
+	background: none;
+}
+
+/* Sits right after the title; points up once the details or block contents are open. */
+.timeline .chevron {
+	flex: none;
+	width: 20px;
+	height: 20px;
+	margin-left: -0.35rem;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 2;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	color: var(--secondary);
+	transition: transform 0.15s;
+}
+.timeline details[open] > summary .chevron,
+.timeline [aria-expanded='true'] > .chevron {
+	transform: rotate(180deg);
+}
+
 /* The item's dot on the rail, in its category's colour; filled once the item has passed. */
 .dot {
 	flex: none;
@@ -142,19 +173,17 @@
 	font-weight: 650;
 }
 
+/* A bell before the title of items marked Alert. */
 .alert {
-	display: inline-grid;
-	place-items: center;
-	width: 1.15rem;
-	height: 1.15rem;
-	margin-right: 0.4rem;
-	border-radius: 4px;
-	background: var(--danger);
-	color: var(--bg);
-	font-family: var(--sans);
-	font-size: var(--text-xs);
-	font-weight: 800;
-	vertical-align: 0.1em;
+	width: 1.05em;
+	height: 1.05em;
+	margin-right: 0.35rem;
+	fill: none;
+	stroke: var(--danger);
+	stroke-width: 2;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	vertical-align: -0.12em;
 }
 
 /* Every duration sits right after its title text, in the same style. */
@@ -166,30 +195,4 @@
 	font-size: var(--text-xs);
 	font-variant-numeric: tabular-nums;
 	white-space: nowrap;
-}
-
-/* Notes and links under the title, top-aligned so long notes read as a list. */
-.meta {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: baseline;
-	gap: 0.1rem 0.9rem;
-	margin: -0.35rem 0 0.55rem var(--indent);
-	font-size: var(--text-sm);
-}
-
-.note {
-	flex-basis: 100%;
-	color: var(--muted);
-	white-space: pre-line;
-	line-height: 1.5;
-}
-
-.meta a {
-	display: inline-flex;
-	align-items: center;
-	min-height: 32px;
-	font-family: var(--sans);
-	font-size: var(--text-xs);
-	font-weight: 500;
 }

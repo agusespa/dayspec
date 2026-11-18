@@ -46,6 +46,63 @@ describe('resolveDay', () => {
 		);
 		expect(day.items.map((item) => item.color)).toEqual(['indigo', undefined]);
 	});
+	it('records where each item is defined, so it can be edited', () => {
+		const day = resolveDay(
+			routine({
+				blocks: {
+					b: {
+						name: 'B',
+						items: [{ title: 'Tea', duration: 5 }, { items: [{ title: 'Toast', duration: 5 }] }]
+					}
+				},
+				days: {
+					all: {
+						on: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+						items: [
+							{ title: 'Wake', time: '06:00', duration: 5 },
+							{ items: [{ title: 'Run', time: '06:30', duration: 5 }] },
+							{ use: 'b', time: '07:00' }
+						]
+					}
+				}
+			}),
+			MON
+		);
+		expect(day.items.map((item) => [item.title, item.source, item.sharedBlock?.key])).toEqual([
+			['Wake', { path: [0] }, undefined],
+			['Run', { path: [1, 0] }, undefined],
+			['Tea', { block: 'b', path: [0] }, 'b'],
+			['Toast', { block: 'b', path: [1, 0] }, 'b']
+		]);
+	});
+	it('says why each item is in the day, using the choice labels', () => {
+		const day = resolveDay(
+			routine({
+				categories: { chores: { name: 'Chores', color: 'orange' } },
+				blocks: { b: { name: 'B', items: [{ title: 'Inner', duration: 5, when: { days: ['mon'] } }] } },
+				days: {
+					all: {
+						on: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+						choices: {
+							gym: { label: 'Gym', type: 'toggle', default: true },
+							place: { options: { office: { label: 'Office' }, home: {} }, default: 'office' }
+						},
+						items: [
+							{ title: 'Always', duration: 5, category: 'chores' },
+							{ when: { gym: true }, items: [{ title: 'Lift', duration: 5, when: { place: 'office' } }] },
+							{ use: 'b', time: '08:00', when: { place: 'office' } }
+						]
+					}
+				}
+			}),
+			MON
+		);
+		expect(day.items.map((item) => [item.title, item.categoryName, item.conditions])).toEqual([
+			['Always', 'Chores', []],
+			['Lift', undefined, ['Gym on', 'Place: Office']],
+			['Inner', undefined, ['Place: Office', 'Mon']]
+		]);
+	});
 	it("gives a block its own colour and its items the block's category unless they set one", () => {
 		const day = resolveDay(
 			routine({
@@ -217,6 +274,7 @@ describe('currentIndex', () => {
 		title: String(i),
 		alert: false,
 		links: [],
+		conditions: [],
 		sortKey
 	}));
 	it('picks the last started item, or the first one before the day begins', () => {

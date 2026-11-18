@@ -188,6 +188,8 @@
 /* ---- Collapsible entries (items and choices) ---- */
 
 .template-editor .entry {
+	/* Room under the status bar when an edit link scrolls an entry to the top. */
+	scroll-margin-top: calc(env(safe-area-inset-top) + 1rem);
 	background: var(--paper);
 	border: 1px solid var(--rule);
 	border-radius: var(--radius);
