@@ -5,7 +5,6 @@
 	import { loadRoutine, routineState, startRoutineRefresh } from '#lib/routine/client.ts';
 	import '#lib/styles/chrome.css';
 	import '#lib/styles/timeline.css';
-	import favicon from '#lib/assets/favicon.svg';
 	import PullToRefresh from '#lib/components/PullToRefresh.svelte';
 	import type { LayoutProps } from './$types';
 
@@ -34,7 +33,6 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
 	<title>Dayspec</title>
 </svelte:head>
 
