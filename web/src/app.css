@@ -2,7 +2,6 @@
 :root {
 	--bg: #000000;
 	--paper: #191112;
-	--surface: #191112;
 	--surface-hover: #342125;
 	--inset: #0b0809;
 	--text: #f1e8dc;
@@ -16,6 +15,13 @@
 	--now-wash: rgb(255 138 101 / 10%);
 	--danger: #ff8a91;
 	--radius: 12px;
+	/* Type scale: every font size in the app comes from these steps. */
+	--text-2xs: 0.68rem;
+	--text-xs: 0.78rem;
+	--text-sm: 0.88rem;
+	--text-md: 1rem;
+	--text-lg: 1.2rem;
+	--text-title: clamp(2rem, 5vw, 2.5rem);
 	--kind-maintenance: #ffd166;
 	--kind-health: #f6b98f;
 	--kind-growth: #ff8a65;
@@ -107,11 +113,11 @@ summary:focus-visible {
 
 ::selection {
 	background: var(--accent);
-	color: #000000;
+	color: var(--accent-text);
 }
 @media (hover: hover) {
 	button:not(:disabled):hover {
-		background-color: var(--surface);
+		background-color: var(--paper);
 	}
 }
 button:disabled {

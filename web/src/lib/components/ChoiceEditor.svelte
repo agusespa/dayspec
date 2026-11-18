@@ -37,7 +37,11 @@
 	<h2>Choices</h2>
 	{#each Object.entries(routine.days[template].choices ?? {}) as [name, choice], index}
 		<details class="entry" data-testid={`ChoiceEditor-${name}`}>
-			<summary data-testid="ChoiceEditor-open">{choice.label ?? name}</summary>
+			<summary data-testid="ChoiceEditor-open"
+				><span class="summary-title">{choice.label ?? name}</span><span class="badge"
+					>{choice.type === 'toggle' ? 'On / off' : 'Options'}</span
+				><svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></summary
+			>
 			<div class="entry-body">
 				<label
 					>Name<input
@@ -78,8 +82,11 @@
 							>
 						</div>
 					{/each}
-					<button type="button" data-testid="ChoiceEditor-add-option" onclick={() => addOption(choice)}
-						>+ Add option</button
+					<button
+						type="button"
+						class="add"
+						data-testid="ChoiceEditor-add-option"
+						onclick={() => addOption(choice)}>+ Add option</button
 					>
 				{/if}
 				{#each typeof choice.default === 'object' ? routine.days[template].on : [undefined] as day}
@@ -112,6 +119,7 @@
 	{/each}
 	<button
 		type="button"
+		class="add"
 		data-testid="ChoiceEditor-add"
 		onclick={() => apply(() => addChoice($state.snapshot(routine), template))}>+ Add choice</button
 	>

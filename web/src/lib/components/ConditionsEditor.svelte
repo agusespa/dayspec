@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { WEEKDAYS, type Choice, type When, type Condition, type Weekday } from '#lib/routine/types.ts';
+	import { weekdayLabel } from '#lib/routine/outline.ts';
 	let { when = $bindable(), choices = {} }: { when?: When; choices?: Record<string, Choice> } = $props();
 	function set(key: string, value: Condition | undefined) {
 		const next = { ...when };
@@ -49,16 +50,22 @@
 </script>
 
 <details class="conditions-editor" data-testid="ConditionsEditor">
-	<summary data-testid="ConditionsEditor-open">Show when{when ? ' · Conditional' : ''}</summary>
+	<summary data-testid="ConditionsEditor-open"
+		><span class="summary-title">Show when{when ? ' · Conditional' : ''}</span><svg
+			class="chevron"
+			viewBox="0 0 24 24"
+			aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg
+		></summary
+	>
 	<div class="condition-fields">
 		<span class="field-label">Days</span>
-		<div class="weekday-fields">
-			{#each WEEKDAYS as day}<label class="check"
+		<div class="day-pills">
+			{#each WEEKDAYS as day}<label class="day-pill"
 					><input
 						type="checkbox"
 						checked={when?.days?.includes(day) ?? false}
 						onchange={(e) => days(day, e.currentTarget.checked)}
-					/>{day}</label
+					/>{weekdayLabel(day)}</label
 				>{/each}
 		</div>
 		{#each Object.entries(choices) as [key, choice]}

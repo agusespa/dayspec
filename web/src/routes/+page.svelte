@@ -94,37 +94,52 @@
 
 <section class="choices" aria-label="Day options">
 	{#each day.choices as choice (choice.name)}
-		<div class="choice">
-			<span class="choice-label" id="choice-{choice.name}">{choice.label}</span>
-			<div class="options" role="radiogroup" aria-labelledby="choice-{choice.name}">
-				{#each choice.options as option (String(option.value))}
-					<button
-						data-testid={`Day-choice-${choice.name}-${String(option.value)}`}
-						role="radio"
-						aria-checked={option.value === choice.value}
-						onclick={() => choose(choice.name, option.value)}>{option.label}</button
-					>
-				{/each}
+		{#if choice.type === 'toggle'}
+			<label class="choice">
+				<span class="choice-label">{choice.label}</span>
+				<input
+					type="checkbox"
+					role="switch"
+					class="switch"
+					data-testid={`Day-choice-${choice.name}`}
+					checked={choice.value === true}
+					onchange={(e) => choose(choice.name, e.currentTarget.checked)}
+				/>
+			</label>
+		{:else}
+			<div class="choice">
+				<span class="choice-label" id="choice-{choice.name}">{choice.label}</span>
+				<div class="options" role="radiogroup" aria-labelledby="choice-{choice.name}">
+					{#each choice.options as option (String(option.value))}
+						<button
+							data-testid={`Day-choice-${choice.name}-${String(option.value)}`}
+							role="radio"
+							aria-checked={option.value === choice.value}
+							onclick={() => choose(choice.name, option.value)}>{option.label}</button
+						>
+					{/each}
+				</div>
 			</div>
-		</div>
+		{/if}
 	{/each}
-	<div class="choice holiday">
-		<label>
-			<span class="choice-label">Holiday</span>
+	<label class="choice">
+		<span class="choice-label">Holiday</span>
+		<span class="holiday-control">
 			<input
 				type="checkbox"
 				role="switch"
+				class="switch"
 				data-testid="Day-holiday-toggle"
 				checked={day.holiday}
 				onchange={(e) => setHoliday(e.currentTarget.checked)}
 			/>
-		</label>
-		{#if stored.holiday === undefined && day.holiday && holidayName && routine.settings?.automatic_swedish_holidays !== false}
-			<span class="holiday-source" data-testid="Day-holiday-source">
-				Automatic · {holidayName}
-			</span>
-		{/if}
-	</div>
+			{#if stored.holiday === undefined && day.holiday && holidayName && routine.settings?.automatic_swedish_holidays !== false}
+				<span class="holiday-source" data-testid="Day-holiday-source">
+					Automatic · {holidayName}
+				</span>
+			{/if}
+		</span>
+	</label>
 </section>
 
 {#if !day.items.length}
@@ -197,71 +212,22 @@
 			0 0 0 3px var(--accent);
 	}
 
-	.holiday {
-		grid-template-columns: 4.75rem 46px minmax(0, 1fr);
-		column-gap: 0.6rem;
-		min-height: 52px;
-		cursor: pointer;
-	}
-
-	.holiday .choice-label {
-		font-size: 1rem;
-		font-weight: 600;
-		letter-spacing: 0;
-	}
-
-	.holiday label {
-		display: contents;
+	.holiday-control {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		min-width: 0;
 	}
 
 	.holiday-source {
-		grid-column: 3;
-		grid-row: 1;
 		line-height: 1.4;
-		font-size: 0.8rem;
+		font-size: var(--text-xs);
 		color: var(--muted);
-	}
-
-	.holiday input {
-		appearance: none;
-		justify-self: start;
-		width: 46px;
-		height: 28px;
-		margin: 0;
-		border-radius: 999px;
-		border: 1px solid var(--rule);
-		background: var(--paper);
-		position: relative;
-		transition: background 0.2s;
-	}
-
-	.holiday input::after {
-		content: '';
-		position: absolute;
-		top: 3px;
-		left: 3px;
-		width: 20px;
-		height: 20px;
-		border-radius: 999px;
-		background: var(--muted);
-		transition:
-			transform 0.2s,
-			background 0.2s;
-	}
-
-	.holiday input:checked {
-		background: var(--accent);
-		border-color: var(--accent);
-	}
-
-	.holiday input:checked::after {
-		background: var(--accent-text);
-		transform: translateX(18px);
 	}
 
 	.version {
 		text-align: center;
-		font-size: 0.68rem;
+		font-size: var(--text-2xs);
 		color: var(--muted);
 		margin: 1.5rem 0 0;
 	}

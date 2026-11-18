@@ -1,4 +1,4 @@
-<!-- One row of the timeline: its time, a dot on the rail, the title, note and links. Styles in timeline.css. -->
+<!-- One row of the timeline: its time, a dot on the rail, the title and duration, then note and links. Styles in timeline.css. -->
 <script lang="ts" module>
 	import type { ResolvedItem } from '#lib/routine/resolve.ts';
 
@@ -31,14 +31,14 @@
 
 {#snippet itemTitle(item: TimelineEntry)}
 	<span class="title">
-		{#if item.alert}<span class="alert" aria-label="Can't be delayed">!</span>{/if}{item.title}
+		{#if item.alert}<span class="alert" aria-label="Can't be delayed">!</span
+			>{/if}{item.title}{#if item.duration}<span class="duration">{item.duration} min</span>{/if}
 	</span>
 {/snippet}
 
-{#snippet itemMeta(item: TimelineEntry)}
-	{#if item.duration || item.note || item.links.length}
+{#snippet itemMeta(item: Pick<TimelineEntry, 'note' | 'links'>)}
+	{#if item.note || item.links.length}
 		<div class="meta">
-			{#if item.duration}<span class="duration">{item.duration} min</span>{/if}
 			{#if item.note}<span class="note" data-testid="Activity-note">{item.note}</span>{/if}
 			{#each item.links as link (link.url)}
 				<a href={link.url} target="_blank" rel="noopener noreferrer"

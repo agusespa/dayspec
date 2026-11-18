@@ -121,9 +121,10 @@ test("deletes the last template and creates a first template from an empty libra
   page,
 }) => {
   await page.goto("/templates");
+  await page.getByTestId("Templates-edit").click();
   page.once("dialog", (dialog) => dialog.dismiss());
-  await page.getByTestId("Templates-delete").click();
-  await expect(page.getByTestId("Templates-row-daily")).toBeVisible();
+  await page.getByTestId("TemplateEditor-delete").click();
+  await expect(page.getByTestId("TemplateEditor")).toBeVisible();
   await page.route("**/api/routine", async (route) => {
     if (route.request().method() === "PUT")
       await route.fulfill({
@@ -136,12 +137,12 @@ test("deletes the last template and creates a first template from an empty libra
     else await route.continue();
   });
   page.once("dialog", (dialog) => dialog.accept());
-  await page.getByTestId("Templates-delete").click();
-  await expect(page.getByTestId("Templates-delete-error")).toBeVisible();
-  await expect(page.getByTestId("Templates-row-daily")).toBeVisible();
+  await page.getByTestId("TemplateEditor-delete").click();
+  await expect(page.getByTestId("TemplateEditor-errors")).toBeVisible();
+  await expect(page.getByTestId("TemplateEditor")).toBeVisible();
   await page.unroute("**/api/routine");
   page.once("dialog", (dialog) => dialog.accept());
-  await page.getByTestId("Templates-delete").click();
+  await page.getByTestId("TemplateEditor-delete").click();
   await expect(page.getByTestId("Templates-empty-library")).toBeVisible();
   await page.reload();
   await page.getByTestId("Templates-new").click();

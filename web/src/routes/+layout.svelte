@@ -87,7 +87,7 @@
 	}
 	.sync-toast p {
 		margin: 0;
-		font-size: 0.85rem;
+		font-size: var(--text-sm);
 		line-height: 1.6;
 	}
 	.toast-actions {
@@ -98,7 +98,7 @@
 	}
 	.toast-actions button {
 		color: var(--accent);
-		font-size: 0.8rem;
+		font-size: var(--text-xs);
 		min-height: 44px;
 	}
 	.toast-actions button:disabled {

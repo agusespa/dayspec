@@ -1,7 +1,7 @@
 <script lang="ts" generics="T extends ResolvedItem">
 	import type { Snippet } from 'svelte';
 	import type { ResolvedItem } from '#lib/routine/resolve.ts';
-	import { groupTimeline, timelineEnd, timelineGaps } from '#lib/routine/timeline.ts';
+	import { groupTimeline, timelineDuration, timelineGaps } from '#lib/routine/timeline.ts';
 	import { itemMeta } from './TimelineItem.svelte';
 	let { items, row, currentId }: { items: T[]; row: Snippet<[T]>; currentId?: string } = $props();
 	const currentIndex = $derived(items.findIndex((item) => item.id === currentId));
@@ -15,11 +15,11 @@
 			<li data-testid="Timeline-block-entry">
 				<div class="contents-row">
 					<span class="contents-title">{item.title}</span>{#if item.duration}<span
-							class="contents-duration"
+							class="duration"
 							data-testid="Timeline-block-duration">{item.duration} min</span
 						>{/if}
 				</div>
-				{@render itemMeta({ ...item, duration: undefined })}
+				{@render itemMeta(item)}
 			</li>
 		{/each}
 	</ul>
@@ -28,8 +28,7 @@
 <ol class="timeline">
 	{#each groups as group (group.id)}
 		{#if group.name}
-			{@const end = timelineEnd(group.items)}
-			{@const duration = end === undefined ? undefined : end - group.items[0].sortKey}
+			{@const duration = timelineDuration(group.items)}
 			{@const containsCurrent = group.items.some((item) => item.id === currentId)}
 			<li
 				class="item shared-block kind-{group.items[0].kind ?? 'none'}"
@@ -45,13 +44,12 @@
 						</span>
 						<span class="body"
 							><span class="row"
-								><span class="dot" aria-hidden="true"></span><span class="title">{group.name}</span><svg
-									class="chevron"
-									viewBox="0 0 24 24"
-									aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg
-								>{#if duration}<span class="contents-duration" data-testid="Timeline-block-total"
-										>{duration} min</span
-									>{/if}</span
+								><span class="dot" aria-hidden="true"></span><span class="title"
+									>{group.name}{#if duration}<span class="duration" data-testid="Timeline-block-total"
+											>{duration} min</span
+										>{/if}</span
+								><svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg
+								></span
 							></span
 						>
 					</summary>
@@ -69,9 +67,7 @@
 				<div class="time mono"><span class="start">{gap.time}</span></div>
 				<div class="body">
 					<div class="row">
-						<span class="gap-dot" aria-hidden="true"></span><span>Unplanned</span><span
-							class="contents-duration">{gap.duration} min</span
-						>
+						<span class="gap-dot" aria-hidden="true"></span><span>{gap.duration} min free</span>
 					</div>
 				</div>
 			</li>
@@ -80,9 +76,17 @@
 </ol>
 
 <style>
+	/* Free time stays on the rail but reads as quieter, shorter rows than activities. */
 	.timeline-gap {
+		--row-height: 32px;
 		color: var(--muted);
-		font-size: 0.85rem;
+		font-size: var(--text-xs);
+	}
+	.timeline-gap :global(.row) {
+		padding: 0;
+	}
+	.timeline-gap :global(.time) {
+		font-size: var(--text-xs);
 	}
 	.gap-dot {
 		flex: none;
@@ -118,8 +122,8 @@
 	}
 	.chevron {
 		flex: none;
-		width: 22px;
-		height: 22px;
+		width: 20px;
+		height: 20px;
 		margin-left: -0.35rem;
 		fill: none;
 		stroke: currentColor;
@@ -144,7 +148,7 @@
 	}
 	.contents-list li {
 		padding: 0.3rem 0;
-		font-size: 0.85rem;
+		font-size: var(--text-sm);
 		line-height: 1.5;
 	}
 	.contents-row {
@@ -153,16 +157,14 @@
 		justify-content: flex-start;
 		gap: 0.5rem;
 	}
-	.contents-duration {
-		flex: none;
-		color: var(--tertiary);
-		font-size: 0.75rem;
-	}
 	.contents-title {
 		color: var(--text);
 	}
 	.block-contents :global(.meta) {
 		margin: 0.15rem 0 0;
-		font-size: 0.75rem;
+		font-size: var(--text-xs);
+	}
+	.contents-row :global(.duration) {
+		margin-left: 0;
 	}
 </style>

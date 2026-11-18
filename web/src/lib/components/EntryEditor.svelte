@@ -1,14 +1,20 @@
 <script lang="ts">
-	import { isGroup, isUse, type Entry, type Routine, type Choice } from '#lib/routine/types.ts';
+	import { isGroup, isUse, type Entry, type Routine, type Choice, type When } from '#lib/routine/types.ts';
 	import { moveEntry, newEntry } from '#lib/routine/edit.ts';
 	import EntryEditor from './EntryEditor.svelte';
 	import ConditionsEditor from './ConditionsEditor.svelte';
+	import { describeWhen } from '#lib/routine/outline.ts';
 	let {
 		entries = $bindable(),
 		routine,
 		shared = false,
 		choices = {}
 	}: { entries: Entry[]; routine: Routine; shared?: boolean; choices?: Record<string, Choice> } = $props();
+	/** A group is named by the conditions it shows under, e.g. "When Gym on · Mon, Tue". */
+	function groupLabel(when: When | undefined): string {
+		const conditions = describeWhen(when, choices);
+		return conditions.length ? `When ${conditions.join(' · ')}` : 'Always';
+	}
 	function set(index: number, field: string, value: unknown) {
 		const next = { ...entries[index], [field]: value } as Entry;
 		if (value === '' || value === undefined) delete (next as unknown as Record<string, unknown>)[field];
@@ -20,11 +26,14 @@
 	{#each entries as entry, i}
 		<details class="entry" data-testid="EntryEditor-entry">
 			<summary data-testid="EntryEditor-open"
-				>{i + 1}. {isGroup(entry)
-					? 'Conditional group'
-					: isUse(entry)
-						? `Shared · ${routine.blocks?.[entry.use]?.name ?? entry.use}`
-						: entry.title || 'Untitled item'}</summary
+				><span class="summary-index">{i + 1}</span><span class="summary-title"
+					>{#if isGroup(entry)}{groupLabel(entry.when)}{:else if isUse(entry)}{routine.blocks?.[entry.use]
+							?.name ?? entry.use}{:else}{entry.title || 'Untitled item'}{/if}</span
+				>{#if !shared && !isGroup(entry) && entry.time}<span class="summary-time mono">{entry.time}</span
+					>{/if}{#if isGroup(entry)}<span class="badge">Group</span>{:else if isUse(entry)}<span class="badge"
+						>Shared</span
+					>{/if}<svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg
+				></summary
 			>
 			<div class="entry-body shared">
 				{#if isGroup(entry)}
@@ -156,12 +165,14 @@
 	<div class="entry-tools">
 		<button
 			type="button"
+			class="add"
 			data-testid="EntryEditor-add"
 			onclick={() => (entries = [...entries, { ...newEntry(), ...(shared ? {} : { time: '08:00' }) }])}
 			>+ Add item</button
 		>
 		{#if Object.keys(routine.blocks ?? {}).length}<button
 				type="button"
+				class="add"
 				data-testid="EntryEditor-use"
 				onclick={() =>
 					(entries = [

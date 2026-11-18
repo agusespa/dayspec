@@ -46,7 +46,10 @@
 	}
 </script>
 
-<section class="masthead"><h1>Profile</h1></section>
+<section class="masthead">
+	<p class="eyebrow">Preferences</p>
+	<h1>Profile</h1>
+</section>
 <section class="settings">
 	<h2>Settings</h2>
 	<label class="setting">
@@ -54,6 +57,7 @@
 		<input
 			type="checkbox"
 			role="switch"
+			class="switch"
 			data-testid="Profile-automatic-holidays"
 			checked={saving ? pending : automatic}
 			onchange={setAutomatic}
@@ -82,13 +86,13 @@
 	.settings {
 		margin-top: 1.5rem;
 		padding: 1.25rem;
-		background: var(--surface);
+		background: var(--paper);
 		border: 1px solid var(--rule);
 		border-radius: var(--radius);
 	}
 	h2 {
 		margin: 0 0 1rem;
-		font-size: 1rem;
+		font-size: var(--text-md);
 	}
 	.setting {
 		display: flex;
@@ -96,7 +100,7 @@
 		align-items: center;
 		gap: 1rem;
 		min-height: 44px;
-		font-size: 0.9rem;
+		font-size: var(--text-sm);
 		cursor: pointer;
 	}
 	select {
@@ -108,46 +112,11 @@
 		border-radius: 10px;
 		font: inherit;
 	}
-	input {
-		appearance: none;
-		flex: none;
-		width: 46px;
-		height: 28px;
-		margin: 0;
-		border: 1px solid var(--rule);
-		border-radius: 999px;
-		background: var(--inset);
-		position: relative;
-		cursor: pointer;
-	}
-	input::after {
-		content: '';
-		position: absolute;
-		width: 20px;
-		height: 20px;
-		top: 3px;
-		left: 3px;
-		border-radius: 50%;
-		background: var(--muted);
-		transition: transform 0.2s;
-	}
-	input:checked {
-		background: var(--accent);
-		border-color: var(--accent);
-	}
-	input:checked::after {
-		transform: translateX(18px);
-		background: var(--accent-text);
-	}
-	input:disabled {
-		opacity: 0.5;
-		cursor: default;
-	}
-	p {
+	.settings p {
 		color: var(--muted);
-		font-size: 0.85rem;
+		font-size: var(--text-sm);
 	}
-	.error {
+	.settings .error {
 		color: var(--danger);
 	}
 </style>

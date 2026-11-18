@@ -17,6 +17,7 @@
 	} from '#lib/routine/edit.ts';
 	import { validateRoutine } from '#lib/routine/validate.ts';
 	import { WEEKDAYS, type Routine, type Entry, type Weekday } from '#lib/routine/types.ts';
+	import { weekdayLabel } from '#lib/routine/outline.ts';
 	import EntryEditor from './EntryEditor.svelte';
 	import ChoiceEditor from './ChoiceEditor.svelte';
 
@@ -202,21 +203,22 @@
 					<section class="new-template" data-testid="TemplateEditor-create">
 						<h2>{templateName(newDays)}</h2>
 
-						<div class="weekday-fields">
+						<div class="day-pills">
 							{#each WEEKDAYS as weekday}
-								<label class="check"
+								<label class="day-pill"
 									><input
 										type="checkbox"
 										data-testid={`TemplateEditor-new-${weekday}`}
 										disabled={!availableDays(draft).includes(weekday)}
 										bind:group={newDays}
 										value={weekday}
-									/>{weekday}</label
+									/>{weekdayLabel(weekday)}</label
 								>
 							{/each}
 						</div>
 						<button
 							type="button"
+							class="primary create-confirm"
 							data-testid="TemplateEditor-create-confirm"
 							disabled={!newDays.length}
 							onclick={addTemplate}>Create template</button
@@ -228,6 +230,7 @@
 						>Theme<input
 							data-testid="TemplateEditor-theme"
 							value={draft.days[key].theme ?? ''}
+							placeholder="e.g. Deep work + family time"
 							oninput={(e) => {
 								const value = e.currentTarget.value;
 								if (value) draft.days[key].theme = value;
@@ -235,8 +238,9 @@
 							}}
 						/></label
 					>
-					<div class="weekday-fields">
-						<span class="field-label">Applies on</span>{#each WEEKDAYS as weekday}<label class="check"
+					<span class="field-label">Applies on</span>
+					<div class="day-pills">
+						{#each WEEKDAYS as weekday}<label class="day-pill"
 								><input
 									type="checkbox"
 									checked={draft.days[key].on.includes(weekday)}
@@ -246,7 +250,7 @@
 										changeDay(weekday, e.currentTarget.checked);
 										e.currentTarget.checked = draft.days[key].on.includes(weekday);
 									}}
-								/>{weekday}</label
+								/>{weekdayLabel(weekday)}</label
 							>{/each}
 					</div>
 
@@ -277,7 +281,7 @@
 						/>
 					{/key}
 					{#if !pendingBlock}
-						<div class="block-delete-section">
+						<div class="danger-zone">
 							<button
 								type="button"
 								class="danger"
@@ -310,7 +314,7 @@
 							</button>
 						{:else}<p class="help">No shared blocks yet.</p>{/each}
 					</div>
-					<button type="button" data-testid="TemplateEditor-block-new" onclick={addBlock}
+					<button type="button" class="add" data-testid="TemplateEditor-block-new" onclick={addBlock}
 						>+ New shared block</button
 					>
 				{/if}
@@ -334,12 +338,14 @@
 					type="button"
 					onclick={reload}>Reload saved templates</button
 				>{/if}
-			{#if !creating && !manageBlocks && draft.days[key]}<button
-					type="button"
-					class="danger editor-delete"
-					data-testid="TemplateEditor-delete"
-					onclick={remove}>Delete template</button
-				>{/if}
+			{#if !creating && !manageBlocks && draft.days[key]}
+				<div class="danger-zone">
+					<button type="button" class="danger" data-testid="TemplateEditor-delete" onclick={remove}
+						>Delete template</button
+					>
+					<p class="help">Its items are removed and its days become free for another template.</p>
+				</div>
+			{/if}
 			<div class="editor-actions">
 				<button data-testid="TemplateEditor-cancel" type="button" onclick={cancel}>Cancel</button>
 				<button data-testid="TemplateEditor-save" class="primary" type="submit" disabled={!dirty}

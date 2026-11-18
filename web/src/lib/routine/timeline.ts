@@ -33,6 +33,14 @@ export function timelineEnd(items: ResolvedItem[]): number | undefined {
 	return Math.max(...items.map((item) => item.sortKey + item.duration));
 }
 
+/** A group's length: its clock span when timed, otherwise the sum of its items' durations. */
+export function timelineDuration(items: ResolvedItem[]): number | undefined {
+	const end = timelineEnd(items);
+	if (end !== undefined) return end - items[0].sortKey;
+	const total = items.reduce((sum, item) => sum + item.duration, 0);
+	return total || undefined;
+}
+
 /** Gaps are display-only; an activity without an end is never given an invented duration. */
 export function timelineGaps<T extends ResolvedItem>(
 	groups: TimelineGroup<T>[]

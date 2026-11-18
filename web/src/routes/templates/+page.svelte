@@ -1,7 +1,7 @@
 <script lang="ts">
 	import BottomNav from '#lib/components/BottomNav.svelte';
-	import { availableDays, templateName, templateKeys, removeTemplate } from '#lib/routine/edit.ts';
-	import { routineState, saveRoutine } from '#lib/routine/client.ts';
+	import { availableDays, templateKeys } from '#lib/routine/edit.ts';
+	import { routineState } from '#lib/routine/client.ts';
 	import { untrack } from 'svelte';
 	import TemplateEditor from '#lib/components/TemplateEditor.svelte';
 	import '#lib/styles/editor.css';
@@ -14,39 +14,12 @@
 	let creating = $state(false);
 	let managingBlocks = $state(false);
 	let saved = $state(false);
-	let removing = $state(false);
-	let error = $state('');
 	const routine = $derived($routineState.routine);
 	const keys = $derived(templateKeys(routine));
 	const remaining = $derived(availableDays(routine));
 	const holiday = $derived(routine.settings?.holiday ?? '');
 	let key = $state(untrack(() => page.url.searchParams.get('t') ?? ''));
 	const selectedKey = $derived(keys.includes(key) ? key : (keys[0] ?? ''));
-	async function remove(next: string) {
-		if (removing) return;
-		const label = templateName($routineState.routine.days[next].on);
-		if (
-			!confirm(
-				`Delete the ${label} template and its items? Its days will become available for a new template.`
-			)
-		)
-			return;
-		removing = true;
-		error = '';
-		saved = false;
-		try {
-			await saveRoutine(removeTemplate($routineState.routine, next), $routineState.revision);
-			if (key === next) {
-				key = '';
-				replaceState('/templates', {});
-			}
-			saved = true;
-		} catch (cause) {
-			error = cause instanceof Error ? cause.message : 'Could not delete this template. Try again.';
-		} finally {
-			removing = false;
-		}
-	}
 	function edit(next: string) {
 		key = next;
 		creating = false;
@@ -90,11 +63,10 @@
 	/>
 {:else}
 	<section class="masthead">
-		<p class="eyebrow library-title">Routine library</p>
+		<p class="eyebrow">Routine library</p>
 		<h1>Templates</h1>
 	</section>
 	{#if saved}<p class="saved-note" role="status" data-testid="Templates-saved">Templates saved</p>{/if}
-	{#if error}<p role="alert" class="delete-error" data-testid="Templates-delete-error">{error}</p>{/if}
 	<div class="template-list" data-testid="Templates-list">
 		{#each keys as k (k)}
 			{@const day = outlineDay(routine, k)}
@@ -108,9 +80,7 @@
 						onclick={() => pick(k)}
 					>
 						<span class="template-name" data-testid="Templates-name">{day.label}</span>
-						<span class="template-meta"
-							>{day.on.map(weekdayLabel).join(' · ')}{k === holiday ? ' · Holidays' : ''}</span
-						>
+						{#if k === holiday}<span class="template-meta">Also used on holidays</span>{/if}
 						{#if day.theme}<span class="template-theme" data-testid="Templates-theme">{day.theme}</span>{/if}
 						<span class="template-count"
 							>{day.items.length}
@@ -123,7 +93,7 @@
 						data-testid="Templates-edit"
 						aria-label={`Edit ${day.label} template`}
 						title={`Edit ${day.label} template`}
-						disabled={!$routineState.online || removing}
+						disabled={!$routineState.online}
 						onclick={() => edit(k)}
 					>
 						<svg
@@ -134,24 +104,6 @@
 							stroke-linecap="round"
 							stroke-linejoin="round"
 							aria-hidden="true"><path d="m16 3 5 5M3 21l5-1L21 7a2.1 2.1 0 0 0-4-4L4 16l-1 5Z" /></svg
-						>
-					</button>
-					<button
-						class="template-edit template-delete"
-						data-testid="Templates-delete"
-						aria-label={`Delete ${day.label} template`}
-						title={`Delete ${day.label} template`}
-						disabled={!$routineState.online || removing}
-						onclick={() => remove(k)}
-					>
-						<svg
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.8"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6" /></svg
 						>
 					</button>
 				</header>
@@ -210,7 +162,7 @@
 			<button
 				class="manage-blocks"
 				data-testid="Templates-blocks"
-				disabled={!$routineState.online || removing}
+				disabled={!$routineState.online}
 				onclick={() => {
 					managingBlocks = true;
 					creating = false;
@@ -222,7 +174,7 @@
 				<button
 					class="add-button"
 					data-testid="Templates-new"
-					disabled={!$routineState.online || removing}
+					disabled={!$routineState.online}
 					onclick={() => {
 						creating = true;
 						managingBlocks = false;
@@ -234,41 +186,26 @@
 		</div>
 	</section>
 {/if}
-<div class="bar-room"></div>
-<BottomNav />
+{#if !editing}
+	<div class="bar-room"></div>
+	<BottomNav />
+{/if}
 
 <style>
-	.library-title {
-		font-size: 1.15rem;
-		font-weight: 600;
-		line-height: 1.4;
-	}
-	.manage-blocks {
-		margin: 0;
-		border: 1px solid var(--rule);
-		border-radius: 10px;
-		color: var(--secondary);
-		background: var(--surface);
-		font-size: 0.8rem;
-	}
-	.manage-blocks:disabled {
-		opacity: 0.4;
-		cursor: default;
-	}
-
 	.template-list {
 		display: grid;
 		gap: 0.85rem;
 		margin-top: 1.5rem;
 	}
 	.template-card {
-		--card-accent: var(--accent);
-		transition: border-color 0.16s ease;
 		border: 1px solid var(--rule);
-		border-left: 2px solid var(--card-accent);
-		border-radius: 12px;
+		border-radius: var(--radius);
 		background: var(--paper);
 		overflow: hidden;
+		transition: border-color 0.16s ease;
+	}
+	.template-card:hover {
+		border-color: var(--surface-hover);
 	}
 	.template-card-heading {
 		display: flex;
@@ -287,26 +224,32 @@
 		text-align: left;
 		padding: 0.8rem;
 	}
+	.template-open:hover {
+		background: transparent;
+	}
 	.template-name {
 		font-family: var(--sans);
-		font-size: 1.15rem;
+		font-size: var(--text-lg);
 		font-weight: 650;
 		letter-spacing: -0.025em;
 		line-height: 1.25;
+		color: var(--text);
 	}
 	.template-meta,
-	.template-count,
-	.template-theme {
-		font-size: 0.75rem;
+	.template-count {
+		font-size: var(--text-xs);
 		line-height: 1.5;
 		color: var(--muted);
 	}
+	.template-meta {
+		color: var(--tertiary);
+	}
 	.template-theme {
+		font-size: var(--text-sm);
+		line-height: 1.5;
 		color: var(--text);
-		font-size: 0.85rem;
 	}
 	.template-count {
-		font-size: 0.75rem;
 		margin-top: 0.25rem;
 	}
 	.template-edit {
@@ -324,25 +267,14 @@
 	.template-edit:hover {
 		background: var(--now-wash);
 	}
-	.template-edit:disabled,
-	.add-button:disabled {
-		opacity: 0.4;
-		cursor: default;
-	}
 	.template-edit svg {
 		width: 22px;
 		height: 22px;
 	}
-	.template-delete {
-		color: var(--muted);
-	}
-	.template-delete:hover,
-	.delete-error {
-		color: var(--danger);
-	}
-	.delete-error {
-		font-size: 0.85rem;
-		line-height: 1.6;
+	.template-edit:disabled,
+	.template-actions button:disabled {
+		opacity: 0.4;
+		cursor: default;
 	}
 	.template-preview {
 		border-top: 1px solid var(--rule);
@@ -351,18 +283,18 @@
 	.empty-preview,
 	.add-template p {
 		color: var(--muted);
-		font-size: 0.8rem;
+		font-size: var(--text-xs);
 		line-height: 1.7;
 	}
 	.add-template {
 		margin-top: 1.25rem;
 	}
-	.template-actions button {
-		box-sizing: border-box;
-		height: 46px;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
+	.add-template p {
+		margin: 0 0 0.85rem;
+	}
+	.field-label {
+		color: var(--tertiary);
+		font-weight: 600;
 	}
 	.template-actions {
 		display: flex;
@@ -370,22 +302,30 @@
 		flex-wrap: wrap;
 		gap: 0.75rem;
 	}
-	.add-template p {
-		margin: 0 0 0.85rem;
+	.template-actions button {
+		height: 46px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 10px;
+		font-size: var(--text-sm);
 	}
-	.field-label {
-		color: var(--text);
-		font-weight: 600;
+	.manage-blocks {
+		border: 1px solid var(--rule);
+		color: var(--secondary);
+		background: var(--paper);
 	}
 	.add-button {
 		background: var(--accent);
 		color: var(--accent-text);
-		border-radius: 10px;
 		padding: 0.75rem 1rem;
+	}
+	.add-button:not(:disabled):hover {
+		background: var(--accent-hover);
 	}
 	.saved-note {
 		color: var(--accent);
-		font-size: 0.8rem;
+		font-size: var(--text-xs);
 	}
 
 	.tags {
@@ -394,14 +334,13 @@
 		gap: 0.3rem;
 		margin: -0.3rem 0 0.5rem var(--indent);
 	}
-
 	.tag {
 		padding: 0.1rem 0.4rem;
 		border-radius: 4px;
 		background: var(--now-wash);
 		color: var(--accent);
 		font-family: var(--sans);
-		font-size: 0.68rem;
+		font-size: var(--text-2xs);
 		font-weight: 600;
 		letter-spacing: 0.02em;
 	}
@@ -410,11 +349,9 @@
 		align-items: start;
 		padding: 0.7rem 0;
 	}
-
 	.rules .choice-label {
 		padding-top: 0.2rem;
 	}
-
 	.option-list {
 		list-style: none;
 		margin: 0;
@@ -423,59 +360,27 @@
 		flex-direction: column;
 		gap: 0.3rem;
 	}
-
 	.option-list li {
 		display: flex;
 		align-items: baseline;
 		flex-wrap: wrap;
 		gap: 0 0.5rem;
 	}
-
 	.option {
 		color: var(--muted);
 	}
-
 	.option.default {
 		color: var(--text);
 		font-weight: 600;
 	}
-
 	.option-note,
 	.active-when {
 		font-family: var(--sans);
-		font-size: 0.7rem;
+		font-size: var(--text-2xs);
 		color: var(--muted);
 	}
-
 	.active-when {
 		margin: 0.4rem 0 0;
 		color: var(--accent);
-	}
-
-	.template-card:hover {
-		border-color: var(--card-accent);
-		box-shadow: 0 0 20px color-mix(in srgb, var(--card-accent) 8%, transparent);
-	}
-	.template-meta {
-		color: var(--tertiary);
-	}
-	.add-button:not(:disabled):hover {
-		background: var(--accent-hover);
-	}
-	.template-open:hover {
-		background: transparent;
-	}
-
-	.template-card:nth-child(3n + 2) {
-		--card-accent: var(--secondary);
-	}
-	.template-card:nth-child(3n) {
-		--card-accent: var(--tertiary);
-	}
-	.template-card .template-name {
-		color: var(--text);
-	}
-	.field-label {
-		color: var(--tertiary);
 	}
 </style>

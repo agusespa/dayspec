@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { groupTimeline, timelineGaps } from './timeline.ts';
+import { groupTimeline, timelineDuration, timelineGaps } from './timeline.ts';
 import { resolveDay } from './resolve.ts';
 import { outlineDay } from './outline.ts';
 import type { Routine } from './types.ts';
@@ -174,4 +174,18 @@ it('keeps a full-day activity occupied across midnight', () => {
 	};
 	const items = resolveDay(routine, '2026-11-16').items;
 	expect(timelineGaps(groupTimeline(items)).size).toBe(0);
+});
+
+describe('timeline group duration', () => {
+	function blockItems(items: Routine['days'][string]['items']) {
+		const day = resolveDay({ ...routine, days: { daily: { on: ['mon'], items } } }, '2026-11-16');
+		return groupTimeline(day.items)[0].items;
+	}
+	it('spans the clock when the block is timed', () => {
+		expect(timelineDuration(blockItems([{ use: 'morning', time: '07:00' }]))).toBe(30);
+	});
+	it('sums item durations when the block has no time', () => {
+		expect(timelineDuration(blockItems([{ use: 'morning' }]))).toBe(30);
+	});
+	it('has no duration for an empty group', () => expect(timelineDuration([])).toBeUndefined());
 });
