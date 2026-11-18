@@ -1,4 +1,4 @@
-import type { Choice, ChoiceValue, Entry, Routine, When } from './types.ts';
+import type { Choice, ChoiceValue, Entry, Routine, When, Weekday } from './types.ts';
 import { cloneRoutine } from './edit.ts';
 
 export function choiceUsed(routine: Routine, template: string, name: string, option?: string): boolean {
@@ -85,4 +85,37 @@ export function setChoiceDefault(choice: Choice, value: ChoiceValue, weekday?: s
 			? { ...(typeof choice.default === 'object' ? choice.default : {}), [weekday]: value }
 			: value
 	};
+}
+
+/** Change how defaults are assigned without changing option IDs or daily overrides. */
+export function setChoiceDefaultMode(choice: Choice, days: readonly Weekday[], byWeekday: boolean): Choice {
+	const values: ChoiceValue[] = choice.type === 'toggle' ? [false, true] : Object.keys(choice.options ?? {});
+	const allowed = (value: ChoiceValue, day: Weekday) => {
+		const restricted = choice.options?.[String(value)]?.only_on;
+		return values.includes(value) && (!restricted || restricted.includes(day));
+	};
+	const current = (day: Weekday) =>
+		typeof choice.default === 'object' ? choice.default[day] : choice.default;
+	if (byWeekday) {
+		const defaults = Object.fromEntries(
+			days.map((day) => {
+				const previous = current(day);
+				const value =
+					previous !== undefined && allowed(previous, day)
+						? previous
+						: values.find((value) => allowed(value, day));
+				if (value === undefined) throw new Error(`No option is available on ${day}.`);
+				return [day, value];
+			})
+		);
+		return { ...choice, default: defaults };
+	}
+	const previous = days.length ? current(days[0]) : undefined;
+	const value =
+		previous !== undefined && days.every((day) => allowed(previous, day))
+			? previous
+			: values.find((value) => days.every((day) => allowed(value, day)));
+	if (value === undefined)
+		throw new Error('No option is available on every assigned day. Use weekday defaults.');
+	return { ...choice, default: value };
 }

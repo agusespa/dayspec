@@ -5,9 +5,10 @@ import {
 	changeChoiceType,
 	removeOption,
 	setChoiceDefault,
+	setChoiceDefaultMode,
 	choiceUsed
 } from './choices.ts';
-import type { Routine } from './types.ts';
+import type { Choice, Routine } from './types.ts';
 const base: Routine = { days: { daily: { on: ['mon'], items: [] } } };
 describe('choice editing', () => {
 	it('creates stable unique keys without mutating saved data', () => {
@@ -62,5 +63,38 @@ describe('choice editing', () => {
 		const choice = { type: 'toggle' as const, default: { mon: true, tue: false } };
 		expect(setChoiceDefault(choice, false, 'mon').default).toEqual({ mon: false, tue: false });
 		expect(choice.default.mon).toBe(true);
+	});
+});
+
+describe('choice default modes', () => {
+	it('starts each weekday with the existing selection and preserves independent changes', () => {
+		const choice: Choice = { options: { office: {}, home: {} }, default: 'office' };
+		const weekdays = setChoiceDefaultMode(choice, ['mon', 'wed', 'fri'], true);
+		expect(weekdays.default).toEqual({ mon: 'office', wed: 'office', fri: 'office' });
+		const edited = setChoiceDefault(setChoiceDefault(weekdays, 'home', 'wed'), 'home', 'fri');
+		expect(edited.default).toEqual({ mon: 'office', wed: 'home', fri: 'home' });
+		expect(choice.default).toBe('office');
+		expect(setChoiceDefaultMode(edited, ['mon', 'wed', 'fri'], true).default).toEqual(edited.default);
+		expect(setChoiceDefaultMode(edited, ['mon', 'wed', 'fri'], false).default).toBe('office');
+	});
+	it.each([false, true])('preserves a toggle default of %s in both modes', (value) => {
+		const choice: Choice = { type: 'toggle', default: value };
+		const weekdays = setChoiceDefaultMode(choice, ['wed', 'fri'], true);
+		expect(weekdays.default).toEqual({ wed: value, fri: value });
+		expect(setChoiceDefaultMode(weekdays, ['wed', 'fri'], false).default).toBe(value);
+	});
+	it('chooses available options for restricted days and only allows common defaults', () => {
+		const choice: Choice = {
+			options: { office: { only_on: ['mon'] }, home: { only_on: ['fri'] } },
+			default: { mon: 'office', fri: 'home' }
+		};
+		expect(setChoiceDefaultMode(choice, ['mon', 'fri'], true).default).toEqual(choice.default);
+		expect(() => setChoiceDefaultMode(choice, ['mon', 'fri'], false)).toThrow('every assigned day');
+		const common: Choice = { ...choice, options: { ...choice.options, anywhere: {} } };
+		expect(setChoiceDefaultMode(common, ['mon', 'fri'], false).default).toBe('anywhere');
+		expect(setChoiceDefaultMode({ ...choice, default: 'office' }, ['mon', 'fri'], true).default).toEqual({
+			mon: 'office',
+			fri: 'home'
+		});
 	});
 });

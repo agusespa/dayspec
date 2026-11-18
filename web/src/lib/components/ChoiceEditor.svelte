@@ -1,13 +1,15 @@
 <script lang="ts">
-	import { type Routine, type Choice, type ChoiceValue } from '#lib/routine/types.ts';
+	import { type Routine, type Choice, type Weekday } from '#lib/routine/types.ts';
 	import {
 		addChoice,
 		removeChoice,
 		changeChoiceType,
 		removeOption,
-		setChoiceDefault
+		setChoiceDefault,
+		setChoiceDefaultMode
 	} from '#lib/routine/choices.ts';
 	import ConditionsEditor from './ConditionsEditor.svelte';
+	import { weekdayLabel } from '#lib/routine/outline.ts';
 	let { routine = $bindable(), template }: { routine: Routine; template: string } = $props();
 	let error = $state('');
 	function apply(change: () => Routine) {
@@ -24,7 +26,7 @@
 		for (let n = 2; Object.hasOwn(options, key); n++) key = `option_${n}`;
 		options[key] = { label: 'New option' };
 	}
-	function updateDefault(name: string, choice: Choice, value: string, day?: string) {
+	function updateDefault(name: string, choice: Choice, value: string, day?: Weekday) {
 		routine.days[template].choices![name] = setChoiceDefault(
 			choice,
 			choice.type === 'toggle' ? value === 'true' : value,
@@ -89,15 +91,36 @@
 						onclick={() => addOption(choice)}>+ Add option</button
 					>
 				{/if}
+				<label
+					>Defaults<select
+						data-testid="ChoiceEditor-default-mode"
+						value={typeof choice.default === 'object' ? 'weekday' : 'same'}
+						onchange={(e) => {
+							const input = e.currentTarget;
+							apply(() => {
+								const next = $state.snapshot(routine);
+								next.days[template].choices![name] = setChoiceDefaultMode(
+									choice,
+									next.days[template].on,
+									input.value === 'weekday'
+								);
+								return next;
+							});
+							input.value =
+								typeof routine.days[template].choices![name].default === 'object' ? 'weekday' : 'same';
+						}}><option value="same">Same every day</option><option value="weekday">By weekday</option></select
+					></label
+				>
 				{#each typeof choice.default === 'object' ? routine.days[template].on : [undefined] as day}
 					<label
-						>Default{day ? ` · ${day}` : ''}<select
+						>Default{day ? ` · ${weekdayLabel(day)}` : ''}<select
 							data-testid="ChoiceEditor-default"
+							aria-label={day ? `Default · ${weekdayLabel(day)}` : 'Default'}
 							value={String(day && typeof choice.default === 'object' ? choice.default[day] : choice.default)}
 							onchange={(e) => updateDefault(name, choice, e.currentTarget.value, day)}
 						>
 							{#if choice.type === 'toggle'}<option value="true">On</option><option value="false">Off</option
-								>{:else}{#each Object.entries(choice.options ?? {}).filter(([, o]) => !day || !o.only_on || o.only_on.includes(day)) as [value, option]}<option
+								>{:else}{#each Object.entries(choice.options ?? {}).filter(([, o]) => !o.only_on || (day ? o.only_on.includes(day) : routine.days[template].on.every( (d) => o.only_on!.includes(d) ))) as [value, option]}<option
 										{value}>{option.label ?? value}</option
 									>{/each}{/if}
 						</select></label
