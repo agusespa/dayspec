@@ -161,7 +161,6 @@
 	{/snippet}
 </Timeline>
 
-<p class="version mono">Dayspec {__APP_VERSION__}</p>
 <div class="bar-room"></div>
 
 <BottomNav>
@@ -223,12 +222,5 @@
 		line-height: 1.4;
 		font-size: var(--text-xs);
 		color: var(--muted);
-	}
-
-	.version {
-		text-align: center;
-		font-size: var(--text-2xs);
-		color: var(--muted);
-		margin: 1.5rem 0 0;
 	}
 </style>

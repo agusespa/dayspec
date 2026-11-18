@@ -29,6 +29,9 @@ test("Profile saves holiday preferences across devices and preserves settings on
     await page.clock.setFixedTime(new Date("2026-12-25T09:00:00+01:00"));
     await page.goto("/");
     await page.getByTestId("Nav-profile").click();
+    await expect(page.getByTestId("Profile-version")).toContainText(
+      /Version dev\s*Built .*\d{4}/,
+    );
     const setting = page.getByTestId("Profile-automatic-holidays");
     await expect(setting).toBeChecked();
     await expect(setting).toBeEnabled();
