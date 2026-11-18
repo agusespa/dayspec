@@ -70,6 +70,8 @@ test("starts empty, saves the first item, and can return to an empty template", 
 test("lists templates and offers creation only for unassigned days", async ({
   page,
 }) => {
+  // This test removes Tuesday's template and checks that day's empty state.
+  await page.clock.setFixedTime(new Date("2026-11-17T12:00:00+01:00"));
   await page.goto("/templates");
   const daily = page.getByTestId("Templates-row-daily");
   await expect(daily.getByTestId("Templates-name")).toHaveText("Daily");
