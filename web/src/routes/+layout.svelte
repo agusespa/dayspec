@@ -67,9 +67,6 @@
 	</aside>
 {/if}
 
-<!-- A solid band behind the iOS status bar, so content doesn't scroll under the clock. -->
-<div class="status-band" aria-hidden="true"></div>
-
 <style>
 	.sync-toast {
 		position: fixed;
@@ -111,19 +108,11 @@
 		padding: 0 1rem calc(env(safe-area-inset-bottom) + 2rem);
 	}
 
-	.status-band {
-		position: fixed;
-		inset: 0 0 auto;
-		z-index: 6;
-		height: env(safe-area-inset-top);
-		background: var(--bg);
-	}
-
 	.banner {
 		background: var(--paper);
 		border: 1px solid var(--danger);
 		border-radius: var(--radius);
 		padding: 0.75rem;
-		margin-top: calc(env(safe-area-inset-top) + 0.75rem);
+		margin-top: calc(env(safe-area-inset-top) + 1.6rem);
 	}
 </style>

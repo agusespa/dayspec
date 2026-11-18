@@ -20,7 +20,7 @@
 	gap: var(--gap);
 	padding: 0.25rem 0.5rem;
 	border-radius: var(--radius);
-	/* Keep the current item clear of the status band and the bottom bar when scrolled to. */
+	/* Keep the current item clear of the status bar and the bottom bar when scrolled to. */
 	scroll-margin: calc(env(safe-area-inset-top) + 1rem) 0 5rem;
 }
 

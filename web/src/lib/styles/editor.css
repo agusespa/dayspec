@@ -1,7 +1,8 @@
 /* The template and shared-block editor. */
 
 .template-editor {
-	padding-top: calc(env(safe-area-inset-top) + 2rem);
+	/* Same height as the page mastheads, clear of the iOS status bar blur. */
+	padding-top: calc(env(safe-area-inset-top) + 1.6rem);
 	padding-bottom: 7rem;
 }
 .editor-heading {

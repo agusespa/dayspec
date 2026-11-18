@@ -243,8 +243,12 @@
 
 /* ---- Masthead ---- */
 
+/*
+ * In the home-screen app iOS draws its own soft blur just below the status bar; 1.6rem keeps the
+ * date line clear of it (the same height as Gympass).
+ */
 .masthead {
-	padding: calc(env(safe-area-inset-top) + 1.25rem) 0 0;
+	padding: calc(env(safe-area-inset-top) + 1.6rem) 0 0;
 }
 
 .eyebrow {
