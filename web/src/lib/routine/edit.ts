@@ -30,6 +30,12 @@ export function templateName(days: readonly Weekday[]): string {
 	return ordered.map((day) => day[0].toUpperCase() + day.slice(1)).join(', ');
 }
 
+/** Library order follows each template's first assigned day, starting on Monday. */
+export function templateKeys(routine: Routine): string[] {
+	const firstDay = (key: string) => Math.min(7, ...routine.days[key].on.map((day) => WEEKDAYS.indexOf(day)));
+	return Object.keys(routine.days).sort((a, b) => firstDay(a) - firstDay(b));
+}
+
 /** Days are available until assigned to a template. */
 export function availableDays(routine: Routine, except?: string): Weekday[] {
 	return WEEKDAYS.filter(

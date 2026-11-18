@@ -1,6 +1,6 @@
 <script lang="ts">
 	import BottomNav from '#lib/components/BottomNav.svelte';
-	import { availableDays, templateName, removeTemplate } from '#lib/routine/edit.ts';
+	import { availableDays, templateName, templateKeys, removeTemplate } from '#lib/routine/edit.ts';
 	import { routineState, saveRoutine } from '#lib/routine/client.ts';
 	import { untrack } from 'svelte';
 	import TemplateEditor from '#lib/components/TemplateEditor.svelte';
@@ -17,7 +17,7 @@
 	let removing = $state(false);
 	let error = $state('');
 	const routine = $derived($routineState.routine);
-	const keys = $derived(Object.keys(routine.days));
+	const keys = $derived(templateKeys(routine));
 	const remaining = $derived(availableDays(routine));
 	const holiday = $derived(routine.settings?.holiday ?? '');
 	let key = $state(untrack(() => page.url.searchParams.get('t') ?? ''));
@@ -356,8 +356,6 @@
 	}
 	.add-template {
 		margin-top: 1.25rem;
-		padding: 1.25rem 0;
-		border-top: 1px solid var(--rule);
 	}
 	.template-actions button {
 		box-sizing: border-box;

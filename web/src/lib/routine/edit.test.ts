@@ -6,6 +6,7 @@ import {
 	createTemplate,
 	assignTemplateDays,
 	templateName,
+	templateKeys,
 	availableDays,
 	removeTemplate,
 	createBlock,
@@ -179,5 +180,23 @@ describe('naming shared blocks', () => {
 	it('rejects an empty name or missing block without changing data', () => {
 		expect(() => renameBlock(source, 'stable', ' ')).toThrow('Enter a block name');
 		expect(() => renameBlock(source, 'missing', 'New')).toThrow('does not exist');
+	});
+});
+
+describe('template library order', () => {
+	it('orders by the earliest assigned weekday regardless of saved key or assignment order', () => {
+		const library: Routine = {
+			days: {
+				friday: { on: ['fri'], items: [] },
+				weekend: { on: ['sun', 'sat'], items: [] },
+				workdays: { on: ['thu', 'mon', 'wed', 'tue'], items: [] }
+			}
+		};
+		const before = JSON.stringify(library);
+		expect(templateKeys(library)).toEqual(['workdays', 'friday', 'weekend']);
+		expect(JSON.stringify(library)).toBe(before);
+	});
+	it('handles an empty library', () => {
+		expect(templateKeys({ days: {} })).toEqual([]);
 	});
 });
