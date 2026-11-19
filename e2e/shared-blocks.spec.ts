@@ -48,19 +48,27 @@ test("collapses shared blocks in Daily and template previews without losing thei
     await expect(block).toHaveCount(1);
     const toggle = block.getByTestId("Timeline-block-toggle");
     await expect(toggle).toContainText("Morning");
-    await expect(block.getByTestId("Timeline-block-total")).toHaveText(
-      "30 min",
-    );
+    await expect(toggle).not.toContainText("30 min");
+    await expect(block.getByTestId("Timeline-block-total")).toBeHidden();
     await expect(page.getByTestId("Timeline-gap")).toHaveCount(1);
     await expect(page.getByTestId("Timeline-gap")).toContainText("07:30");
     await expect(page.getByTestId("Timeline-gap")).toContainText("90 min");
     const items = block.getByTestId("Timeline-block-entry");
     await expect(items.first()).toBeHidden();
     await toggle.click();
+    await expect(block.getByTestId("Timeline-block-total")).toHaveText(
+      "30 min",
+    );
+    await expect(block.getByTestId("Timeline-block-total")).toBeVisible();
+    await expect(
+      block.locator(".block-facts .metadata > span").first(),
+    ).toHaveText("30 min");
     await expect(items.first()).toBeVisible();
     await expect(items.first()).toContainText("Wash");
     await expect(items.nth(1)).toContainText("Breakfast");
-    await expect(items.nth(1)).toContainText("20 min");
+    await expect(
+      items.nth(1).getByTestId("Timeline-block-entry-toggle"),
+    ).not.toContainText("20 min");
     await expect(items.first().getByTestId("Activity-note")).toHaveCount(0);
     await items.first().getByTestId("Timeline-block-entry-toggle").click();
     await expect(items.first().getByTestId("Activity-note")).toHaveText(
@@ -69,9 +77,13 @@ test("collapses shared blocks in Daily and template previews without losing thei
     await expect(block.getByTestId("TimelineItem")).toHaveCount(0);
     await expect(toggle).toContainText("07:00");
     await expect(toggle).not.toContainText("07:30");
-    await expect(
-      items.nth(1).getByTestId("Timeline-block-duration"),
-    ).toHaveText("20 min");
+    await items.nth(1).getByTestId("Timeline-block-entry-toggle").click();
+    await expect(items.nth(1).getByTestId("ItemDetails-duration")).toHaveText(
+      "20 min",
+    );
+    await expect(items.nth(1).getByTestId("ItemDetails-range")).toHaveText(
+      "07:10–07:30",
+    );
     await toggle.click();
     await expect(items.first()).toBeHidden();
     await page.goto("/templates");

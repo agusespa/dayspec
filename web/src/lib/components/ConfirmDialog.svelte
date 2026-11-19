@@ -1,18 +1,30 @@
 <script lang="ts">
 	let {
-		message = 'Your unsaved edits will be lost.',
+		title,
+		message,
+		cancelLabel = 'Cancel',
+		confirmLabel = 'Delete',
 		returnFocus,
-		onkeep,
-		ondiscard
-	}: { message?: string; returnFocus?: HTMLElement; onkeep: () => void; ondiscard: () => void } = $props();
+		oncancel,
+		onconfirm
+	}: {
+		title: string;
+		message: string;
+		cancelLabel?: string;
+		confirmLabel?: string;
+		returnFocus?: HTMLElement;
+		oncancel: () => void;
+		onconfirm: () => void;
+	} = $props();
+	const id = $props.id();
 </script>
 
 <dialog
-	aria-labelledby="discard-title"
-	aria-describedby="discard-description"
+	aria-labelledby={`${id}-title`}
+	aria-describedby={`${id}-description`}
 	oncancel={(event) => {
 		event.preventDefault();
-		onkeep();
+		oncancel();
 	}}
 	{@attach (node) => {
 		node.showModal();
@@ -22,11 +34,11 @@
 		};
 	}}
 >
-	<h2 id="discard-title">Discard changes?</h2>
-	<p id="discard-description">{message}</p>
+	<h2 id={`${id}-title`}>{title}</h2>
+	<p id={`${id}-description`}>{message}</p>
 	<div class="actions">
-		<button type="button" class="keep" onclick={onkeep}>Keep editing</button>
-		<button type="button" class="discard" onclick={ondiscard}>Discard changes</button>
+		<button type="button" class="cancel" onclick={oncancel}>{cancelLabel}</button>
+		<button type="button" class="confirm" onclick={onconfirm}>{confirmLabel}</button>
 	</div>
 </dialog>
 
@@ -47,7 +59,7 @@
 		-webkit-backdrop-filter: blur(6px);
 		backdrop-filter: blur(6px);
 	}
-	h2 {
+	dialog h2 {
 		margin: 0;
 		font-size: var(--text-lg);
 		font-weight: 650;
@@ -69,15 +81,15 @@
 		padding-inline: 1rem;
 		font-size: var(--text-sm);
 	}
-	.keep {
+	.cancel {
 		border: 1px solid var(--rule);
 		background: var(--inset);
 	}
-	.discard {
+	.confirm {
 		background: var(--danger);
 		color: var(--accent-text);
 	}
-	.discard:hover {
+	.confirm:hover {
 		background: color-mix(in srgb, var(--danger), white 12%);
 	}
 </style>

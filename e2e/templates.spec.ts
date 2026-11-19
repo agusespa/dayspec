@@ -438,12 +438,15 @@ test("manages shared blocks directly from the library and protects blocks that a
   await expect(page.getByTestId("TemplateEditor-block-delete")).toHaveCount(0);
   await page.getByTestId("TemplateEditor-cancel").click();
   const createdCard = page.getByTestId("TemplateEditor-block-card-block");
-  page.once("dialog", (dialog) => dialog.dismiss());
   await createdCard
     .getByRole("button", {
       name: "Delete shared block Evening wind down",
       exact: true,
     })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Cancel", exact: true })
     .click();
   await expect(createdCard).toBeVisible();
   await page.route("**/api/routine", (route) =>
@@ -455,15 +458,21 @@ test("manages shared blocks directly from the library and protects blocks that a
         })
       : route.continue(),
   );
-  page.once("dialog", (dialog) => dialog.accept());
   await createdCard.getByTestId("TemplateEditor-block-delete").click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Delete", exact: true })
+    .click();
   await expect(page.getByTestId("TemplateEditor-errors")).toContainText(
     "Could not delete block",
   );
   await expect(createdCard).toBeVisible();
   await page.unroute("**/api/routine");
-  page.once("dialog", (dialog) => dialog.accept());
   await createdCard.getByTestId("TemplateEditor-block-delete").click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Delete", exact: true })
+    .click();
   await expect(createdCard).toHaveCount(0);
   await expect(page.getByTestId("TemplateEditor-block-list")).toBeVisible();
   await expect(page.getByTestId("TemplateEditor-save")).toHaveCount(0);
@@ -754,9 +763,12 @@ test("deletes a template directly from its card and preserves the rest of the li
     "aria-expanded",
     "true",
   );
-  page.once("dialog", (dialog) => dialog.accept());
   await card
     .getByRole("button", { name: "Delete Saturday template", exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Delete", exact: true })
     .click();
   await expect(card).toHaveCount(0);
   await expect(page.getByTestId("TemplateEditor")).toHaveCount(0);

@@ -60,10 +60,11 @@ test('adds activities and shared blocks to Calendar from their details', async (
 		await expect(
 			page.getByRole('link', { name: 'Add Breakfast to Google Calendar', exact: true })
 		).toBeVisible();
-		// Nothing to show for an untimed activity without notes or links, so it doesn't open.
-		await expect(
-			page.getByTestId('TimelineItem').filter({ hasText: 'Unscheduled' }).getByTestId('TimelineItem-toggle')
-		).toHaveCount(0);
+		// An untimed activity shows its duration, with no calendar draft available.
+		const unscheduled = page.getByTestId('TimelineItem').filter({ hasText: 'Unscheduled' });
+		await unscheduled.getByTestId('TimelineItem-toggle').click();
+		await expect(unscheduled.getByTestId('ItemDetails-duration')).toHaveText('5 min');
+		await expect(unscheduled.getByRole('link', { name: /to Google Calendar/ })).toHaveCount(0);
 		await page.getByRole('button', { name: 'Next day', exact: true }).click();
 		await page.getByTestId('TimelineItem').filter({ hasText: 'Work' }).getByTestId('TimelineItem-toggle').click();
 		const work = page.getByRole('link', { name: 'Add Work to Google Calendar', exact: true });

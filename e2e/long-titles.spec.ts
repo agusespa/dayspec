@@ -34,7 +34,7 @@ for (const width of [320, 390]) {
 				expect(await title.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
 				const chevron = await row.locator('.chevron').boundingBox();
 				expect(chevron!.x + chevron!.width).toBeLessThanOrEqual(width);
-				await expect(row.locator('.duration')).toBeVisible();
+				await expect(row.locator('.duration')).toHaveCount(0);
 				const collapsed = (await title.boundingBox())!.height;
 				await row.click();
 				await expect(title).toHaveCSS('white-space', 'normal');

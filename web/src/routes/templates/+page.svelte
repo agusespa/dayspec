@@ -4,6 +4,7 @@
 	import { routineState, saveRoutine } from '#lib/routine/client.ts';
 	import { untrack } from 'svelte';
 	import TemplateEditor from '#lib/components/TemplateEditor.svelte';
+	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
 	import '#lib/styles/editor.css';
 	import { goto, replaceState } from '$app/navigation';
 	import { page } from '$app/state';
@@ -24,6 +25,7 @@
 	let saved = $state(false);
 	let deleting = $state(false);
 	let deleteError = $state('');
+	let deleteRequest = $state<{ key: string; label: string; trigger: HTMLElement }>();
 	const routine = $derived($routineState.routine);
 	const keys = $derived(templateKeys(routine));
 	const remaining = $derived(availableDays(routine));
@@ -38,11 +40,7 @@
 		editing = true;
 		saved = false;
 	}
-	async function remove(keyToDelete: string, label: string) {
-		if (
-			!confirm(`Delete ${label} template and its items? Its days will become available for a new template.`)
-		)
-			return;
+	async function remove(keyToDelete: string) {
 		deleting = true;
 		deleteError = '';
 		saved = false;
@@ -65,6 +63,20 @@
 	}
 </script>
 
+{#if deleteRequest}
+	<ConfirmDialog
+		title={`Delete ${deleteRequest.label} template?`}
+		message="The template and its activities will be deleted. Its days will become available for a new template."
+		returnFocus={deleteRequest.trigger}
+		oncancel={() => (deleteRequest = undefined)}
+		onconfirm={() => {
+			if (!deleteRequest) return;
+			const { key } = deleteRequest;
+			deleteRequest = undefined;
+			void remove(key);
+		}}
+	/>
+{/if}
 {#if editing}
 	<TemplateEditor
 		{routine}
@@ -135,7 +147,7 @@
 						aria-label={`Delete ${day.label} template`}
 						title={`Delete ${day.label} template`}
 						disabled={!$routineState.online || deleting}
-						onclick={() => void remove(k, day.label)}
+						onclick={(event) => (deleteRequest = { key: k, label: day.label, trigger: event.currentTarget })}
 					>
 						<svg
 							viewBox="0 0 24 24"

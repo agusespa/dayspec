@@ -19,7 +19,7 @@
 	import { weekdayLabel } from '#lib/routine/outline.ts';
 	import EntryEditor from './EntryEditor.svelte';
 	import ChoiceEditor from './ChoiceEditor.svelte';
-	import DiscardDialog from './DiscardDialog.svelte';
+	import ConfirmDialog from './ConfirmDialog.svelte';
 
 	let {
 		routine,
@@ -48,6 +48,7 @@
 	let pendingBlock = $state('');
 	let errors = $state<string[]>([]);
 	let saving = $state(false);
+	let deleteRequest = $state<{ key: string; trigger: HTMLElement }>();
 	let discardAction = $state<() => void>();
 	let discardMessage = $state('');
 	let discardReturnFocus = $state<HTMLElement>();
@@ -66,7 +67,6 @@
 	}
 
 	async function deleteBlock(id: string) {
-		if (!confirm('Delete this shared block and its items?')) return;
 		saving = true;
 		errors = [];
 		try {
@@ -211,11 +211,28 @@
 </script>
 
 {#if discardAction}
-	<DiscardDialog
+	<ConfirmDialog
+		title="Discard changes?"
+		cancelLabel="Keep editing"
+		confirmLabel="Discard changes"
 		message={discardMessage}
 		returnFocus={discardReturnFocus}
-		onkeep={() => (discardAction = undefined)}
-		ondiscard={discard}
+		oncancel={() => (discardAction = undefined)}
+		onconfirm={discard}
+	/>
+{/if}
+{#if deleteRequest}
+	<ConfirmDialog
+		title="Delete shared block?"
+		message={`“${draft.blocks![deleteRequest.key].name}” and its items will be deleted.`}
+		returnFocus={deleteRequest.trigger}
+		oncancel={() => (deleteRequest = undefined)}
+		onconfirm={() => {
+			if (!deleteRequest) return;
+			const { key } = deleteRequest;
+			deleteRequest = undefined;
+			void deleteBlock(key);
+		}}
 	/>
 {/if}
 <section class="template-editor" data-testid="TemplateEditor">
@@ -423,7 +440,7 @@
 									aria-label={`Delete shared block ${block.name}`}
 									title={references.length ? `Used by ${references.join(', ')}` : `Delete ${block.name}`}
 									disabled={references.length > 0}
-									onclick={() => void deleteBlock(name)}
+									onclick={(event) => (deleteRequest = { key: name, trigger: event.currentTarget })}
 								>
 									<svg
 										viewBox="0 0 24 24"

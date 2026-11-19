@@ -55,7 +55,7 @@
 		const headerBottom = document.querySelector('.page-header')?.getBoundingClientRect().bottom ?? 0;
 		const barTop = document.querySelector('.bottombar')?.getBoundingClientRect().top ?? innerHeight;
 		if (row.top >= headerBottom && row.bottom <= barTop) return;
-		current.scrollIntoView({ block: 'center', behavior });
+		(current.querySelector('.row') ?? current).scrollIntoView({ block: 'center', behavior });
 	}
 
 	function goToday() {
@@ -186,11 +186,8 @@
 		</button>
 		<div class="bar-center">
 			{#if isToday}
-				<span class="day-label current-day-label" aria-current="page"
-					><span>Daily</span><small>{formatDate(date, 'short').split(' ').slice(1).join(' ')}</small></span
-				>
 				<button
-					class="day-label current-day-button"
+					class="day-label"
 					aria-label="Go to current activity"
 					aria-current="page"
 					title="Go to today's current activity"
@@ -242,7 +239,6 @@
 		gap: 0.2rem 1.25rem;
 		padding: 0.3rem 0;
 		overflow: hidden;
-		border-bottom: 1px solid var(--rule);
 	}
 
 	.choice {

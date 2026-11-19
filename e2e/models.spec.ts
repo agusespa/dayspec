@@ -94,7 +94,7 @@ test("edits choices, conditional activities, durations and Notion links, then se
     await expect(page.getByTestId("TimelineItem")).toHaveCount(1);
     await page.getByTestId("Day-choice-choice-option_2").click();
     await expect(page.getByTestId("TimelineItem")).toHaveCount(2);
-    await expect(page.getByTestId("TimelineItem").first()).toContainText(
+    await expect(page.getByTestId("TimelineItem").first()).not.toContainText(
       "15 min",
     );
     await page
@@ -102,6 +102,12 @@ test("edits choices, conditional activities, durations and Notion links, then se
       .first()
       .getByTestId("TimelineItem-toggle")
       .click();
+    await expect(
+      page
+        .getByTestId("TimelineItem")
+        .first()
+        .getByTestId("ItemDetails-duration"),
+    ).toHaveText("15 min");
     await expect(
       page
         .getByTestId("TimelineItem")

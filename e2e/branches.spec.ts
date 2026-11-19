@@ -617,11 +617,17 @@ test("simplified add controls and heading trash icons preserve unrelated entries
   const remove = work
     .locator(":scope > .branch-heading")
     .getByRole("button", { name: "Delete branch Work location", exact: true });
-  page.once("dialog", (dialog) => dialog.dismiss());
   await remove.click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Cancel", exact: true })
+    .click();
   await expect(work).toBeVisible();
-  page.once("dialog", (dialog) => dialog.accept());
   await remove.click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Delete", exact: true })
+    .click();
   await expect(work).toHaveCount(0);
   await page.getByTestId("TemplateEditor-save").click();
   await expect(page.getByTestId("Templates-saved")).toBeVisible();

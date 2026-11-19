@@ -5,6 +5,7 @@
 	import { moveEntry, newEntry, sortEntriesByTime } from '#lib/routine/edit.ts';
 	import EntryEditor from './EntryEditor.svelte';
 	import BranchSection from './BranchSection.svelte';
+	import ConfirmDialog from './ConfirmDialog.svelte';
 	import { timelineSections, branchOptions, inBranch, newBranch } from '#lib/routine/branches.ts';
 	import { describeWhen } from '#lib/routine/outline.ts';
 	let {
@@ -27,6 +28,7 @@
 	} = $props();
 	const sections = $derived(timelineSections(entries, choices, excluded));
 	let addingBranch = $state(false);
+	let deleteRequest = $state<{ label: string; indices: number[]; trigger: HTMLElement }>();
 	let active = $state<number>();
 	// Keep each card's DOM state attached to its entry when the timeline is reordered.
 	const entryKeys = new WeakMap<Entry, number>();
@@ -327,6 +329,21 @@
 	{/if}
 {/snippet}
 
+{#if deleteRequest}
+	<ConfirmDialog
+		title="Delete branch?"
+		message={`“${deleteRequest.label}” and all activities in its alternatives will be removed from this template.`}
+		returnFocus={deleteRequest.trigger}
+		oncancel={() => (deleteRequest = undefined)}
+		onconfirm={() => {
+			if (!deleteRequest) return;
+			const { indices } = deleteRequest;
+			deleteRequest = undefined;
+			entries = entries.filter((_, i) => !indices.includes(i));
+			sortByTime();
+		}}
+	/>
+{/if}
 <div class="entries">
 	{#if !entries.length && excluded.length}<p class="branch-empty">Continue routine</p>{/if}
 	{#each sections as section (Math.min(...section.indices.map((i) => entryKey(entries[i]))))}
@@ -352,12 +369,12 @@
 						type="button"
 						class="entry-delete"
 						aria-label={`Delete branch ${choice.label ?? name}`}
-						onclick={() => {
-							if (confirm('Remove this branch and its activities?')) {
-								entries = entries.filter((_, i) => !section.indices.includes(i));
-								sortByTime();
-							}
-						}}>{@render trash()}</button
+						onclick={(event) =>
+							(deleteRequest = {
+								label: choice.label ?? name,
+								indices: section.indices,
+								trigger: event.currentTarget
+							})}>{@render trash()}</button
 					>
 				{/snippet}
 			</BranchSection>

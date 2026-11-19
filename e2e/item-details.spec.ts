@@ -53,7 +53,14 @@ test("tapping an activity shows its time range, category, conditions and calenda
 
     const lift = page.getByTestId("TimelineItem").filter({ hasText: "Lift" });
     await expect(lift.getByTestId("ItemDetails")).toHaveCount(0);
+    await expect(lift.getByTestId("TimelineItem-toggle")).not.toContainText(
+      "45 min",
+    );
     await lift.getByTestId("TimelineItem-toggle").click();
+    await expect(lift.getByTestId("ItemDetails-duration")).toHaveText("45 min");
+    await expect(lift.locator(".facts .metadata > span").first()).toHaveText(
+      "45 min",
+    );
     await expect(lift.getByTestId("TimelineItem-toggle")).toHaveAttribute(
       "aria-expanded",
       "true",
@@ -75,13 +82,11 @@ test("tapping an activity shows its time range, category, conditions and calenda
     await lift.getByTestId("TimelineItem-toggle").click();
     await expect(lift.getByTestId("ItemDetails")).toHaveCount(0);
 
-    // An untimed activity with nothing else to show doesn't open.
-    await expect(
-      page
-        .getByTestId("TimelineItem")
-        .filter({ hasText: "Later" })
-        .getByTestId("TimelineItem-toggle"),
-    ).toHaveCount(0);
+    // Untimed activities still open to show their duration.
+    const later = page.getByTestId("TimelineItem").filter({ hasText: "Later" });
+    await later.getByTestId("TimelineItem-toggle").click();
+    await expect(later.getByTestId("ItemDetails-duration")).toHaveText("5 min");
+    await expect(later.getByTestId("ItemDetails-range")).toHaveCount(0);
 
     // An open block shows its own range and category, and each activity opens on its own.
     const block = page.getByTestId("Timeline-block");

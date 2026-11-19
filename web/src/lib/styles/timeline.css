@@ -205,10 +205,9 @@ button.row[aria-expanded='false'] .title-text,
 	vertical-align: -0.12em;
 }
 
-/* Every duration sits right after its title text, in the same style. */
+/* Duration precedes the time range in expanded activity and block details. */
 .duration {
 	flex: none;
-	margin-left: 0.5rem;
 	font-weight: 500;
 	letter-spacing: 0;
 	color: var(--tertiary);

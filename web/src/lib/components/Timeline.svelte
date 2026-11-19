@@ -5,7 +5,7 @@
 	import CalendarLink from './CalendarLink.svelte';
 	import AlertIcon from './AlertIcon.svelte';
 	import EditLink from './EditLink.svelte';
-	import ItemDetails, { hasDetails, timeRange } from './ItemDetails.svelte';
+	import ItemDetails, { timeRange } from './ItemDetails.svelte';
 	let {
 		items,
 		row,
@@ -31,30 +31,17 @@
 	<ul class="contents-list">
 		{#each entries as item (item.id)}
 			<li class="tone-{item.color ?? 'none'}" data-testid="Timeline-block-entry">
-				{#if hasDetails(item, calendarDate)}
-					<button
-						type="button"
-						class="contents-row"
-						data-testid="Timeline-block-entry-toggle"
-						aria-expanded={!!openEntries[item.id]}
-						onclick={() => (openEntries[item.id] = !openEntries[item.id])}
-						><span class="contents-title"
-							>{#if item.alert}<AlertIcon />{/if}{item.title}</span
-						>{#if item.duration}<span class="duration" data-testid="Timeline-block-duration"
-								>{item.duration} min</span
-							>{/if}<svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg
-						></button
-					>
-					{#if openEntries[item.id]}<ItemDetails {item} {calendarDate} {editTemplate} />{/if}
-				{:else}
-					<div class="contents-row">
-						<span class="contents-title"
-							>{#if item.alert}<AlertIcon />{/if}{item.title}</span
-						>{#if item.duration}<span class="duration" data-testid="Timeline-block-duration"
-								>{item.duration} min</span
-							>{/if}
-					</div>
-				{/if}
+				<button
+					type="button"
+					class="contents-row"
+					data-testid="Timeline-block-entry-toggle"
+					aria-expanded={!!openEntries[item.id]}
+					onclick={() => (openEntries[item.id] = !openEntries[item.id])}
+					><span class="contents-title"
+						>{#if item.alert}<AlertIcon />{/if}{item.title}</span
+					><svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button
+				>
+				{#if openEntries[item.id]}<ItemDetails {item} {calendarDate} {editTemplate} />{/if}
 			</li>
 		{/each}
 	</ul>
@@ -82,9 +69,7 @@
 								><span class="dot" aria-hidden="true"></span><span class="title"
 									>{#if group.items.some((item) => item.alert)}<AlertIcon />{/if}<span class="title-text"
 										>{group.name}</span
-									>{#if duration}<span class="duration" data-testid="Timeline-block-total"
-											>{duration} min</span
-										>{/if}</span
+									></span
 								><svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg
 								></span
 							></span
@@ -92,14 +77,18 @@
 					</summary>
 					<div class="block-contents" data-testid="Timeline-block-contents">
 						<div class="block-facts" data-testid="Timeline-block-facts">
-							{#if timeRange(group.items[0].time, group.items.at(-1)!.end)}<span class="mono range"
-									>{timeRange(group.items[0].time, group.items.at(-1)!.end)}</span
-								>{/if}
-							{#if group.categoryName}<span class="category"
-									><span class="swatch" aria-hidden="true"></span><span class="name"
-										>{group.categoryName}</span
-									></span
-								>{/if}
+							<div class="metadata">
+								{#if duration}<span class="duration" data-testid="Timeline-block-total">{duration} min</span
+									>{/if}
+								{#if timeRange(group.items[0].time, group.items.at(-1)!.end)}<span class="mono range"
+										>{timeRange(group.items[0].time, group.items.at(-1)!.end)}</span
+									>{/if}
+								{#if group.categoryName}<span class="category"
+										><span class="swatch" aria-hidden="true"></span><span class="name"
+											>{group.categoryName}</span
+										></span
+									>{/if}
+							</div>
 							<span class="actions">
 								{#if editTemplate}<EditLink
 										source={{ block: group.items[0].sharedBlock!.key, path: [] }}
@@ -222,6 +211,14 @@
 		color: var(--muted);
 		font-size: var(--text-xs);
 	}
+	.metadata {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0 0.6rem;
+		min-width: 0;
+	}
+
 	.block-facts .range {
 		color: var(--text);
 	}
@@ -233,6 +230,7 @@
 		align-items: center;
 		gap: 0.4rem;
 		min-width: 0;
+		max-width: 100%;
 	}
 	.block-facts .name {
 		overflow: hidden;
@@ -249,6 +247,7 @@
 	.block-facts .actions {
 		display: flex;
 		margin-left: auto;
+		flex: none;
 	}
 	.contents-title {
 		min-width: 0;
@@ -262,8 +261,5 @@
 	}
 	.block-contents :global(.details) {
 		margin: -0.3rem 0 0.1rem;
-	}
-	.contents-row :global(.duration) {
-		margin-left: 0;
 	}
 </style>

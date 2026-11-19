@@ -1,24 +1,11 @@
-<!-- What an opened timeline row shows: its time range, category, conditions, note, links, edit and calendar links. -->
+<!-- What an opened timeline row shows: its duration, time range, category, conditions, note, links, edit and calendar links. -->
 <script lang="ts" module>
 	import type { ResolvedItem } from '#lib/routine/resolve.ts';
-	import { googleCalendarUrl } from '#lib/routine/calendar.ts';
 
 	/** "09:00–09:30", with ≈ for approximate times; nothing for untimed items. */
 	export function timeRange(start: string | undefined, end: string | undefined, approx = false) {
 		if (!start) return undefined;
 		return `${approx ? '≈' : ''}${start}${end ? `–${end}` : ''}`;
-	}
-
-	/** Whether opening the row would show anything, so rows with nothing to add get no chevron. */
-	export function hasDetails(item: ResolvedItem, calendarDate?: string, showConditions = true): boolean {
-		return (
-			!!item.time ||
-			!!item.categoryName ||
-			(showConditions && item.conditions.length > 0) ||
-			!!item.note ||
-			item.links.length > 0 ||
-			(!!calendarDate && !!googleCalendarUrl(calendarDate, [item]))
-		);
 	}
 </script>
 
@@ -41,26 +28,26 @@
 	} = $props();
 	const range = $derived(timeRange(item.time, item.end, item.approx));
 	const canEdit = $derived(!!editTemplate && !!item.source);
-	const canAddToCalendar = $derived(!!calendarDate && !!googleCalendarUrl(calendarDate, [item]));
 </script>
 
 <div class="details" data-testid="ItemDetails">
-	{#if range || item.categoryName || canAddToCalendar || canEdit}
-		<div class="facts">
+	<div class="facts">
+		<div class="metadata">
+			<span class="duration" data-testid="ItemDetails-duration">{item.duration} min</span>
 			{#if range}<span class="range mono" data-testid="ItemDetails-range">{range}</span>{/if}
 			{#if item.categoryName}<span class="category" data-testid="ItemDetails-category"
 					><span class="swatch" aria-hidden="true"></span><span class="name">{item.categoryName}</span></span
 				>{/if}
-			<span class="actions">
-				{#if canEdit}<EditLink
-						source={item.source!}
-						template={editTemplate}
-						label={`Edit ${item.title}`}
-					/>{/if}
-				{#if calendarDate}<CalendarLink date={calendarDate} items={[item]} title={item.title} />{/if}
-			</span>
 		</div>
-	{/if}
+		<span class="actions">
+			{#if canEdit}<EditLink
+					source={item.source!}
+					template={editTemplate}
+					label={`Edit ${item.title}`}
+				/>{/if}
+			{#if calendarDate}<CalendarLink date={calendarDate} items={[item]} title={item.title} />{/if}
+		</span>
+	</div>
 	{#if showConditions && item.conditions.length}<p class="when" data-testid="ItemDetails-when">
 			When {item.conditions.join(' · ')}
 		</p>{/if}
@@ -96,18 +83,27 @@
 		color: var(--muted);
 		font-size: var(--text-xs);
 	}
+	.metadata {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0 0.6rem;
+		min-width: 0;
+	}
+
 	.range {
 		color: var(--text);
 	}
 	.range {
 		flex: none;
 	}
-	/* One line: a long category name shortens rather than pushing the calendar link down. */
+	/* Metadata can wrap while edit and calendar actions keep their own space. */
 	.category {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.4rem;
 		min-width: 0;
+		max-width: 100%;
 	}
 	.name {
 		overflow: hidden;
@@ -124,6 +120,7 @@
 	.actions {
 		display: flex;
 		margin-left: auto;
+		flex: none;
 	}
 	.when {
 		color: var(--muted);

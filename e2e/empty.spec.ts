@@ -129,8 +129,11 @@ test("deletes the last template and creates a first template from an empty libra
   await page.getByTestId("Templates-edit").click();
   await expect(page.getByTestId("TemplateEditor-delete")).toHaveCount(0);
   await page.getByTestId("TemplateEditor-cancel").click();
-  page.once("dialog", (dialog) => dialog.dismiss());
   await page.getByTestId("Templates-delete").click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Cancel", exact: true })
+    .click();
   await expect(page.getByTestId("Templates-row-daily")).toBeVisible();
   await page.route("**/api/routine", async (route) => {
     if (route.request().method() === "PUT")
@@ -143,13 +146,19 @@ test("deletes the last template and creates a first template from an empty libra
       });
     else await route.continue();
   });
-  page.once("dialog", (dialog) => dialog.accept());
   await page.getByTestId("Templates-delete").click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Delete", exact: true })
+    .click();
   await expect(page.getByTestId("Templates-delete-error")).toBeVisible();
   await expect(page.getByTestId("Templates-row-daily")).toBeVisible();
   await page.unroute("**/api/routine");
-  page.once("dialog", (dialog) => dialog.accept());
   await page.getByTestId("Templates-delete").click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Delete", exact: true })
+    .click();
   await expect(page.getByTestId("Templates-empty-library")).toBeVisible();
   await page.reload();
   await page.getByTestId("Templates-new").click();
@@ -226,7 +235,12 @@ test("creates a duration block and sets its start time only in the template", as
     "09:00",
   );
   await block.getByTestId("Timeline-block-toggle").click();
-  await expect(block.getByTestId("Timeline-block-duration")).toHaveText([
+  await expect(block.getByTestId("ItemDetails-duration")).toHaveCount(0);
+  for (const item of await block
+    .getByTestId("Timeline-block-entry-toggle")
+    .all())
+    await item.click();
+  await expect(block.getByTestId("ItemDetails-duration")).toHaveText([
     "15 min",
     "5 min",
   ]);
@@ -249,7 +263,12 @@ test("creates a duration block and sets its start time only in the template", as
     "09:00",
   );
   await dailyBlock.getByTestId("Timeline-block-toggle").click();
-  await expect(dailyBlock.getByTestId("Timeline-block-duration")).toHaveText([
+  await expect(dailyBlock.getByTestId("ItemDetails-duration")).toHaveCount(0);
+  for (const item of await dailyBlock
+    .getByTestId("Timeline-block-entry-toggle")
+    .all())
+    await item.click();
+  await expect(dailyBlock.getByTestId("ItemDetails-duration")).toHaveText([
     "15 min",
     "5 min",
   ]);

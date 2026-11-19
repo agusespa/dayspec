@@ -124,3 +124,35 @@ test("opens Today at the top without scrolling to the current item", async ({
   expect(await page.evaluate(() => window.scrollY)).toBe(0);
   await expect(page.getByRole("heading", { level: 1 })).toBeInViewport();
 });
+
+test("tapping today's date scrolls to the current activity on mobile and still returns from other days", async ({
+  page,
+}) => {
+  await openAt(page, "2026-11-17T21:02:00");
+  const current = page.locator("[data-current] .row").first();
+  const todayButton = page.getByRole("button", {
+    name: "Go to current activity",
+    exact: true,
+  });
+  await expect(todayButton).toBeVisible();
+  expect(await page.evaluate(() => scrollY)).toBe(0);
+  async function currentIsVisible() {
+    const row = (await current.boundingBox())!;
+    const header = (await page.locator(".page-header").boundingBox())!;
+    const nav = (await page
+      .getByRole("navigation", { name: "Main navigation" })
+      .boundingBox())!;
+    return row.y >= header.y + header.height && row.y + row.height <= nav.y;
+  }
+  await todayButton.tap();
+  await expect.poll(currentIsVisible).toBe(true);
+  // It works again after scrolling away, without changing the selected day.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await todayButton.tap();
+  await expect.poll(currentIsVisible).toBe(true);
+  await page.getByTestId("Day-next").tap();
+  await expect(page.locator("[data-current]")).toHaveCount(0);
+  await page.getByTestId("Day-today").tap();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Today");
+  await expect.poll(currentIsVisible).toBe(true);
+});
