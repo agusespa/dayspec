@@ -41,27 +41,27 @@ export interface ItemDef {
 	alert?: boolean;
 	link?: string | string[];
 	note?: string;
-	when?: When;
 }
 
 export interface UseEntry {
 	use: string;
 	time?: string;
-	when?: When;
 }
 
-export interface Group {
-	when?: When;
+export interface Branch {
+	when: When;
 	items: Entry[];
 }
 
-export type Entry = ItemDef | UseEntry | Group;
+export type Entry = ItemDef | UseEntry | Branch;
+
+export type SharedEntry = Omit<ItemDef, 'time' | 'approx'> | Pick<UseEntry, 'use'>;
 
 export interface Block {
 	name: string;
 	/** The block's colour, and the category of its items that don't set their own. */
 	category?: string;
-	items: Entry[];
+	items: SharedEntry[];
 }
 
 export interface ChoiceOption {
@@ -96,7 +96,7 @@ export interface Routine {
 	days: Record<string, DayTemplate>;
 }
 
-export function isGroup(entry: Entry): entry is Group {
+export function isBranch(entry: Entry): entry is Branch {
 	return 'items' in entry;
 }
 

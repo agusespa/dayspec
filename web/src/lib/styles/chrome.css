@@ -256,7 +256,17 @@
 	padding-right: 1rem;
 	padding-bottom: 0.8rem;
 	padding-left: 1rem;
-	background: var(--bg);
+}
+/* Keep the glass on its own layer so fixed editor actions stay anchored to the screen. */
+.page-header::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+	background: var(--floating-bg);
+	-webkit-backdrop-filter: var(--floating-filter);
+	backdrop-filter: var(--floating-filter);
 }
 
 /* Share the status-bar clearance with editors and loading messages. */
@@ -445,5 +455,18 @@ label.choice {
 	}
 	.bottombar .current-day-button {
 		display: flex;
+	}
+}
+
+/* Let desktop header glass reach both screen edges without widening its contents. */
+@media (min-width: 1024px) {
+	html {
+		overflow-x: clip;
+	}
+	.page-header::before {
+		left: 50%;
+		right: auto;
+		width: 100vw;
+		transform: translateX(-50%);
 	}
 }

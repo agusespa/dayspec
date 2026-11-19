@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	cloneRoutine,
 	moveEntry,
+	sortEntriesByTime,
 	newEntry,
 	createTemplate,
 	assignTemplateDays,
@@ -18,7 +19,7 @@ import {
 	updateCategory,
 	removeCategory
 } from './edit.ts';
-import type { Entry, Routine } from './types.ts';
+import type { Entry, SharedEntry, Routine } from './types.ts';
 const routine: Routine = {
 	blocks: {
 		shared: {
@@ -31,6 +32,7 @@ const routine: Routine = {
 			on: ['sat'],
 			items: [
 				{
+					when: { days: ['sat'] },
 					items: [
 						{ title: 'New item 2', duration: 5 },
 						{ title: 'New item 3', duration: 5 }
@@ -50,11 +52,8 @@ describe('template drafts', () => {
 		expect(routine.days.saturday.on).toEqual(['sat']);
 		expect(routine.blocks!.shared.items).toEqual([{ title: 'New item', duration: 5 }]);
 	});
-	it('moves entries without changing the original list or conditional content', () => {
-		const entries: Entry[] = [
-			{ use: 'shared', when: { gym: true } },
-			{ title: 'Read', duration: 5 }
-		];
+	it('moves shared-block entries without changing their content or the original sequence', () => {
+		const entries: SharedEntry[] = [{ use: 'shared' }, { title: 'Read', duration: 5 }];
 		expect(moveEntry(entries, 1, -1)).toEqual([entries[1], entries[0]]);
 		expect(moveEntry(entries, 0, 1)).toEqual([entries[1], entries[0]]);
 		expect(moveEntry(entries, 0, -1)).toBe(entries);
@@ -126,7 +125,9 @@ describe('shared block management', () => {
 			days: {
 				mon: {
 					on: ['mon'],
-					items: [{ when: { use: 'shared' }, items: [{ items: [{ use: 'shared' }] }] }]
+					items: [
+						{ when: { use: 'shared' }, items: [{ when: { days: ['mon'] }, items: [{ use: 'shared' }] }] }
+					]
 				}
 			},
 			blocks: {
@@ -147,7 +148,9 @@ describe('shared block management', () => {
 	});
 	it('ignores choice conditions named use and deletes only an unused block', () => {
 		const unused: Routine = {
-			days: { mon: { on: ['mon'], items: [{ title: 'One', when: { use: 'shared' }, duration: 5 }] } },
+			days: {
+				mon: { on: ['mon'], items: [{ when: { use: 'shared' }, items: [{ title: 'One', duration: 5 }] }] }
+			},
 			blocks: {
 				shared: {
 					name: 'Shared',
@@ -171,7 +174,7 @@ describe('naming shared blocks', () => {
 			stable: { name: 'Before', items: [{ title: 'Stretch', duration: 15 }] },
 			other: { name: 'Other', items: [{ use: 'stable' }] }
 		},
-		days: { mon: { on: ['mon'], items: [{ items: [{ use: 'stable' }] }] } }
+		days: { mon: { on: ['mon'], items: [{ when: { days: ['mon'] }, items: [{ use: 'stable' }] }] } }
 	};
 	it('preserves IDs, content, references, punctuation and capitalization', () => {
 		const renamed = renameBlock(source, 'stable', 'Morning — Wake Up!');
@@ -217,7 +220,7 @@ describe('categories', () => {
 				on: ['mon'],
 				items: [
 					{ title: 'Laundry', duration: 30, category: 'chores' },
-					{ items: [{ title: 'Laundry', duration: 30, category: 'chores' }] },
+					{ when: { days: ['mon'] }, items: [{ title: 'Laundry', duration: 30, category: 'chores' }] },
 					{ title: 'Nap', duration: 20, category: 'rest' }
 				]
 			}
@@ -267,5 +270,53 @@ describe('categories', () => {
 		expect(
 			removeCategory({ categories: { only: { name: 'Only', color: 'red' } }, days: {} }, 'only').categories
 		).toBeUndefined();
+	});
+});
+
+describe('editor chronological ordering', () => {
+	it('orders activities and block occurrences using the logical day, with stable ties', () => {
+		const entries: Entry[] = [
+			{ title: 'After midnight', time: '01:00', duration: 5 },
+			{ title: 'Evening', time: '20:00', duration: 5 },
+			{ use: 'shared', time: '08:00' },
+			{ title: 'Same start', time: '08:00', duration: 5 },
+			{ title: 'Early', time: '05:00', duration: 5 }
+		];
+		const before = structuredClone(entries);
+		expect(sortEntriesByTime(entries)).toEqual([entries[4], entries[2], entries[3], entries[1], entries[0]]);
+		expect(sortEntriesByTime(entries, '00:00')[0]).toBe(entries[0]);
+		expect(entries).toEqual(before);
+	});
+	it('keeps alternative paths together and orders groups by their earliest nested start', () => {
+		const entries: Entry[] = [
+			{ title: 'Dinner', time: '19:00', duration: 30 },
+			{ when: { location: 'home' }, items: [{ title: 'Home', time: '09:00', duration: 5 }] },
+			{
+				when: { location: 'office' },
+				items: [{ when: { days: ['mon'] }, items: [{ use: 'shared', time: '08:00' }] }]
+			},
+			{ title: 'Breakfast', time: '07:00', duration: 15 },
+			{ title: 'Lunch', time: '12:00', duration: 30 }
+		];
+		const choices = { location: { options: { home: {}, office: {} }, default: 'home' } };
+		expect(sortEntriesByTime(entries, '04:00', choices)).toEqual([
+			entries[3],
+			entries[2],
+			entries[1],
+			entries[4],
+			entries[0]
+		]);
+		expect(entries[1]).toHaveProperty('when.location', 'home');
+	});
+	it('leaves untimed entries and empty alternatives in their existing slots', () => {
+		const entries: Entry[] = [
+			{ title: 'Late', time: '20:00', duration: 5 },
+			{ title: 'Untimed', duration: 5 },
+			{ when: { days: ['mon'] }, items: [] },
+			{ title: 'Incomplete', time: '08:', duration: 5 },
+			{ title: 'Early', time: '07:00', duration: 5 }
+		];
+		expect(sortEntriesByTime(entries)).toEqual([entries[4], entries[1], entries[2], entries[3], entries[0]]);
+		expect(sortEntriesByTime([])).toEqual([]);
 	});
 });

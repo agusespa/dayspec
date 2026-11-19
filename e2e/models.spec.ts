@@ -45,6 +45,7 @@ test("edits choices, conditional activities, durations and Notion links, then se
     await choice.getByTestId("ChoiceEditor-option-name").nth(0).fill("Home");
     await choice.getByTestId("ChoiceEditor-option-name").nth(1).fill("Office");
     await page.getByTestId("EntryEditor-add").click();
+    await page.getByTestId("EntryEditor-event").click();
     const first = page.getByTestId("EntryEditor-entry").nth(0);
     await expect(first.getByTestId("EntryEditor-title")).toBeHidden();
     await first.getByTestId("EntryEditor-open").click();
@@ -53,26 +54,42 @@ test("edits choices, conditional activities, durations and Notion links, then se
     await first
       .getByTestId("EntryEditor-link")
       .fill("https://www.notion.so/routine");
-    await page.getByTestId("EntryEditor-add").click();
-    const second = page.getByTestId("EntryEditor-entry").nth(1);
+    await page
+      .getByRole("button", { name: "+ Add branch", exact: true })
+      .last()
+      .click();
+    await page
+      .getByRole("combobox", { name: "Alternative for new branch" })
+      .last()
+      .selectOption("choice");
+    const branch = page.getByRole("region", {
+      name: "Work location",
+      exact: true,
+    });
+    await branch.getByRole("button", { name: "Office", exact: true }).click();
+    await branch.getByTestId("EntryEditor-add").click();
+    await branch.getByTestId("EntryEditor-event").click();
+    const second = branch.getByTestId("EntryEditor-entry");
     await second.getByTestId("EntryEditor-open").click();
     await second.getByTestId("EntryEditor-title").fill("Commute");
     await second.getByTestId("EntryEditor-time").fill("08:15");
     await second.getByTestId("EntryEditor-duration").fill("20");
-    await second.getByTestId("ConditionsEditor-open").click();
-    await second.getByTestId("ConditionsEditor-option-option_2").check();
+    await expect(
+      page.locator(".editor-timeline").getByTestId("ConditionsEditor"),
+    ).toHaveCount(0);
     await save(page);
     const persisted = (await (await request.get("/api/routine")).json())
       .routine;
     expect(persisted.days.work.choices.choice.options.option_2.label).toBe(
       "Office",
     );
-    expect(persisted.days.work.items[1]).toMatchObject({
-      duration: 20,
-      time: "08:15",
+    const office = persisted.days.work.items.find(
+      (entry) => entry.when?.choice === "option_2",
+    );
+    expect(office).toEqual({
       when: { choice: "option_2" },
+      items: [{ title: "Commute", duration: 20, time: "08:15" }],
     });
-    expect(persisted.days.work.items[1]).not.toHaveProperty("end");
     await page.goto("/");
     await expect(page.getByTestId("TimelineItem")).toHaveCount(1);
     await page.getByTestId("Day-choice-choice-option_2").click();
@@ -80,9 +97,16 @@ test("edits choices, conditional activities, durations and Notion links, then se
     await expect(page.getByTestId("TimelineItem").first()).toContainText(
       "15 min",
     );
-    await page.getByTestId("TimelineItem").first().getByTestId("TimelineItem-toggle").click();
+    await page
+      .getByTestId("TimelineItem")
+      .first()
+      .getByTestId("TimelineItem-toggle")
+      .click();
     await expect(
-      page.getByTestId("TimelineItem").first().getByRole("link", { name: /www\.notion\.so/ }),
+      page
+        .getByTestId("TimelineItem")
+        .first()
+        .getByRole("link", { name: /www\.notion\.so/ }),
     ).toHaveAttribute("href", "https://www.notion.so/routine");
     await page.reload();
     await expect(page.getByTestId("TimelineItem")).toHaveCount(2);
@@ -118,7 +142,7 @@ test("edits choices, conditional activities, durations and Notion links, then se
           })
         : route.continue(),
     );
-    await page.getByTestId("Profile-holiday-template").selectOption("");
+    await page.getByTestId("Profile-holiday-template").selectOption("work");
     await expect(page.getByTestId("Profile-error")).toBeVisible();
     await expect(page.getByTestId("Profile-holiday-template")).toHaveValue(
       "rest",
@@ -173,8 +197,10 @@ test("refuses a missing block duration without replacing the saved block", async
     expect((await (await request.get("/api/routine")).json()).routine).toEqual(
       routine,
     );
-    page.once("dialog", (dialog) => dialog.accept());
     await page.getByTestId("TemplateEditor-cancel").click();
+    await page
+      .getByRole("button", { name: "Discard changes", exact: true })
+      .click();
   } finally {
     const current = await (await request.get("/api/routine")).json();
     expect(

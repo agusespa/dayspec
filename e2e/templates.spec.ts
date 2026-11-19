@@ -162,6 +162,23 @@ test("a stale save preserves the draft and cannot overwrite another device’s e
     (await (await request.get("/api/routine")).json()).routine.days.saturday
       .theme,
   ).toBe("Changed on another device");
+  await page.getByTestId("TemplateEditor-reload").click();
+  const dialog = page.getByRole("dialog", { name: "Discard changes?" });
+  await expect(dialog).toContainText("latest saved templates");
+  await dialog
+    .getByRole("button", { name: "Keep editing", exact: true })
+    .click();
+  await expect(page.getByTestId("TemplateEditor-theme")).toHaveValue(
+    "My unsaved draft",
+  );
+  await page.getByTestId("TemplateEditor-reload").click();
+  await dialog
+    .getByRole("button", { name: "Discard changes", exact: true })
+    .click();
+  await expect(page.getByTestId("TemplateEditor-theme")).toHaveValue(
+    "Changed on another device",
+  );
+  await expect(page.getByTestId("TemplateEditor-save")).toBeDisabled();
 });
 test("cancel protection leaves the saved routine unchanged", async ({
   page,
@@ -169,17 +186,32 @@ test("cancel protection leaves the saved routine unchanged", async ({
 }) => {
   await openEditor(page);
   await page.getByTestId("TemplateEditor-theme").fill("Discard this");
-  page.once("dialog", (dialog) => dialog.dismiss());
   await page.getByTestId("TemplateEditor-cancel").click();
+  await expect(
+    page.getByRole("dialog", { name: "Discard changes?" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Keep editing", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByTestId("TemplateEditor-theme")).toHaveValue(
+    "Discard this",
+  );
+  await expect(page.getByTestId("TemplateEditor-cancel")).toBeFocused();
+  await page.getByTestId("TemplateEditor-cancel").click();
+  await page.getByRole("button", { name: "Keep editing", exact: true }).click();
   await expect(page.getByTestId("TemplateEditor")).toBeVisible();
-  page.once("dialog", (dialog) => dialog.accept());
   await page.getByTestId("TemplateEditor-cancel").click();
+  await page
+    .getByRole("button", { name: "Discard changes", exact: true })
+    .click();
   await expect(page.getByTestId("TemplateEditor")).toHaveCount(0);
   expect((await (await request.get("/api/routine")).json()).routine).toEqual(
     testRoutine,
   );
 });
-test("edits activity notes and reorders entries without losing details", async ({
+test("edits activity notes and orders entries by start time without losing details", async ({
   page,
   request,
 }) => {
@@ -189,8 +221,8 @@ test("edits activity notes and reorders entries without losing details", async (
       saturday: {
         on: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
         items: [
-          { title: "First", note: "Water", duration: 5 },
-          { title: "Second", duration: 5 },
+          { title: "First", time: "08:00", note: "Water", duration: 5 },
+          { title: "Second", time: "09:00", duration: 5 },
         ],
       },
     },
@@ -208,16 +240,19 @@ test("edits activity notes and reorders entries without losing details", async (
   await expandEntries(page);
   await page.getByTestId("EntryEditor-note").first().fill("Water\nWash face");
   await expandEntries(page);
-  await page
+  const secondTime = page
     .getByTestId("EntryEditor-entry")
     .last()
-    .getByTestId("EntryEditor-up")
-    .click();
+    .getByTestId("EntryEditor-time");
+  await secondTime.fill("07:00");
+  await secondTime.blur();
+  await expect(page.getByTestId("EntryEditor-up")).toHaveCount(0);
+  await expect(page.getByTestId("EntryEditor-down")).toHaveCount(0);
   await save(page);
   const persisted = (await (await request.get("/api/routine")).json()).routine;
   expect(persisted.days.saturday.items).toEqual([
-    { title: "Second", duration: 5 },
-    { title: "First", note: "Water\nWash face", duration: 5 },
+    { title: "Second", time: "07:00", duration: 5 },
+    { title: "First", time: "08:00", note: "Water\nWash face", duration: 5 },
   ]);
   await page.reload();
   await page
@@ -350,11 +385,15 @@ test("manages shared blocks directly from the library and protects blocks that a
 }) => {
   await page.goto("/templates");
   await page.getByTestId("Templates-blocks").click();
-  await page.getByTestId("TemplateEditor-block-wake_up").click();
-  await expect(page.getByTestId("TemplateEditor-block-delete")).toBeDisabled();
+  const usedCard = page.getByTestId("TemplateEditor-block-card-wake_up");
   await expect(
-    page.getByTestId("TemplateEditor-block-references"),
+    usedCard.getByTestId("TemplateEditor-block-delete"),
+  ).toBeDisabled();
+  await expect(
+    usedCard.getByTestId("TemplateEditor-block-references"),
   ).toBeVisible();
+  await page.getByTestId("TemplateEditor-block-wake_up").click();
+  await expect(page.getByTestId("TemplateEditor-block-delete")).toHaveCount(0);
   await expect(page.getByTestId("TemplateEditor-block-back")).toHaveCount(0);
   await expect(page.getByTestId("TemplateEditor-block-name")).toHaveValue(
     "Wake up",
@@ -370,9 +409,9 @@ test("manages shared blocks directly from the library and protects blocks that a
   await expect(page.getByTestId("TemplateEditor-block-name")).toHaveValue(
     "Morning start",
   );
-  await expect(page.getByTestId("TemplateEditor-block-delete")).toBeDisabled();
+  await expect(page.getByTestId("TemplateEditor-block-delete")).toHaveCount(0);
   await page.getByTestId("TemplateEditor-cancel").click();
-  await page.getByTestId("Templates-blocks").click();
+  await expect(page.getByTestId("TemplateEditor-block-list")).toBeVisible();
   await page.getByTestId("TemplateEditor-block-new").click();
   await page.getByTestId("TemplateEditor-save").click();
   await expect(page.getByTestId("TemplateEditor-errors")).toBeVisible();
@@ -388,9 +427,342 @@ test("manages shared blocks directly from the library and protects blocks that a
   await expect(page.getByTestId("EntryEditor-title")).toHaveValue(
     "Read a book",
   );
+  await expect(page.getByTestId("TemplateEditor-block-delete")).toHaveCount(0);
+  await page.getByTestId("TemplateEditor-cancel").click();
+  const createdCard = page.getByTestId("TemplateEditor-block-card-block");
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await createdCard
+    .getByRole("button", {
+      name: "Delete shared block Evening wind down",
+      exact: true,
+    })
+    .click();
+  await expect(createdCard).toBeVisible();
+  await page.route("**/api/routine", (route) =>
+    route.request().method() === "PUT"
+      ? route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ error: "Could not delete block. Try again." }),
+        })
+      : route.continue(),
+  );
   page.once("dialog", (dialog) => dialog.accept());
-  await page.getByTestId("TemplateEditor-block-delete").click();
-  await save(page);
+  await createdCard.getByTestId("TemplateEditor-block-delete").click();
+  await expect(page.getByTestId("TemplateEditor-errors")).toContainText(
+    "Could not delete block",
+  );
+  await expect(createdCard).toBeVisible();
+  await page.unroute("**/api/routine");
+  page.once("dialog", (dialog) => dialog.accept());
+  await createdCard.getByTestId("TemplateEditor-block-delete").click();
+  await expect(createdCard).toHaveCount(0);
+  await expect(page.getByTestId("TemplateEditor-block-list")).toBeVisible();
+  await expect(page.getByTestId("TemplateEditor-save")).toHaveCount(0);
+  await page.reload();
   await page.getByTestId("Templates-blocks").click();
   await expect(page.getByTestId("TemplateEditor-block-block")).toHaveCount(0);
+});
+
+test("cancel returns to shared blocks and discards only confirmed edits", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/templates");
+  await page.getByTestId("Templates-blocks").click();
+  await page.getByTestId("TemplateEditor-block-wake_up").click();
+  await page.getByTestId("TemplateEditor-block-name").fill("Discard this name");
+  await expandEntries(page);
+  await page.getByTestId("EntryEditor-title").fill("Discard this activity");
+  await page.getByTestId("TemplateEditor-cancel").click();
+  await expect(
+    page.getByRole("dialog", { name: "Discard changes?" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Keep editing", exact: true }).click();
+  await expect(page.getByTestId("TemplateEditor-block-name")).toHaveValue(
+    "Discard this name",
+  );
+  await page.getByTestId("TemplateEditor-cancel").click();
+  await page
+    .getByRole("button", { name: "Discard changes", exact: true })
+    .click();
+  await expect(page.getByTestId("TemplateEditor-block-list")).toBeVisible();
+  await expect(page.getByTestId("TemplateEditor-save")).toHaveCount(0);
+  await page.getByTestId("TemplateEditor-block-wake_up").click();
+  await expect(page.getByTestId("TemplateEditor-block-name")).toHaveValue(
+    testRoutine.blocks.wake_up.name,
+  );
+  await expandEntries(page);
+  await expect(page.getByTestId("EntryEditor-title")).toHaveValue(
+    testRoutine.blocks.wake_up.items[0].title,
+  );
+  await page.getByTestId("TemplateEditor-cancel").click();
+  await page.getByTestId("TemplateEditor-block-new").click();
+  await page.getByTestId("TemplateEditor-save").click();
+  await expect(page.getByTestId("TemplateEditor-errors")).toBeVisible();
+  await page.getByTestId("TemplateEditor-cancel").click();
+  await page
+    .getByRole("button", { name: "Discard changes", exact: true })
+    .click();
+  await expect(page.getByTestId("TemplateEditor-block-list")).toBeVisible();
+  await expect(page.getByTestId("TemplateEditor-block-block")).toHaveCount(0);
+  await expect(page.getByTestId("TemplateEditor-errors")).toHaveCount(0);
+  await expect(page.getByTestId("TemplateEditor-save")).toHaveCount(0);
+  await page.getByTestId("TemplateEditor-cancel").click();
+  await expect(page.getByTestId("Templates-list")).toBeVisible();
+  expect((await (await request.get("/api/routine")).json()).routine).toEqual(
+    testRoutine,
+  );
+});
+
+test("new activities and shared blocks follow their start times in the editor", async ({
+  page,
+  request,
+}) => {
+  const current = await (await request.get("/api/routine")).json();
+  const routine = {
+    blocks: { wake_up: testRoutine.blocks.wake_up },
+    days: {
+      saturday: {
+        on: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+        items: [
+          { title: "Early routine", time: "07:00", duration: 5 },
+          { title: "Dinner", time: "18:00", duration: 30 },
+        ],
+      },
+    },
+  };
+  expect(
+    (
+      await request.put("/api/routine", {
+        headers: { "If-Match": current.revision },
+        data: { routine },
+      })
+    ).ok(),
+  ).toBeTruthy();
+  await openEditor(page);
+  await page.getByTestId("EntryEditor-add").click();
+  await page.getByTestId("EntryEditor-event").click();
+  const titles = page.getByTestId("EntryEditor-open").locator(".summary-title");
+  await expect(titles).toHaveText(["Early routine", "New item", "Dinner"]);
+  const activity = page
+    .getByTestId("EntryEditor-entry")
+    .filter({ hasText: "New item" });
+  await activity.getByTestId("EntryEditor-open").click();
+  await activity.getByTestId("EntryEditor-title").fill("Mid-morning break");
+  const edited = page
+    .getByTestId("EntryEditor-entry")
+    .filter({ hasText: "Mid-morning break" });
+  await edited.getByTestId("EntryEditor-time").fill("10:30");
+  await edited.getByTestId("EntryEditor-time").blur();
+  await page.getByTestId("EntryEditor-add").click();
+  await page.getByTestId("EntryEditor-use").click();
+  await expect(titles).toHaveText([
+    "Early routine",
+    "Wake up",
+    "Mid-morning break",
+    "Dinner",
+  ]);
+  const block = page
+    .getByTestId("EntryEditor-entry")
+    .filter({ has: page.getByTestId("EntryEditor-block") });
+  await expect(block).not.toHaveAttribute("open", "");
+  await block.getByTestId("EntryEditor-open").click();
+  await block.getByTestId("EntryEditor-time").fill("06:30");
+  await block.getByTestId("EntryEditor-time").blur();
+  await expect(titles).toHaveText([
+    "Wake up",
+    "Early routine",
+    "Mid-morning break",
+    "Dinner",
+  ]);
+  await expect(block.getByTestId("EntryEditor-time")).toBeVisible();
+  await expect(block.getByTestId("EntryEditor-time")).toHaveValue("06:30");
+  await save(page);
+  const saved = (await (await request.get("/api/routine")).json()).routine;
+  expect(saved.days.saturday.items).toEqual([
+    { use: "wake_up", time: "06:30" },
+    routine.days.saturday.items[0],
+    { title: "Mid-morning break", time: "10:30", duration: 5 },
+    routine.days.saturday.items[1],
+  ]);
+});
+
+test("events and blocks have no per-item condition controls", async ({
+  page,
+}) => {
+  await page.goto("/templates");
+  await page.getByTestId("Templates-blocks").click();
+  for (const key of ["wake_up", "gym_evening"]) {
+    await page.getByTestId(`TemplateEditor-block-${key}`).click();
+    await expandEntries(page);
+    await expect(page.getByTestId("ConditionsEditor")).toHaveCount(0);
+    await expect(page.getByTestId("BranchSection")).toHaveCount(0);
+    await expect(
+      page.getByRole("combobox", { name: "Alternative for new branch" }),
+    ).toHaveCount(0);
+    await page.getByTestId("TemplateEditor-cancel").click();
+  }
+  await page.getByTestId("TemplateEditor-cancel").click();
+  await page
+    .getByTestId("Templates-row-saturday")
+    .getByTestId("Templates-edit")
+    .click();
+  const block = page
+    .getByTestId("EntryEditor-entry")
+    .filter({ has: page.getByTestId("EntryEditor-block") })
+    .first();
+  await block.getByTestId("EntryEditor-open").first().click();
+  await expect(block.getByTestId("ConditionsEditor")).toHaveCount(0);
+  await expandEntries(page);
+  await expect(
+    page.locator(".editor-timeline").getByTestId("ConditionsEditor"),
+  ).toHaveCount(0);
+  await expect(
+    page.locator(".editor-timeline").getByText("Show when", { exact: true }),
+  ).toHaveCount(0);
+});
+
+test("shared block contents retain sequence controls without fixed times", async ({
+  page,
+  request,
+}) => {
+  const current = await (await request.get("/api/routine")).json();
+  const routine = {
+    days: {},
+    blocks: {
+      morning: {
+        name: "Morning",
+        items: [{ title: "Wash", duration: 5 }, { use: "tea" }],
+      },
+      tea: { name: "Tea", items: [{ title: "Make tea", duration: 10 }] },
+    },
+  };
+  expect(
+    (
+      await request.put("/api/routine", {
+        headers: { "If-Match": current.revision },
+        data: { routine },
+      })
+    ).ok(),
+  ).toBeTruthy();
+  await page.goto("/templates");
+  await page.getByTestId("Templates-blocks").click();
+  await page.getByTestId("TemplateEditor-block-morning").click();
+  await expandEntries(page);
+  await expect(page.getByTestId("EntryEditor-time")).toHaveCount(0);
+  await expect(page.getByTestId("EntryEditor-up")).toHaveCount(2);
+  await page.getByTestId("EntryEditor-up").last().click();
+  await save(page);
+  const saved = (await (await request.get("/api/routine")).json()).routine;
+  expect(saved.blocks.morning.items).toEqual([
+    { use: "tea" },
+    { title: "Wash", duration: 5 },
+  ]);
+});
+
+test("browser back uses the discard modal and resumes only after confirmation", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/profile");
+  await page.getByRole("link", { name: "Templates", exact: true }).click();
+  await page
+    .getByTestId("Templates-row-saturday")
+    .getByTestId("Templates-edit")
+    .click();
+  await page
+    .getByTestId("TemplateEditor-theme")
+    .fill("Unsaved navigation draft");
+  await page.evaluate(() => history.back());
+  const dialog = page.getByRole("dialog", { name: "Discard changes?" });
+  await expect(dialog).toBeVisible();
+  await expect(page).toHaveURL(/\/templates$/);
+  await dialog
+    .getByRole("button", { name: "Keep editing", exact: true })
+    .click();
+  await expect(page.getByTestId("TemplateEditor-theme")).toHaveValue(
+    "Unsaved navigation draft",
+  );
+  await page.evaluate(() => history.back());
+  await expect(dialog).toBeVisible();
+  await dialog
+    .getByRole("button", { name: "Discard changes", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/profile$/);
+  await expect(
+    page.getByRole("heading", { name: "Profile", exact: true }),
+  ).toBeVisible();
+  expect((await (await request.get("/api/routine")).json()).routine).toEqual(
+    testRoutine,
+  );
+});
+
+test("browser reload and tab close warn only for unsaved changes", async ({
+  page,
+}) => {
+  await openEditor(page);
+  await page
+    .getByTestId("TemplateEditor-theme")
+    .fill("Protected browser reload draft");
+  const warning = page.waitForEvent("dialog");
+  const reload = page.evaluate(() => location.reload()).catch(() => undefined);
+  const dialog = await warning;
+  expect(dialog.type()).toBe("beforeunload");
+  await dialog.dismiss();
+  await reload;
+  await expect(page.getByTestId("TemplateEditor-theme")).toHaveValue(
+    "Protected browser reload draft",
+  );
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  const closeWarning = page.waitForEvent("dialog");
+  await page.close({ runBeforeUnload: true });
+  const closeDialog = await closeWarning;
+  expect(closeDialog.type()).toBe("beforeunload");
+  await closeDialog.dismiss();
+  expect(page.isClosed()).toBe(false);
+  await expect(page.getByTestId("TemplateEditor-theme")).toHaveValue(
+    "Protected browser reload draft",
+  );
+  await save(page);
+  const unexpected: string[] = [];
+  page.on("dialog", async (dialog) => {
+    unexpected.push(dialog.type());
+    await dialog.dismiss();
+  });
+  await openEditor(page);
+  await page.reload();
+  await expect(page.getByTestId("Templates-list")).toBeVisible();
+  expect(unexpected).toEqual([]);
+});
+
+test("deletes a template directly from its card and preserves the rest of the library", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/templates?t=saturday");
+  const card = page.getByTestId("Templates-row-saturday");
+  await expect(card.getByTestId("Templates-open")).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
+  page.once("dialog", (dialog) => dialog.accept());
+  await card
+    .getByRole("button", { name: "Delete Saturday template", exact: true })
+    .click();
+  await expect(card).toHaveCount(0);
+  await expect(page.getByTestId("TemplateEditor")).toHaveCount(0);
+  await expect(page).toHaveURL(/\/templates$/);
+  await expect(page.getByTestId("Templates-unassigned")).toContainText("Sat");
+  const expected = structuredClone(testRoutine);
+  delete expected.days.saturday;
+  delete expected.settings.holiday;
+  expect((await (await request.get("/api/routine")).json()).routine).toEqual(
+    expected,
+  );
+  await page.reload();
+  await expect(card).toHaveCount(0);
+  await expect(
+    page.getByTestId("Templates-list").locator("article"),
+  ).toHaveCount(Object.keys(expected.days).length);
 });

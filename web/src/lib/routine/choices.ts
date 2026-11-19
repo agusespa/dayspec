@@ -1,4 +1,12 @@
-import type { Choice, ChoiceValue, Entry, Routine, When, Weekday } from './types.ts';
+import {
+	isBranch,
+	type Choice,
+	type ChoiceValue,
+	type Entry,
+	type Routine,
+	type When,
+	type Weekday
+} from './types.ts';
 import { cloneRoutine } from './edit.ts';
 
 export function choiceUsed(routine: Routine, template: string, name: string, option?: string): boolean {
@@ -9,15 +17,8 @@ export function choiceUsed(routine: Routine, template: string, name: string, opt
 		if (typeof value === 'object' && !Array.isArray(value)) return [value.not].flat().includes(option);
 		return [value].flat().includes(option);
 	};
-	const walk = (entries: Entry[], stack: string[] = []): boolean =>
-		entries.some(
-			(entry) =>
-				matches(entry.when) ||
-				('items' in entry && walk(entry.items, stack)) ||
-				('use' in entry &&
-					!stack.includes(entry.use) &&
-					walk(routine.blocks?.[entry.use]?.items ?? [], [...stack, entry.use]))
-		);
+	const walk = (entries: Entry[]): boolean =>
+		entries.some((entry) => isBranch(entry) && (matches(entry.when) || walk(entry.items)));
 	return (
 		walk(routine.days[template].items) ||
 		Object.values(routine.days[template].choices ?? {}).some((choice) => matches(choice.active_when))

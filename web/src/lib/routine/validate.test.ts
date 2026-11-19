@@ -26,7 +26,9 @@ describe('validateRoutine', () => {
 	});
 	it('reports unknown blocks and choices', () => {
 		const errors = validateRoutine(
-			withDay({ items: [{ use: 'nope' }, { title: 'B', duration: 5, when: { place: 'office' } }] }),
+			withDay({
+				items: [{ use: 'nope' }, { when: { place: 'office' }, items: [{ title: 'B', duration: 5 }] }]
+			}),
 			schema
 		);
 		expect(errors).toEqual([
@@ -88,8 +90,8 @@ describe('validateRoutine', () => {
 					gym: { type: 'toggle', default: true }
 				},
 				items: [
-					{ title: 'A', when: { place: 'beach' }, duration: 5 },
-					{ title: 'B', when: { gym: 'yes' }, duration: 5 }
+					{ when: { place: 'beach' }, items: [{ title: 'A', duration: 5 }] },
+					{ when: { gym: 'yes' }, items: [{ title: 'B', duration: 5 }] }
 				]
 			}),
 			schema
@@ -236,7 +238,7 @@ it('validates unused blocks without requiring template-specific choices', () => 
 				blocks: {
 					unused: {
 						name: 'Unused',
-						items: [{ title: 'Unused', when: { location: 'home' }, duration: 5 }]
+						items: [{ title: 'Unused', duration: 5 }]
 					}
 				}
 			},
@@ -297,7 +299,7 @@ it('requires durations and rejects fixed start times inside shared blocks', () =
 			{ days: {}, blocks: { b: { name: 'Block', items: [{ title: 'Fixed', duration: 5, time: '08:00' }] } } },
 			schema
 		).join(' ')
-	).toContain('set the start time');
+	).toContain('time');
 });
 
 describe('calendar preference', () => {
@@ -307,5 +309,53 @@ describe('calendar preference', () => {
 		expect(
 			validateRoutine({ days: {}, settings: { calendar: 'unsupported' } }, schema).length
 		).toBeGreaterThan(0);
+	});
+});
+
+describe('branch-only conditions and reusable block contents', () => {
+	it.each([
+		{ title: 'Work', duration: 10, when: { days: ['mon'] } },
+		{ use: 'shared', when: { days: ['mon'] } },
+		{ items: [] },
+		{ when: {}, items: [] }
+	])('rejects a non-branch condition or an invalid branch: %j', (entry) => {
+		expect(validateRoutine(withDay({ items: [entry] }), schema).length).toBeGreaterThan(0);
+	});
+	it.each([
+		{ title: 'Work', duration: 10, when: { days: ['mon'] } },
+		{ when: { days: ['mon'] }, items: [{ title: 'Work', duration: 10 }] },
+		{ title: 'Work', duration: 10, time: '08:00' },
+		{ title: 'Work', duration: 10, approx: true },
+		{ use: 'inner', time: '08:00' },
+		{ use: 'inner', when: { days: ['mon'] } }
+	])('rejects template-only fields inside shared blocks: %j', (entry) => {
+		const blocks = {
+			shared: { name: 'Shared', items: [entry] },
+			inner: { name: 'Inner', items: [{ title: 'Tea', duration: 5 }] }
+		};
+		for (const items of [[], [{ use: 'shared', time: '08:00' }]])
+			expect(validateRoutine(withDay({ items }, { blocks }), schema).length).toBeGreaterThan(0);
+	});
+	it('accepts nested branches around activities and reusable block occurrences', () => {
+		const routine = withDay(
+			{
+				items: [
+					{
+						when: { days: ['mon'] },
+						items: [
+							{ title: 'Work', time: '07:00', duration: 10 },
+							{ when: { days: ['mon', 'tue'] }, items: [{ use: 'shared', time: '08:00' }] }
+						]
+					}
+				]
+			},
+			{
+				blocks: {
+					shared: { name: 'Shared', items: [{ title: 'Tea', duration: 5 }, { use: 'inner' }] },
+					inner: { name: 'Inner', items: [{ title: 'Read', duration: 10 }] }
+				}
+			}
+		);
+		expect(validateRoutine(routine, schema)).toEqual([]);
 	});
 });

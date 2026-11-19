@@ -76,13 +76,22 @@ describe('shared block timeline groups', () => {
 			]);
 		}
 	});
-	it('omits a block when all its items are filtered out', () => {
+	it('omits a block when its enclosing branch is inactive', () => {
 		const filtered: Routine = {
 			...routine,
+			days: {
+				daily: {
+					on: ['mon'],
+					items: [
+						{ when: { days: ['tue'] }, items: [{ use: 'morning', time: '07:00' }] },
+						{ title: 'Work', duration: 5 }
+					]
+				}
+			},
 			blocks: {
 				morning: {
 					name: 'Morning',
-					items: [{ title: 'Tuesday only', when: { days: ['tue'] }, duration: 5 }]
+					items: [{ title: 'Tuesday only', duration: 5 }]
 				}
 			}
 		};

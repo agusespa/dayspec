@@ -21,7 +21,7 @@ import {
 
 export { describeWhen, weekdayLabel } from './resolve.ts';
 import {
-	isGroup,
+	isBranch,
 	isUse,
 	type Choice,
 	type ChoiceValue,
@@ -76,8 +76,8 @@ function placeAll(
 	const out: Placed[] = [];
 	for (const [index, entry] of entries.entries()) {
 		const location = `${path}/${index}`;
-		const whens = entry.when ? [...outer, entry.when] : outer;
-		if (isGroup(entry)) {
+		const whens = isBranch(entry) ? [...outer, entry.when] : outer;
+		if (isBranch(entry)) {
 			out.push(...placeAll(entry.items, routine, whens, location, inherited));
 		} else if (isUse(entry)) {
 			const block = routine.blocks?.[entry.use];

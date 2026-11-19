@@ -7,7 +7,7 @@ import { dayMinutes, weekdayOf } from './date.ts';
 import { getSwedishPublicHolidayName } from './swedish-holidays.ts';
 import {
 	DEFAULT_DAY_STARTS_AT,
-	isGroup,
+	isBranch,
 	isUse,
 	type Category,
 	type Choice,
@@ -201,10 +201,10 @@ function collect(entries: Entry[], ctx: Context, scope: Scope): CollectedItem[] 
 	const out: CollectedItem[] = [];
 	for (const [index, entry] of entries.entries()) {
 		const location = `${scope.location}/${index}`;
-		if (!matches(entry.when, ctx.values, ctx.weekday)) continue;
-		const whens = entry.when ? [...scope.whens, entry.when] : scope.whens;
+		const whens = isBranch(entry) ? [...scope.whens, entry.when] : scope.whens;
 		const source = { ...scope.source, path: [...scope.source.path, index] };
-		if (isGroup(entry)) {
+		if (isBranch(entry)) {
+			if (!matches(entry.when, ctx.values, ctx.weekday)) continue;
 			out.push(...collect(entry.items, ctx, { ...scope, location, whens, source }));
 		} else if (isUse(entry)) {
 			const block = ctx.routine.blocks?.[entry.use];

@@ -51,6 +51,7 @@ test("starts empty, saves the first item, and can return to an empty template", 
   await page.getByTestId("Templates-edit").click();
   await expect(page.getByTestId("TemplateEditor-name")).toHaveText("Daily");
   await page.getByTestId("EntryEditor-add").click();
+  await page.getByTestId("EntryEditor-event").click();
   await expandEntries(page);
   await page.getByTestId("EntryEditor-title").fill("My first routine item");
   await page.getByTestId("TemplateEditor-save").click();
@@ -91,6 +92,7 @@ test("lists templates and offers creation only for unassigned days", async ({
   await page.getByTestId("TemplateEditor-new-sun").check();
   await page.getByTestId("TemplateEditor-create-confirm").click();
   await page.getByTestId("EntryEditor-add").click();
+  await page.getByTestId("EntryEditor-event").click();
   await expandEntries(page);
   await page.getByTestId("EntryEditor-title").fill("Weekend walk");
   await page.getByTestId("TemplateEditor-save").click();
@@ -121,10 +123,15 @@ test("deletes the last template and creates a first template from an empty libra
   page,
 }) => {
   await page.goto("/templates");
+  await expect(page.getByTestId("Templates-delete")).toHaveAccessibleName(
+    "Delete Daily template",
+  );
   await page.getByTestId("Templates-edit").click();
+  await expect(page.getByTestId("TemplateEditor-delete")).toHaveCount(0);
+  await page.getByTestId("TemplateEditor-cancel").click();
   page.once("dialog", (dialog) => dialog.dismiss());
-  await page.getByTestId("TemplateEditor-delete").click();
-  await expect(page.getByTestId("TemplateEditor")).toBeVisible();
+  await page.getByTestId("Templates-delete").click();
+  await expect(page.getByTestId("Templates-row-daily")).toBeVisible();
   await page.route("**/api/routine", async (route) => {
     if (route.request().method() === "PUT")
       await route.fulfill({
@@ -137,12 +144,12 @@ test("deletes the last template and creates a first template from an empty libra
     else await route.continue();
   });
   page.once("dialog", (dialog) => dialog.accept());
-  await page.getByTestId("TemplateEditor-delete").click();
-  await expect(page.getByTestId("TemplateEditor-errors")).toBeVisible();
-  await expect(page.getByTestId("TemplateEditor")).toBeVisible();
+  await page.getByTestId("Templates-delete").click();
+  await expect(page.getByTestId("Templates-delete-error")).toBeVisible();
+  await expect(page.getByTestId("Templates-row-daily")).toBeVisible();
   await page.unroute("**/api/routine");
   page.once("dialog", (dialog) => dialog.accept());
-  await page.getByTestId("TemplateEditor-delete").click();
+  await page.getByTestId("Templates-delete").click();
   await expect(page.getByTestId("Templates-empty-library")).toBeVisible();
   await page.reload();
   await page.getByTestId("Templates-new").click();
@@ -196,6 +203,7 @@ test("creates a duration block and sets its start time only in the template", as
   await expandEntries(page);
   await page.getByTestId("EntryEditor-duration").fill("15");
   await page.getByTestId("EntryEditor-add").click();
+  await page.getByTestId("EntryEditor-event").click();
   await expandEntries(page);
   await page.getByTestId("EntryEditor-title").nth(1).fill("Drink water");
   await expandEntries(page);
@@ -206,6 +214,7 @@ test("creates a duration block and sets its start time only in the template", as
     .getByTestId("Templates-row-daily")
     .getByTestId("Templates-edit")
     .click();
+  await page.getByTestId("EntryEditor-add").click();
   await page.getByTestId("EntryEditor-use").click();
   await expandEntries(page);
   await page.getByTestId("EntryEditor-time").fill("09:00");

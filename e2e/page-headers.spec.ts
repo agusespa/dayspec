@@ -29,3 +29,42 @@ for (const path of ["/", "/templates", "/profile"]) {
     ).toBe(0);
   });
 }
+
+for (const width of [390, 1440]) {
+  test(`shared blocks and editors use the same sticky header at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.route("**/api/routine", (route) =>
+      route.fulfill({ json: { routine, revision: '"editor-headers"' } }),
+    );
+    await page.goto("/templates");
+    await page.getByTestId("Templates-blocks").click();
+    const header = page.locator(".page-header");
+    for (const view of ["list", "block", "template"]) {
+      if (view === "block")
+        await page.getByTestId("TemplateEditor-block-wake_up").click();
+      if (view === "template") {
+        await page.getByTestId("TemplateEditor-cancel").click();
+        await page.getByTestId("TemplateEditor-cancel").click();
+        await page.getByTestId("Templates-edit").first().click();
+      }
+      await expect(header.locator("h1")).toHaveText(
+        view === "list"
+          ? "Shared blocks"
+          : view === "block"
+            ? "Edit shared block"
+            : "Edit template",
+      );
+      await expect(header.locator(".eyebrow")).toHaveCount(0);
+      await page.evaluate(() => {
+        const spacer = document.createElement("div");
+        spacer.style.height = "2000px";
+        document.querySelector(".template-editor")!.append(spacer);
+        window.scrollTo(0, 400);
+      });
+      await expect.poll(async () => (await header.boundingBox())!.y).toBe(0);
+      await expect(header.locator("h1")).toBeInViewport();
+    }
+  });
+}

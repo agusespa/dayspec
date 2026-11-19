@@ -2,7 +2,7 @@
 
 .template-editor {
 	/* Same height as the page mastheads, clear of the iOS status bar blur. */
-	padding-top: var(--page-top);
+	padding-top: 0;
 	padding-bottom: 7rem;
 }
 .editor-heading {
@@ -96,6 +96,7 @@
 	outline-offset: 1px;
 }
 .template-editor .fields {
+	max-width: 18rem;
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: 0.75rem;
@@ -192,7 +193,7 @@
 
 .template-editor .entry {
 	/* Room under the status bar when an edit link scrolls an entry to the top. */
-	scroll-margin-top: var(--page-top);
+	scroll-margin-top: calc(var(--page-top) + 7rem);
 	background: var(--paper);
 	border: 1px solid var(--rule);
 	border-radius: var(--radius);
@@ -286,14 +287,16 @@
 }
 
 /* Every "+ Add …" action looks the same. */
-.template-editor button.add {
+.template-editor .entry-tools button.add,
+.template-editor .add {
 	border: 1px dashed var(--surface-hover);
 	border-radius: 10px;
 	background: transparent;
 	color: var(--secondary);
 	font-size: var(--text-sm);
 }
-.template-editor button.add:not(:disabled):hover {
+.template-editor .entry-tools button.add:not(:disabled):hover,
+.template-editor .add:not(:disabled):hover {
 	border-color: var(--secondary);
 	background: color-mix(in srgb, var(--secondary) 8%, transparent);
 }
@@ -349,24 +352,51 @@
 	gap: 0.6rem;
 	margin: 1rem 0;
 }
+.template-editor .block-list-card {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	padding: 0.4rem;
+	border: 1px solid var(--rule);
+	border-radius: var(--radius);
+	background: var(--paper);
+}
+.template-editor .block-list-card:hover {
+	border-color: var(--surface-hover);
+}
 .template-editor .block-list-row {
+	flex: 1;
+	min-width: 0;
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 	gap: 0.75rem;
 	text-align: left;
-	padding: 0.85rem;
-	border: 1px solid var(--rule);
-	border-radius: var(--radius);
-	background: var(--paper);
+	padding: 0.7rem;
 }
-.template-editor .block-list-row:hover {
-	border-color: var(--surface-hover);
+.template-editor .block-summary {
+	display: grid;
+	gap: 0.3rem;
+	min-width: 0;
 }
-.template-editor .block-list-row > span:first-child {
-	font-family: var(--sans);
+.template-editor .block-title {
 	font-size: var(--text-md);
 	font-weight: 600;
+	overflow-wrap: anywhere;
+}
+.template-editor .block-edit-icon {
+	flex: none;
+	width: 20px;
+	height: 20px;
+	color: var(--secondary);
+}
+.template-editor .block-list-card > .entry-delete {
+	width: 44px;
+	height: 44px;
+}
+.template-editor .block-list-card .block-references {
+	flex-basis: 100%;
+	margin: 0 0.7rem 0.5rem;
 }
 .template-editor .block-name-field {
 	margin-top: 1.5rem;
@@ -387,19 +417,6 @@
 .template-editor button.danger:not(:disabled):hover {
 	border-color: color-mix(in srgb, var(--danger) 65%, var(--rule));
 	background: color-mix(in srgb, var(--danger) 13%, transparent);
-}
-
-/* Destructive actions sit apart, at the end of the form. */
-.template-editor .danger-zone {
-	margin-top: 2rem;
-	padding-top: 1rem;
-	border-top: 1px solid var(--rule);
-}
-.template-editor .danger-zone > button {
-	font-size: var(--text-sm);
-}
-.template-editor .danger-zone .help {
-	margin: 0.25rem 0 0;
 }
 
 /* ---- Errors ---- */
@@ -459,6 +476,11 @@
 	opacity: 1;
 }
 
+/* Restore the space left by the hidden join beneath an editor branch. */
+.template-editor .branch-section {
+	padding-bottom: 1rem;
+}
+
 /* Editor cards do not need the decorative timeline connectors. */
 .template-editor .branch-section::before,
 .template-editor .branch-section::after,
@@ -471,32 +493,8 @@
 	padding-left: 0;
 	border: 0;
 }
-.template-editor .branch-create {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.5rem;
-	margin-top: 0.75rem;
-}
-.template-editor .branch-create select {
-	flex: 1;
-	width: auto;
-}
 .template-editor .branch-add {
 	margin-top: 0.6rem;
-}
-.template-editor .branch-add-hidden {
-	display: none;
-}
-.template-editor .entry-condition {
-	font-size: var(--text-2xs);
-	color: var(--tertiary);
-	max-width: 40%;
-}
-
-.template-editor .branch-tools {
-	margin-top: 0.85rem;
-	padding: 0.75rem 0 0.85rem;
-	border-top: 1px solid var(--rule);
 }
 
 /* Layout wrappers stay invisible below the desktop breakpoint. */
@@ -520,8 +518,8 @@
 		flex-wrap: nowrap;
 		padding: var(--page-top) 0 1.25rem;
 		margin-bottom: 1.5rem;
+		margin-inline: 0;
 		border-bottom: 1px solid var(--rule);
-		background: var(--bg);
 	}
 	.template-editor .editor-toolbar {
 		display: flex;
@@ -570,4 +568,85 @@
 	.template-editor .block-list {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
+}
+
+/* Compact, shared add and delete controls for editor cards. */
+.template-editor .entry-delete {
+	flex: none;
+	display: grid;
+	place-items: center;
+	width: 34px;
+	height: 34px;
+	min-height: 0;
+	padding: 7px;
+	border: 1px solid transparent;
+	border-radius: 50%;
+	background: transparent;
+	color: var(--danger);
+}
+.template-editor .entry-delete svg {
+	color: inherit;
+	width: 18px;
+	height: 18px;
+}
+.template-editor .entry-delete:hover {
+	color: var(--danger);
+	background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+.template-editor .branch-heading > .entry-delete {
+	margin-left: auto;
+}
+.template-editor .entry-add-controls {
+	align-items: start;
+	margin-top: 0.75rem;
+}
+.template-editor .add-item {
+	position: relative;
+}
+.template-editor .add-item > summary {
+	display: flex;
+	align-items: center;
+	min-height: 44px;
+	font-weight: 550;
+	padding: 0.55rem 0.8rem;
+	list-style: none;
+	cursor: pointer;
+	line-height: 1.4;
+}
+.template-editor .add-item > summary::-webkit-details-marker {
+	display: none;
+}
+.template-editor .add-item-menu {
+	position: absolute;
+	bottom: calc(100% + 0.4rem);
+	left: 0;
+	z-index: 5;
+	display: grid;
+	gap: 0.2rem;
+	min-width: 160px;
+	padding: 0.35rem;
+	border: 1px solid var(--rule);
+	border-radius: 12px;
+	background: var(--paper);
+	box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
+}
+.template-editor .add-item-menu button {
+	text-align: left;
+	background: transparent;
+}
+.template-editor .add-item-menu button:hover {
+	background: var(--inset);
+}
+.template-editor .branch-draft {
+	margin-top: 0.75rem;
+	padding: 0.75rem;
+	border: 1px solid var(--rule);
+	border-radius: var(--radius);
+	background: var(--paper);
+}
+.template-editor .branch-draft > header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	font-weight: 600;
 }

@@ -43,6 +43,7 @@
 			aria-hidden="true"><path d="M12 21v-9m0 0L4 4m8 8 8-8M4 9V4h5M15 4h5v5" /></svg
 		>
 		<span>{choice.label ?? humanize(name)}</span>
+		{@render actions?.()}
 	</header>
 	<div class="branch-options" role="group" aria-label={`${choice.label ?? humanize(name)} alternatives`}>
 		{#each options as option}
@@ -60,6 +61,5 @@
 	<div class="branch-content">
 		{#if value !== undefined}{@render children(value)}{/if}
 	</div>
-	{@render actions?.()}
 	<div class="branch-join" aria-hidden="true"><span></span></div>
 </section>

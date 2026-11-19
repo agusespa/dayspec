@@ -33,12 +33,13 @@ const fixture: Routine = {
         },
         { title: "Lunch", time: "12:00", duration: 30 },
         {
-          title: "Lift",
-          time: "18:00",
-          duration: 45,
           when: { gym: true, location: "office" },
+          items: [{ title: "Lift", time: "18:00", duration: 45 }],
         },
-        { title: "Rest", time: "18:00", duration: 45, when: { gym: false } },
+        {
+          when: { gym: false },
+          items: [{ title: "Rest", time: "18:00", duration: 45 }],
+        },
         { title: "Dinner", time: "19:00", duration: 30 },
       ],
     },
@@ -113,7 +114,9 @@ test("edits both alternatives, adds a shared block with inherited condition and 
   await work.getByRole("button", { name: "Office", exact: true }).click();
   await work.getByTestId("EntryEditor-open").first().click();
   await work.getByTestId("EntryEditor-title").first().fill("Train to office");
+  await work.getByTestId("EntryEditor-add").click();
   await work.getByTestId("EntryEditor-use").click();
+  await expect(work.getByTestId("ConditionsEditor")).toHaveCount(0);
   const gym = page.getByRole("region", { name: "Gym", exact: true });
   await expect(gym).toContainText("Work location: Office");
   await gym.getByRole("button", { name: "Off", exact: true }).click();
@@ -125,9 +128,15 @@ test("edits both alternatives, adds a shared block with inherited condition and 
   await page.getByTestId("TemplateEditor-save").click();
   await expect(page.getByTestId("Templates-saved")).toBeVisible();
   const saved = (await (await request.get("/api/routine")).json()).routine;
-  expect(saved.days.weekday.items[1].items[0].title).toBe("Focus at home");
-  expect(saved.days.weekday.items[2].items[0].title).toBe("Train to office");
-  expect(saved.days.weekday.items[2].items.at(-1)).toEqual({
+  const home = saved.days.weekday.items.find(
+    (entry) => entry.when?.location === "home",
+  );
+  const office = saved.days.weekday.items.find(
+    (entry) => entry.when?.location === "office" && !entry.when.gym,
+  );
+  expect(home.items[0].title).toBe("Focus at home");
+  expect(office.items[0].title).toBe("Train to office");
+  expect(office.items[1]).toEqual({
     use: "stretch",
     time: "08:00",
   });
@@ -147,23 +156,31 @@ test("creates an empty toggle section and assigns new activity to the chosen sid
 }) => {
   await edit(page);
   await page
-    .getByRole("combobox", { name: "Alternative for new branch" })
-    .last()
-    .selectOption("gym");
-  await page
     .getByRole("button", { name: "+ Add branch", exact: true })
     .last()
     .click();
+  await page
+    .getByRole("combobox", { name: "Alternative for new branch" })
+    .last()
+    .selectOption("gym");
   const gym = page.getByRole("region", { name: "Gym", exact: true }).last();
   await gym.getByRole("button", { name: "Off", exact: true }).click();
   await expect(gym).toContainText("Continue routine");
   await gym.getByTestId("EntryEditor-add").click();
-  await gym.getByTestId("EntryEditor-open").click();
-  await gym.getByTestId("EntryEditor-title").fill("Evening walk");
+  await gym.getByTestId("EntryEditor-event").click();
+  const added = page
+    .getByTestId("EntryEditor-entry")
+    .filter({ hasText: "New item" });
+  await added.getByTestId("EntryEditor-open").click();
+  await added.getByTestId("EntryEditor-title").fill("Evening walk");
   await page.getByTestId("TemplateEditor-save").click();
   await expect(page.getByTestId("Templates-saved")).toBeVisible();
   const saved = (await (await request.get("/api/routine")).json()).routine;
-  expect(saved.days.weekday.items.at(-1)).toEqual({
+  expect(
+    saved.days.weekday.items.find((entry) =>
+      entry.items?.some((item) => item.title === "Evening walk"),
+    ),
+  ).toEqual({
     when: { gym: false },
     items: [{ title: "Evening walk", duration: 5, time: "08:00" }],
   });
@@ -401,48 +418,37 @@ test("nests child alternatives and keeps independent later alternatives separate
         items: [
           { title: "Breakfast", time: "07:00", duration: 15 },
           {
-            title: "Office work",
-            time: "09:00",
-            duration: 60,
             when: { location: "office" },
+            items: [{ title: "Office work", time: "09:00", duration: 60 }],
           },
           {
-            title: "Dance",
-            time: "18:00",
-            duration: 60,
             when: { evening: "dance" },
+            items: [{ title: "Dance", time: "18:00", duration: 60 }],
           },
           {
-            title: "Workshop",
-            time: "18:00",
-            duration: 60,
             when: { evening: "workshop" },
+            items: [{ title: "Workshop", time: "18:00", duration: 60 }],
           },
           {
-            title: "Home work",
-            time: "09:00",
-            duration: 60,
             when: { location: "home" },
+            items: [{ title: "Home work", time: "09:00", duration: 60 }],
           },
-          { title: "Lift", time: "18:00", duration: 60, when: { gym: true } },
           {
-            title: "Shared evening",
-            time: "19:00",
-            duration: 30,
+            when: { gym: true },
+            items: [{ title: "Lift", time: "18:00", duration: 60 }],
+          },
+          {
             when: { evening: { not: "workshop" } },
+            items: [{ title: "Shared evening", time: "19:00", duration: 30 }],
           },
           { title: "Dinner", time: "20:00", duration: 30 },
           {
-            title: "Go out",
-            time: "21:00",
-            duration: 30,
             when: { later: true },
+            items: [{ title: "Go out", time: "21:00", duration: 30 }],
           },
           {
-            title: "Stay home",
-            time: "21:00",
-            duration: 30,
             when: { later: false },
+            items: [{ title: "Stay home", time: "21:00", duration: 30 }],
           },
         ],
       },
@@ -504,3 +510,170 @@ test("nests child alternatives and keeps independent later alternatives separate
     ),
   ).toBe(true);
 });
+
+test("branches follow their activities' start times without manual ordering controls", async ({
+  page,
+  request,
+}) => {
+  const current = await (await request.get("/api/routine")).json();
+  const routine = {
+    days: {
+      day: {
+        on: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+        choices: { gym: { label: "Gym", type: "toggle", default: true } },
+        items: [
+          { title: "Morning", time: "07:00", duration: 15 },
+          {
+            when: { gym: true },
+            items: [{ title: "Workout", time: "18:00", duration: 45 }],
+          },
+          { when: { gym: false }, items: [] },
+          { title: "Dinner", time: "19:00", duration: 30 },
+        ],
+      },
+    },
+  };
+  expect(
+    (
+      await request.put("/api/routine", {
+        headers: { "If-Match": current.revision },
+        data: { routine },
+      })
+    ).ok(),
+  ).toBeTruthy();
+  await page.goto("/templates");
+  await page.getByTestId("Templates-edit").click();
+  const branch = page.getByRole("region", { name: "Gym", exact: true });
+  await branch.getByTestId("EntryEditor-open").click();
+  const time = branch.getByTestId("EntryEditor-time");
+  await time.fill("06:00");
+  await time.blur();
+  const headings = page.locator(
+    ".editor-timeline > .entries > .entry > summary .summary-title, .editor-timeline > .entries > .branch-section > .branch-heading > span",
+  );
+  await expect(headings).toHaveText(["Gym", "Morning", "Dinner"]);
+  await expect(page.getByTestId("EntryEditor-up")).toHaveCount(0);
+  await expect(page.getByTestId("EntryEditor-down")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Move branch/ })).toHaveCount(
+    0,
+  );
+  await expect(branch.getByTestId("EntryEditor-time")).toHaveValue("06:00");
+  await expect(branch.getByTestId("EntryEditor-time")).toBeVisible();
+  await page.getByTestId("TemplateEditor-save").click();
+  await expect(page.getByTestId("Templates-saved")).toBeVisible();
+  const saved = (await (await request.get("/api/routine")).json()).routine;
+  expect(saved.days.day.items[0].when).toEqual({ gym: true });
+  expect(saved.days.day.items[0].items[0].time).toBe("06:00");
+});
+
+test("simplified add controls and heading trash icons preserve unrelated entries", async ({
+  page,
+  request,
+}) => {
+  await edit(page);
+  const timeline = page.locator(".editor-timeline > .entries");
+  await expect(
+    page.getByRole("combobox", { name: "Alternative for new branch" }),
+  ).toHaveCount(0);
+  await timeline
+    .getByRole("button", { name: "+ Add branch", exact: true })
+    .last()
+    .click();
+  await expect(
+    page.getByRole("region", { name: "New branch", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Delete new branch", exact: true })
+    .click();
+  await expect(
+    page.getByRole("region", { name: "New branch", exact: true }),
+  ).toHaveCount(0);
+  await expect(page.getByTestId("TemplateEditor-save")).toBeDisabled();
+
+  const breakfast = page
+    .getByTestId("EntryEditor-entry")
+    .filter({ hasText: "Breakfast" });
+  await expect(breakfast).not.toHaveAttribute("open", "");
+  await breakfast
+    .getByRole("button", { name: "Delete event Breakfast", exact: true })
+    .click();
+  await expect(breakfast).toHaveCount(0);
+  await expect(
+    page.getByTestId("EntryEditor-open").filter({ hasText: "Lunch" }),
+  ).toBeVisible();
+
+  const work = page.getByRole("region", { name: "Work location", exact: true });
+  await work.getByTestId("EntryEditor-add").click();
+  await expect(work.getByTestId("EntryEditor-event")).toBeVisible();
+  await expect(work.getByTestId("EntryEditor-use")).toBeVisible();
+  await work.getByTestId("EntryEditor-use").click();
+  const stretch = work
+    .getByTestId("EntryEditor-entry")
+    .filter({ hasText: "Stretch" });
+  await stretch
+    .getByRole("button", { name: "Delete shared block Stretch", exact: true })
+    .click();
+  await expect(stretch).toHaveCount(0);
+  const remove = work
+    .locator(":scope > .branch-heading")
+    .getByRole("button", { name: "Delete branch Work location", exact: true });
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await remove.click();
+  await expect(work).toBeVisible();
+  page.once("dialog", (dialog) => dialog.accept());
+  await remove.click();
+  await expect(work).toHaveCount(0);
+  await page.getByTestId("TemplateEditor-save").click();
+  await expect(page.getByTestId("Templates-saved")).toBeVisible();
+  const saved = (await (await request.get("/api/routine")).json()).routine;
+  expect(saved.blocks).toEqual(fixture.blocks);
+  expect(saved.days.weekday.items).toEqual(
+    fixture.days.weekday.items.filter((_, i) => ![0, 1, 2].includes(i)),
+  );
+});
+
+for (const width of [390, 1440]) {
+  test(`add item menus dismiss outside and with Escape at ${width}px`, async ({
+    page,
+    request,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await edit(page);
+    const menu = page.locator(
+      ".editor-timeline > .entries > .entry-add-controls > .add-item",
+    );
+    const trigger = menu.getByTestId("EntryEditor-add");
+    await trigger.click();
+    await expect(menu.getByTestId("EntryEditor-event")).toBeVisible();
+    await menu.locator(".add-item-menu").click({ position: { x: 2, y: 2 } });
+    await expect(menu).toHaveAttribute("open", "");
+    const heading = page.getByRole("heading", {
+      name: "Timeline",
+      exact: true,
+    });
+    if (width === 390) await heading.tap();
+    else await heading.click();
+    await expect(menu).not.toHaveAttribute("open", "");
+
+    await trigger.click();
+    await menu.getByTestId("EntryEditor-event").focus();
+    await page.keyboard.press("Escape");
+    await expect(menu).not.toHaveAttribute("open", "");
+    await expect(trigger).toBeFocused();
+
+    await trigger.click();
+    const work = page.getByRole("region", {
+      name: "Work location",
+      exact: true,
+    });
+    await work.getByTestId("EntryEditor-add").click();
+    await expect(menu).not.toHaveAttribute("open", "");
+    await expect(work.getByTestId("EntryEditor-use")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(work.getByTestId("EntryEditor-use")).toBeHidden();
+    await expect(page.getByTestId("TemplateEditor-save")).toBeDisabled();
+    expect((await (await request.get("/api/routine")).json()).routine).toEqual(
+      fixture,
+    );
+  });
+}

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { templateName } from '#lib/routine/edit.ts';
+	import { templateName, templateKeys } from '#lib/routine/edit.ts';
 	import BottomNav from '#lib/components/BottomNav.svelte';
 	import CategoriesEditor from '#lib/components/CategoriesEditor.svelte';
 	import { routineState, saveRoutine } from '#lib/routine/client.ts';
@@ -46,8 +46,7 @@
 		pending = automatic;
 		const { routine, revision } = $routineState;
 		const settings = { ...routine.settings };
-		if (input.value) settings.holiday = input.value;
-		else delete settings.holiday;
+		settings.holiday = input.value;
 		saving = true;
 		error = '';
 		try {
@@ -94,12 +93,11 @@
 	<label class="setting"
 		><span>Holiday template</span><select
 			data-testid="Profile-holiday-template"
-			disabled={saving || !$routineState.online}
+			disabled={saving || !$routineState.online || !Object.keys($routineState.routine.days).length}
 			value={saving ? pendingHoliday : ($routineState.routine.settings?.holiday ?? '')}
 			onchange={setHoliday}
-			><option value="">Regular weekday template</option
-			>{#each Object.entries($routineState.routine.days) as [id, day]}<option value={id}
-					>{templateName(day.on)}</option
+			>{#each templateKeys($routineState.routine) as id}<option value={id}
+					>{templateName($routineState.routine.days[id].on)}</option
 				>{/each}</select
 		></label
 	>

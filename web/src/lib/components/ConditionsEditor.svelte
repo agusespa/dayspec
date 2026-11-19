@@ -55,7 +55,7 @@
 
 <details bind:open class="conditions-editor" data-testid="ConditionsEditor">
 	<summary data-testid="ConditionsEditor-open"
-		><span class="summary-title">Show when{when ? ' · Conditional' : ''}</span><svg
+		><span class="summary-title">Available when{when ? ' · Conditional' : ''}</span><svg
 			class="chevron"
 			viewBox="0 0 24 24"
 			aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg

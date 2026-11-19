@@ -28,13 +28,17 @@ test("tapping an activity shows its time range, category, conditions and calenda
               items: [
                 { use: "morning", time: "07:00" },
                 {
-                  title: "Lift",
-                  time: "09:00",
-                  duration: 45,
-                  approx: true,
-                  alert: true,
-                  category: "chores",
                   when: { gym: true },
+                  items: [
+                    {
+                      title: "Lift",
+                      time: "09:00",
+                      duration: 45,
+                      approx: true,
+                      alert: true,
+                      category: "chores",
+                    },
+                  ],
                 },
                 { title: "Later", duration: 5 },
               ],

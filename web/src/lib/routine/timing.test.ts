@@ -64,15 +64,12 @@ describe('reusable durations', () => {
 			{ title: 'Water', duration: 5 }
 		]);
 	});
-	it('filters conditional items before scheduling and resolves one-item blocks', () => {
+	it('filters conditional block occurrences and resolves one-item blocks', () => {
 		const routine: Routine = {
 			blocks: {
 				sequence: {
 					name: 'Sequence',
-					items: [
-						{ title: 'Skipped', duration: 60, when: { days: ['tue'] } },
-						{ title: 'Read', duration: 20 }
-					]
+					items: [{ title: 'Read', duration: 20 }]
 				},
 				single: {
 					name: 'Single',
@@ -84,6 +81,7 @@ describe('reusable durations', () => {
 					on: ['mon'],
 					items: [
 						{ use: 'sequence', time: '08:00' },
+						{ when: { days: ['tue'] }, items: [{ use: 'sequence', time: '10:00' }] },
 						{ use: 'single', time: '23:55' }
 					]
 				}

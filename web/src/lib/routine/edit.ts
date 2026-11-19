@@ -1,11 +1,17 @@
 import {
 	CATEGORY_COLORS,
 	WEEKDAYS,
+	DEFAULT_DAY_STARTS_AT,
+	isBranch,
+	type Choice,
 	type CategoryColor,
 	type Weekday,
 	type Entry,
+	type ItemDef,
 	type Routine
 } from './types.ts';
+import { dayMinutes } from './date.ts';
+import { timelineSections } from './branches.ts';
 
 /** A detached draft so cancel and failed saves never mutate the active routine. */
 export function cloneRoutine(routine: Routine): Routine {
@@ -20,8 +26,39 @@ export function moveEntry(entries: Entry[], index: number, direction: -1 | 1): E
 	return next;
 }
 
+/** Sort timed entries while keeping each alternative section together and untimed entries in place. */
+export function sortEntriesByTime(
+	entries: Entry[],
+	dayStart = DEFAULT_DAY_STARTS_AT,
+	choices: Record<string, Choice> = {},
+	excluded: string[] = []
+): Entry[] {
+	const start = (entry: Entry): number | undefined => {
+		if (isBranch(entry)) {
+			const times = entry.items.map(start).filter((time) => time !== undefined);
+			return times.length ? Math.min(...times) : undefined;
+		}
+		return entry.time && /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(entry.time)
+			? dayMinutes(entry.time, dayStart)
+			: undefined;
+	};
+	const ordered = <T>(items: T[], time: (item: T) => number | undefined): T[] => {
+		const timed = items.filter((item) => time(item) !== undefined).sort((a, b) => time(a)! - time(b)!);
+		let index = 0;
+		return items.map((item) => (time(item) === undefined ? item : timed[index++]));
+	};
+	const units = timelineSections(entries, choices, excluded).flatMap((section) => {
+		const items = section.indices.map((i) => entries[i]);
+		return section.choice ? [ordered(items, start)] : items.map((entry) => [entry]);
+	});
+	return ordered(units, (items) => {
+		const times = items.map(start).filter((time) => time !== undefined);
+		return times.length ? Math.min(...times) : undefined;
+	}).flat();
+}
+
 /** New drafts start with a duration that can be adjusted before saving. */
-export function newEntry(_routine?: Routine): Entry {
+export function newEntry(_routine?: Routine): ItemDef {
 	return { title: 'New item', duration: 5 };
 }
 

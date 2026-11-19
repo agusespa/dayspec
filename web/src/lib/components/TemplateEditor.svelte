@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { beforeNavigate } from '$app/navigation';
+	import { beforeNavigate, goto } from '$app/navigation';
 	import { untrack } from 'svelte';
 	import schema from '../../../../routine.schema.json';
 	import { routineState, loadRoutine, saveRoutine, currentRoutine } from '#lib/routine/client.ts';
@@ -9,17 +9,17 @@
 		assignTemplateDays,
 		templateName,
 		availableDays,
-		removeTemplate,
 		createBlock,
 		removeBlock,
 		blockReferences,
 		renameBlock
 	} from '#lib/routine/edit.ts';
 	import { validateRoutine } from '#lib/routine/validate.ts';
-	import { WEEKDAYS, type Routine, type Entry, type Weekday } from '#lib/routine/types.ts';
+	import { WEEKDAYS, type Routine, type SharedEntry, type Weekday } from '#lib/routine/types.ts';
 	import { weekdayLabel } from '#lib/routine/outline.ts';
 	import EntryEditor from './EntryEditor.svelte';
 	import ChoiceEditor from './ChoiceEditor.svelte';
+	import DiscardDialog from './DiscardDialog.svelte';
 
 	let {
 		routine,
@@ -48,10 +48,13 @@
 	let pendingBlock = $state('');
 	let errors = $state<string[]>([]);
 	let saving = $state(false);
+	let discardAction = $state<() => void>();
+	let discardMessage = $state('');
+	let discardReturnFocus = $state<HTMLElement>();
 	let creating = $state(untrack(() => startCreating));
 	let newDays = $state<Weekday[]>([]);
 	let blockName = $state(untrack(() => routine.blocks?.[blockKey]?.name ?? ''));
-	const references = $derived(blockKey ? blockReferences(draft, blockKey) : []);
+	const blockList = $derived(manageBlocks && !blockKey);
 	function addBlock() {
 		const name = 'New shared block';
 		const created = createBlock($state.snapshot(draft), name);
@@ -62,15 +65,20 @@
 		errors = [];
 	}
 
-	function deleteBlock() {
+	async function deleteBlock(id: string) {
 		if (!confirm('Delete this shared block and its items?')) return;
+		saving = true;
+		errors = [];
 		try {
-			draft = removeBlock($state.snapshot(draft), blockKey);
-			blockKey = '';
-			pendingBlock = '';
-			errors = [];
+			const candidate = removeBlock($state.snapshot(draft), id);
+			await saveRoutine(candidate, revision);
+			draft = candidate;
+			revision = currentRoutine().revision;
+			baseline = JSON.stringify(draft);
 		} catch (error) {
 			errors = [(error as Error).message];
+		} finally {
+			saving = false;
 		}
 	}
 
@@ -101,34 +109,58 @@
 
 	const changedElsewhere = $derived(!!$routineState.revision && $routineState.revision !== revision);
 
-	beforeNavigate((navigation) => {
-		if (dirty && !confirm('Discard your unsaved template changes?')) navigation.cancel();
-	});
-	function unload(event: BeforeUnloadEvent) {
-		if (dirty) {
-			event.preventDefault();
-			event.returnValue = '';
-		}
+	function warnBeforeUnload(event: BeforeUnloadEvent) {
+		if (dirty) event.preventDefault();
 	}
-	function cancel() {
-		if (dirty && !confirm('Discard your unsaved template changes?')) return;
+	$effect(() => {
+		if (!dirty) return;
+		window.addEventListener('beforeunload', warnBeforeUnload);
+		return () => window.removeEventListener('beforeunload', warnBeforeUnload);
+	});
+
+	function requestDiscard(
+		action: () => void,
+		message = 'Your unsaved edits will be lost.',
+		trigger = document.activeElement instanceof HTMLElement ? document.activeElement : undefined
+	) {
+		if (!dirty) return action();
+		discardMessage = message;
+		discardReturnFocus = trigger;
+		discardAction = action;
+	}
+	function discard() {
+		const action = discardAction;
+		discardAction = undefined;
+		action?.();
+	}
+	beforeNavigate((navigation) => {
+		// A custom dialog can intercept app navigation, but not browser refresh/tab close.
+		if (!dirty || navigation.type === 'leave' || !navigation.to) return;
+		navigation.cancel();
+		const destination = navigation.to;
+		requestDiscard(() => {
+			baseline = JSON.stringify(draft);
+			blockName = draft.blocks?.[blockKey]?.name ?? '';
+			if (navigation.type === 'popstate') history.go(navigation.delta);
+			else if (navigation.willUnload) location.assign(destination.url);
+			else void goto(destination.url);
+		});
+	});
+	function cancel(event: MouseEvent) {
+		requestDiscard(closeEditor, undefined, event.currentTarget as HTMLElement);
+	}
+	function closeEditor() {
+		if (manageBlocks && blockKey && !startBlock) {
+			draft = JSON.parse(baseline);
+			blockKey = '';
+			pendingBlock = '';
+			blockName = '';
+			errors = [];
+			return;
+		}
 		baseline = JSON.stringify(draft);
 		blockName = draft.blocks?.[blockKey]?.name ?? '';
 		onclose(key, false);
-	}
-	async function remove() {
-		if (!confirm('Delete this template and its items? Its days will become available for a new template.'))
-			return;
-		saving = true;
-		try {
-			await saveRoutine(removeTemplate($state.snapshot(draft), key), revision);
-			baseline = JSON.stringify(draft);
-			onclose('', true);
-		} catch (error) {
-			errors = [(error as Error).message];
-		} finally {
-			saving = false;
-		}
 	}
 	async function save() {
 		let candidate = $state.snapshot(draft);
@@ -156,8 +188,14 @@
 			saving = false;
 		}
 	}
-	async function reload() {
-		if (dirty && !confirm('Discard your draft and load the latest saved templates?')) return;
+	function reload(event: MouseEvent) {
+		requestDiscard(
+			() => void reloadSaved(),
+			'Your unsaved edits will be replaced with the latest saved templates.',
+			event.currentTarget as HTMLElement
+		);
+	}
+	async function reloadSaved() {
 		await loadRoutine();
 		if (!$routineState.online) return;
 		const latest = currentRoutine();
@@ -172,11 +210,17 @@
 	}
 </script>
 
-<svelte:window onbeforeunload={unload} />
+{#if discardAction}
+	<DiscardDialog
+		message={discardMessage}
+		returnFocus={discardReturnFocus}
+		onkeep={() => (discardAction = undefined)}
+		ondiscard={discard}
+	/>
+{/if}
 <section class="template-editor" data-testid="TemplateEditor">
-	<div class="editor-heading">
+	<div class="editor-heading page-header masthead">
 		<div>
-			<p class="eyebrow">Routine library</p>
 			<h1>
 				{manageBlocks
 					? pendingBlock
@@ -192,23 +236,29 @@
 					{templateName(draft.days[key].on)}
 				</p>{/if}
 		</div>
-		<div class="editor-toolbar">
-			{#if saving || dirty}<span class="save-state" role="status"
-					>{saving ? 'Saving…' : 'Unsaved changes'}</span
-				>{/if}
-			<div class="editor-actions">
-				<button data-testid="TemplateEditor-cancel" type="button" disabled={saving} onclick={cancel}
-					>Cancel</button
-				>
-				<button
-					data-testid="TemplateEditor-save"
-					class="primary"
-					type="submit"
-					form="routine-editor-form"
-					disabled={saving || !dirty}>{saving ? 'Saving…' : 'Save changes'}</button
-				>
+		{#if blockList}
+			<button type="button" data-testid="TemplateEditor-cancel" disabled={saving} onclick={cancel}
+				>Done</button
+			>
+		{:else}
+			<div class="editor-toolbar">
+				{#if saving || dirty}<span class="save-state" role="status"
+						>{saving ? 'Saving…' : 'Unsaved changes'}</span
+					>{/if}
+				<div class="editor-actions">
+					<button data-testid="TemplateEditor-cancel" type="button" disabled={saving} onclick={cancel}
+						>Cancel</button
+					>
+					<button
+						data-testid="TemplateEditor-save"
+						class="primary"
+						type="submit"
+						form="routine-editor-form"
+						disabled={saving || !dirty}>{saving ? 'Saving…' : 'Save changes'}</button
+					>
+				</div>
 			</div>
-		</div>
+		{/if}
 	</div>
 
 	<form
@@ -326,45 +376,72 @@
 								<EntryEditor
 									routine={draft}
 									shared
-									bind:entries={draft.blocks[blockKey].items}
-									choices={Object.assign({}, ...Object.values(draft.days).map((day) => day.choices ?? {}))}
+									bind:entries={
+										() => draft.blocks![blockKey].items,
+										(items) => (draft.blocks![blockKey].items = items as SharedEntry[])
+									}
 									focus={blockKey === startBlock ? focus : undefined}
 								/>
 							{/key}
 						</div>
 					</div>
-					{#if !pendingBlock}
-						<div class="danger-zone">
-							<button
-								type="button"
-								class="danger"
-								data-testid="TemplateEditor-block-delete"
-								disabled={references.length > 0}
-								onclick={deleteBlock}>Delete block</button
-							>
-							{#if references.length}<p class="help" data-testid="TemplateEditor-block-references">
-									Used by {references.join(', ')}. Remove those references before deleting this block.
-								</p>{/if}
-						</div>
-					{/if}
 				{:else}
 					<div class="block-list" data-testid="TemplateEditor-block-list">
 						{#each Object.entries(draft.blocks ?? {}) as [name, block]}
-							<button
-								type="button"
-								class="block-list-row"
-								data-testid={`TemplateEditor-block-${name}`}
-								onclick={() => {
-									blockKey = name;
-									blockName = block.name;
-									errors = [];
-								}}
-							>
-								<span>{block.name}</span><span class="help"
-									>{block.items.length}
-									{block.items.length !== 1 ? 'items' : 'item'} · Edit →</span
+							{@const references = blockReferences(draft, name)}
+							<article class="block-list-card" data-testid={`TemplateEditor-block-card-${name}`}>
+								<button
+									type="button"
+									class="block-list-row"
+									data-testid={`TemplateEditor-block-${name}`}
+									onclick={() => {
+										blockKey = name;
+										blockName = block.name;
+										errors = [];
+									}}
 								>
-							</button>
+									<span class="block-summary"
+										><span class="block-title">{block.name}</span><span class="help"
+											>{block.items.length} {block.items.length !== 1 ? 'items' : 'item'}</span
+										></span
+									>
+									<svg
+										class="block-edit-icon"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1.8"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										aria-hidden="true"><path d="m16 3 5 5M3 21l5-1L21 7a2.1 2.1 0 0 0-4-4L4 16l-1 5Z" /></svg
+									>
+								</button>
+								<button
+									type="button"
+									class="entry-delete"
+									data-testid="TemplateEditor-block-delete"
+									aria-label={`Delete shared block ${block.name}`}
+									title={references.length ? `Used by ${references.join(', ')}` : `Delete ${block.name}`}
+									disabled={references.length > 0}
+									onclick={() => void deleteBlock(name)}
+								>
+									<svg
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1.8"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6" /></svg
+									>
+								</button>
+								{#if references.length}<p
+										class="help block-references"
+										data-testid="TemplateEditor-block-references"
+									>
+										Used by {references.join(', ')}
+									</p>{/if}
+							</article>
 						{:else}<p class="help">No shared blocks yet.</p>{/each}
 					</div>
 					<button type="button" class="add" data-testid="TemplateEditor-block-new" onclick={addBlock}
@@ -391,14 +468,6 @@
 					type="button"
 					onclick={reload}>Reload saved templates</button
 				>{/if}
-			{#if !creating && !manageBlocks && draft.days[key]}
-				<div class="danger-zone">
-					<button type="button" class="danger" data-testid="TemplateEditor-delete" onclick={remove}
-						>Delete template</button
-					>
-					<p class="help">Its items are removed and its days become free for another template.</p>
-				</div>
-			{/if}
 		</fieldset>
 	</form>
 </section>

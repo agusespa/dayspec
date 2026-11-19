@@ -104,10 +104,8 @@ func checkReferences(root map[string]any, raw []byte) error {
 			remaining--
 			e := object(value)
 			at := fmt.Sprintf("%s[%d]", where, i)
-			if choices != nil {
-				checkWhen(e["when"], choices, at+".when")
-			}
 			if nested := list(e["items"]); nested != nil {
+				checkWhen(e["when"], choices, at+".when")
 				walk(nested, choices, at+".items", stack, depth+1)
 				continue
 			}
@@ -122,7 +120,7 @@ func checkReferences(root map[string]any, raw []byte) error {
 					continue
 				}
 				next := append(slices.Clone(stack), name)
-				walk(list(object(block)["items"]), choices, "blocks."+name, next, depth+1)
+				walk(list(object(block)["items"]), nil, "blocks."+name, next, depth+1)
 			} else {
 				checkLinks(e, at)
 				if key, ok := e["category"].(string); ok && categories[key] == nil {
@@ -174,18 +172,7 @@ func checkReferences(root map[string]any, raw []byte) error {
 		if key, ok := object(block)["category"].(string); ok && categories[key] == nil {
 			add("blocks."+name, "unknown category "+key)
 		}
-		var relative func([]any)
-		relative = func(entries []any) {
-			for _, value := range entries {
-				entry := object(value)
-				if entry["time"] != nil {
-					add("blocks."+name, "set the start time in the template, not inside a shared block")
-				}
-				relative(list(entry["items"]))
-			}
-		}
 		entries := list(object(block)["items"])
-		relative(entries)
 		walk(entries, nil, "blocks."+name, []string{name}, 0)
 	}
 

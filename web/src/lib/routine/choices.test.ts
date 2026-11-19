@@ -18,16 +18,21 @@ describe('choice editing', () => {
 		expect(base.days.daily.choices).toBeUndefined();
 		expect(removeChoice(two, 'daily', 'choice').days.daily.choices).not.toHaveProperty('choice');
 	});
-	it('protects references in activities, nested shared blocks and dependent choices', () => {
+	it('protects references in nested branches and dependent alternatives', () => {
 		const routine = addChoice(base, 'daily');
 		routine.blocks = {
 			outer: { name: 'Outer', items: [{ use: 'inner' }] },
 			inner: {
 				name: 'Inner',
-				items: [{ title: 'Commute', duration: 10, when: { choice: { not: ['option_2'] } } }]
+				items: [{ title: 'Commute', duration: 10 }]
 			}
 		};
-		routine.days.daily.items = [{ items: [{ use: 'outer', time: '08:00' }] }];
+		routine.days.daily.items = [
+			{
+				when: { choice: { not: ['option_2'] } },
+				items: [{ when: { days: ['mon'] }, items: [{ use: 'outer', time: '08:00' }] }]
+			}
+		];
 		expect(choiceUsed(routine, 'daily', 'choice', 'option_2')).toBe(true);
 		expect(() => removeChoice(routine, 'daily', 'choice')).toThrow('conditions');
 		expect(() => changeChoiceType(routine, 'daily', 'choice', 'toggle')).toThrow('conditions');
@@ -51,7 +56,7 @@ describe('choice editing', () => {
 		const choice = routine.days.daily.choices!.choice;
 		choice.options!.third = { label: 'Third' };
 		expect(() => removeOption(routine, 'daily', 'choice', 'option')).toThrow('defaults');
-		routine.days.daily.items = [{ title: 'Work', duration: 10, when: { choice: ['third'] } }];
+		routine.days.daily.items = [{ when: { choice: ['third'] }, items: [{ title: 'Work', duration: 10 }] }];
 		expect(() => removeOption(routine, 'daily', 'choice', 'third')).toThrow('conditions');
 		routine.days.daily.items = [];
 		const removed = removeOption(routine, 'daily', 'choice', 'third');

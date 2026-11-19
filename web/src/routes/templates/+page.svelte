@@ -1,7 +1,7 @@
 <script lang="ts">
 	import BottomNav from '#lib/components/BottomNav.svelte';
-	import { availableDays, templateKeys } from '#lib/routine/edit.ts';
-	import { routineState } from '#lib/routine/client.ts';
+	import { availableDays, templateKeys, removeTemplate } from '#lib/routine/edit.ts';
+	import { routineState, saveRoutine } from '#lib/routine/client.ts';
 	import { untrack } from 'svelte';
 	import TemplateEditor from '#lib/components/TemplateEditor.svelte';
 	import '#lib/styles/editor.css';
@@ -22,6 +22,8 @@
 	let creating = $state(false);
 	let managingBlocks = $state(!!linked?.block);
 	let saved = $state(false);
+	let deleting = $state(false);
+	let deleteError = $state('');
 	const routine = $derived($routineState.routine);
 	const keys = $derived(templateKeys(routine));
 	const remaining = $derived(availableDays(routine));
@@ -29,11 +31,33 @@
 	let key = $state(untrack(() => page.url.searchParams.get('t') ?? ''));
 	const selectedKey = $derived(keys.includes(key) ? key : (keys[0] ?? ''));
 	function edit(next: string) {
+		deleteError = '';
 		key = next;
 		creating = false;
 		managingBlocks = false;
 		editing = true;
 		saved = false;
+	}
+	async function remove(keyToDelete: string, label: string) {
+		if (
+			!confirm(`Delete ${label} template and its items? Its days will become available for a new template.`)
+		)
+			return;
+		deleting = true;
+		deleteError = '';
+		saved = false;
+		try {
+			await saveRoutine(removeTemplate(routine, keyToDelete), $routineState.revision);
+			if (key === keyToDelete) {
+				key = '';
+				replaceState('/templates', {});
+			}
+			saved = true;
+		} catch (error) {
+			deleteError = error instanceof Error ? error.message : 'Could not delete this template. Try again.';
+		} finally {
+			deleting = false;
+		}
 	}
 	function pick(next: string) {
 		key = key === next ? '' : next;
@@ -63,6 +87,9 @@
 		<h1>Templates</h1>
 	</section>
 	{#if saved}<p class="saved-note" role="status" data-testid="Templates-saved">Templates saved</p>{/if}
+	{#if deleteError}<p class="delete-error" role="alert" data-testid="Templates-delete-error">
+			{deleteError}
+		</p>{/if}
 	<div class="template-list" data-testid="Templates-list">
 		{#each keys as k (k)}
 			{@const day = outlineDay(routine, k)}
@@ -89,7 +116,7 @@
 						data-testid="Templates-edit"
 						aria-label={`Edit ${day.label} template`}
 						title={`Edit ${day.label} template`}
-						disabled={!$routineState.online}
+						disabled={!$routineState.online || deleting}
 						onclick={() => edit(k)}
 					>
 						<svg
@@ -100,6 +127,24 @@
 							stroke-linecap="round"
 							stroke-linejoin="round"
 							aria-hidden="true"><path d="m16 3 5 5M3 21l5-1L21 7a2.1 2.1 0 0 0-4-4L4 16l-1 5Z" /></svg
+						>
+					</button>
+					<button
+						class="template-edit template-delete"
+						data-testid="Templates-delete"
+						aria-label={`Delete ${day.label} template`}
+						title={`Delete ${day.label} template`}
+						disabled={!$routineState.online || deleting}
+						onclick={() => void remove(k, day.label)}
+					>
+						<svg
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.8"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6" /></svg
 						>
 					</button>
 				</header>
@@ -133,7 +178,7 @@
 			<button
 				class="manage-blocks"
 				data-testid="Templates-blocks"
-				disabled={!$routineState.online}
+				disabled={!$routineState.online || deleting}
 				onclick={() => {
 					managingBlocks = true;
 					creating = false;
@@ -145,7 +190,7 @@
 				<button
 					class="add-button"
 					data-testid="Templates-new"
-					disabled={!$routineState.online}
+					disabled={!$routineState.online || deleting}
 					onclick={() => {
 						creating = true;
 						managingBlocks = false;
@@ -237,6 +282,16 @@
 	}
 	.template-edit:hover {
 		background: var(--now-wash);
+	}
+	.template-delete,
+	.delete-error {
+		color: var(--danger);
+	}
+	.template-delete:hover {
+		background: color-mix(in srgb, var(--danger) 10%, transparent);
+	}
+	.delete-error {
+		font-size: var(--text-sm);
 	}
 	.template-edit svg {
 		width: 22px;

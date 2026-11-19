@@ -1,5 +1,5 @@
 import { humanize, matches } from './resolve.ts';
-import type { Choice, ChoiceValue, Entry } from './types.ts';
+import { isBranch, type Branch, type Choice, type ChoiceValue, type Entry } from './types.ts';
 
 export interface BranchOption {
 	value: ChoiceValue;
@@ -33,9 +33,9 @@ export function timelineSections(
 	const sections: TimelineSection[] = [];
 	let alternatives = new Map<string, TimelineSection>();
 	for (const [index, entry] of entries.entries()) {
-		const ownChoice = Object.keys(entry.when ?? {}).find(
-			(key) => key !== 'days' && choices[key] && entry.when?.[key] !== undefined && !excluded.includes(key)
-		);
+		const ownChoice = isBranch(entry)
+			? Object.keys(entry.when).find((key) => key !== 'days' && choices[key] && !excluded.includes(key))
+			: undefined;
 		const choice = ownChoice ? (parents[ownChoice] ?? ownChoice) : undefined;
 		if (choice) {
 			const section = alternatives.get(choice);
@@ -55,29 +55,14 @@ export function timelineSections(
 	return sections;
 }
 
-/** Only the displayed decision is evaluated; other conditions remain visible and editable. */
+/** Only the displayed decision is evaluated; nested branch conditions are resolved inside it. */
 export function inBranch(entry: Entry, key: string, value: ChoiceValue): boolean {
-	return matches({ [key]: entry.when?.[key] }, { [key]: value }, 'mon');
+	return isBranch(entry) && matches({ [key]: entry.when[key] }, { [key]: value }, 'mon');
 }
 
-/** Empty groups let users build both sides without inventing placeholder activities. */
-export function newBranch(key: string, choice: Choice): Entry[] {
+/** Empty branches let users build both sides without inventing placeholder activities. */
+export function newBranch(key: string, choice: Choice): Branch[] {
 	return branchOptions(choice).map(({ value }) => ({ when: { [key]: value }, items: [] }));
-}
-
-/** Move an entire decision past the neighbouring run, preserving both alternatives' order. */
-export function moveSection(
-	entries: Entry[],
-	sections: TimelineSection[],
-	start: number,
-	direction: -1 | 1
-): Entry[] {
-	const index = sections.findIndex((section) => section.start === start);
-	const target = index + direction;
-	if (index < 0 || target < 0 || target >= sections.length) return entries;
-	const reordered = [...sections];
-	[reordered[index], reordered[target]] = [reordered[target], reordered[index]];
-	return reordered.flatMap((section) => section.indices.map((i) => entries[i]));
 }
 
 /** A preview's parent selection only applies inside that branch, never to its siblings. */
@@ -98,6 +83,7 @@ export function branchView(
 	};
 	const scope = (items: Entry[]): Entry[] =>
 		items.flatMap((entry) => {
+			if (!isBranch(entry)) return [entry];
 			const when = { ...entry.when };
 			for (const [key, condition] of Object.entries(when)) {
 				if (key === 'days') continue;
@@ -110,10 +96,8 @@ export function branchView(
 					delete when[key];
 				}
 			}
-			const next: Entry = { ...entry, ...('items' in entry ? { items: scope(entry.items) } : {}) };
-			if (Object.keys(when).length) next.when = when;
-			else delete next.when;
-			return 'items' in next && !next.when ? next.items : [next];
+			const items = scope(entry.items);
+			return Object.keys(when).length ? [{ when, items }] : items;
 		});
 	const parents: Record<string, string> = {};
 	for (const name of Object.keys(choices)) {

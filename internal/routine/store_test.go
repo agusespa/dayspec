@@ -124,8 +124,8 @@ func TestValidation(t *testing.T) {
 		{"category colour", `{"categories":{"chores":{"name":"Chores","color":"#ff0000"}}}`, "categories"},
 		{"legacy kind", `{"items":[{"title":"Wake","kind":"maintenance","duration":5}]}`, "additional properties"},
 		{"link", `{"items":[{"title":"Wake","link":"absent","duration":5}]}`, "pattern"},
-		{"choice", `{"items":[{"title":"Wake","when":{"place":"home"},"duration":5}]}`, "unknown or later choice"},
-		{"option", `{"choices":{"place":{"options":{"home":{},"office":{}},"default":"home"}},"items":[{"title":"Wake","when":{"place":"beach"},"duration":5}]}`, "unknown option"},
+		{"choice", `{"items":[{"when":{"place":"home"},"items":[{"title":"Wake","duration":5}]}]}`, "unknown or later choice"},
+		{"option", `{"choices":{"place":{"options":{"home":{},"office":{}},"default":"home"}},"items":[{"when":{"place":"beach"},"items":[{"title":"Wake","duration":5}]}]}`, "unknown option"},
 		{"default", `{"choices":{"gym":{"type":"toggle","default":{"mon":true}}}}`, "no valid default"},
 		{"cycle", `{"blocks":{"loop":{"name":"loop","items":[{"use":"loop"}]}},"items":[{"use":"loop"}]}`, "circular block"},
 		{"list overrides", `{"blocks":{"pair":{"name":"pair","items":[{"title":"Tea","duration":5},{"title":"Coffee","duration":5}]}},"items":[{"use":"pair","end":"08:00"}]}`, "additional properties"},
@@ -276,7 +276,7 @@ func TestUnusedBlocks(t *testing.T) {
 			t.Fatalf("accepted invalid unused block: %s", blocks)
 		}
 	}
-	raw := []byte(`{"days":{},"blocks":{"unused":{"name":"Unused","items":[{"title":"Unused","when":{"location":"home"},"duration":5}]}}}`)
+	raw := []byte(`{"days":{},"blocks":{"unused":{"name":"Unused","items":[{"title":"Unused","duration":5}]}}}`)
 	if err := s.Validate(raw); err != nil {
 		t.Fatal(err)
 	}
@@ -374,5 +374,37 @@ func TestEmptyAlternativePersists(t *testing.T) {
 	}
 	if string(reopened.Get().Routine) != string(raw) {
 		t.Fatal("empty alternative was not preserved")
+	}
+}
+
+func TestBranchOnlyConditions(t *testing.T) {
+	s, _ := testStore(t)
+	invalidEntries := []string{
+		`{"title":"Work","duration":10,"when":{"days":["mon"]}}`,
+		`{"use":"shared","when":{"days":["mon"]}}`,
+		`{"items":[]}`,
+		`{"when":{},"items":[]}`,
+	}
+	for _, entry := range invalidEntries {
+		raw := []byte(`{"days":{"daily":{"on":["mon"],"items":[` + entry + `]}}}`)
+		if err := s.Validate(raw); err == nil {
+			t.Fatalf("accepted invalid entry: %s", entry)
+		}
+	}
+	invalidShared := []string{
+		`{"title":"Work","duration":10,"when":{"days":["mon"]}}`,
+		`{"when":{"days":["mon"]},"items":[{"title":"Work","duration":10}]}`,
+		`{"title":"Work","duration":10,"time":"08:00"}`,
+		`{"title":"Work","duration":10,"approx":true}`,
+		`{"use":"inner","time":"08:00"}`,
+		`{"use":"inner","when":{"days":["mon"]}}`,
+	}
+	for _, entry := range invalidShared {
+		for _, items := range []string{`[]`, `[{"use":"shared","time":"08:00"}]`} {
+			raw := []byte(`{"days":{"daily":{"on":["mon"],"items":` + items + `}},"blocks":{"shared":{"name":"Shared","items":[` + entry + `]},"inner":{"name":"Inner","items":[{"title":"Tea","duration":5}]}}}`)
+			if err := s.Validate(raw); err == nil {
+				t.Fatalf("accepted invalid shared entry: %s", entry)
+			}
+		}
 	}
 }

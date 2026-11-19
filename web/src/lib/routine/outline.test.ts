@@ -20,7 +20,7 @@ describe('outlineDay', () => {
 		blocks: {
 			tea: {
 				name: 'Tea',
-				items: [{ title: 'Tea', when: { days: ['tue'] }, duration: 5 }]
+				items: [{ title: 'Tea', duration: 5 }]
 			}
 		},
 		days: {
@@ -33,7 +33,7 @@ describe('outlineDay', () => {
 					}
 				},
 				items: [
-					{ time: '09:00', title: 'Late', when: { place: 'home' }, duration: 5 },
+					{ when: { place: 'home' }, items: [{ time: '09:00', title: 'Late', duration: 5 }] },
 					{
 						when: { place: 'office' },
 						items: [{ time: '08:00', title: 'Early', note: 'Make tea', duration: 5 }]
@@ -66,18 +66,26 @@ describe('conditions explained by an enclosing branch', () => {
 		blocks: {
 			morning: {
 				name: 'Morning',
-				items: [
-					{ title: 'Exercise', duration: 10, when: { place: ['office', 'wfh'], gym: true, days: ['mon'] } },
-					{ title: 'Office only', duration: 10, when: { place: 'office' } },
-					{ title: 'Not office', duration: 10, when: { place: { not: 'office' } } }
-				]
+				items: [{ title: 'Exercise', duration: 10 }]
 			}
 		},
 		days: {
 			day: {
 				on: ['mon'],
 				choices,
-				items: [{ when: { place: 'wfh' }, items: [{ use: 'morning', time: '08:00' }] }]
+				items: [
+					{
+						when: { place: 'wfh' },
+						items: [
+							{
+								when: { place: ['office', 'wfh'], gym: true, days: ['mon'] },
+								items: [{ use: 'morning', time: '08:00' }]
+							},
+							{ when: { place: 'office' }, items: [{ title: 'Office only', duration: 10 }] },
+							{ when: { place: { not: 'office' } }, items: [{ title: 'Not office', duration: 10 }] }
+						]
+					}
+				]
 			}
 		}
 	};

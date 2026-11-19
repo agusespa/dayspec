@@ -5,7 +5,7 @@
 import { Ajv2020, type ErrorObject } from 'ajv/dist/2020.js';
 import {
 	WEEKDAYS,
-	isGroup,
+	isBranch,
 	isUse,
 	type Choice,
 	type Entry,
@@ -105,8 +105,8 @@ export function checkReferences(routine: Routine): string[] {
 				return;
 			}
 			const at = `${where}[${i}]`;
-			if (choices) checkWhen(entry.when, choices, `${at}.when`);
-			if (isGroup(entry)) {
+			if (isBranch(entry)) {
+				if (choices) checkWhen(entry.when, choices, `${at}.when`);
 				walk(entry.items, choices, `${at}.items`, stack, depth + 1);
 				return;
 			}
@@ -121,7 +121,7 @@ export function checkReferences(routine: Routine): string[] {
 					return;
 				}
 				const inner = [...stack, entry.use];
-				walk(block.items, choices, `blocks.${entry.use}`, inner, depth + 1);
+				walk(block.items, undefined, `blocks.${entry.use}`, inner, depth + 1);
 				return;
 			}
 			checkItem(entry, at);
@@ -160,19 +160,11 @@ export function checkReferences(routine: Routine): string[] {
 		walk(day.items, choices, `days.${dayKey}.items`, []);
 	}
 
-	// Unused blocks still need valid links, references, and nesting. Choice conditions
-	// are checked in each consuming template, where the available choices are known.
+	// Shared blocks are unconditional; validate references and links even when unused.
 	for (const [name, block] of Object.entries(blocks)) {
 		if (block.category !== undefined && !Object.hasOwn(categories, block.category))
 			errors.add(`blocks.${name}: unknown category "${block.category}"`);
-		const relative = (entries: Entry[]) => {
-			for (const entry of entries) {
-				if ('time' in entry)
-					errors.add(`blocks.${name}: set the start time in the template, not inside a shared block`);
-				if (isGroup(entry)) relative(entry.items);
-			}
-		};
-		relative(block.items);
+
 		walk(block.items, undefined, `blocks.${name}`, [name]);
 	}
 

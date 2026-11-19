@@ -63,7 +63,7 @@ test("desktop shared block editing places activities beside its settings", async
   await page.getByTestId("EntryEditor-open").first().click();
   await expect(page.getByTestId("EntryEditor-title").first()).toBeVisible();
   await page.getByTestId("TemplateEditor-cancel").click();
-  await expect(page.getByTestId("Templates-list")).toBeVisible();
+  await expect(page.getByTestId("TemplateEditor-block-list")).toBeVisible();
 });
 
 test("below the desktop breakpoint the library and editor retain their single column and bottom save bar", async ({

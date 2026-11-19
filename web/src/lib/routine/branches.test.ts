@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { branchOptions, inBranch, moveSection, newBranch, timelineSections, branchView } from './branches.ts';
+import { branchOptions, inBranch, newBranch, timelineSections, branchView } from './branches.ts';
 import schema from '../../../../routine.schema.json';
 import { validateRoutine } from './validate.ts';
 import { resolveDay } from './resolve.ts';
-import type { Choice, Entry, Routine } from './types.ts';
+import type { Choice, Entry, Routine, When, Branch } from './types.ts';
 
 const location: Choice = {
 	label: 'Work location',
@@ -11,11 +11,8 @@ const location: Choice = {
 	default: 'home'
 };
 const choices = { location, gym: { type: 'toggle', default: false } satisfies Choice };
-const item = (title: string, when?: Entry['when']): Entry => ({
-	title,
-	duration: 5,
-	...(when ? { when } : {})
-});
+const item = (title: string, when?: When): Entry =>
+	when ? { when, items: [{ title, duration: 5 }] } : { title, duration: 5 };
 
 describe('template branches', () => {
 	it('keeps common activities and repeated decision points in their original positions', () => {
@@ -71,20 +68,6 @@ describe('template branches', () => {
 			{ when: { gym: false }, items: [] }
 		]);
 	});
-	it('moves both alternatives together past neighbouring activities without mutating data', () => {
-		const entries = [
-			item('Before'),
-			item('Home', { location: 'home' }),
-			item('Office', { location: 'office' }),
-			item('After')
-		];
-		const sections = timelineSections(entries, choices);
-		expect(moveSection(entries, sections, 1, -1)).toEqual([entries[1], entries[2], entries[0], entries[3]]);
-		expect(moveSection(entries, sections, 1, 1)).toEqual([entries[0], entries[3], entries[1], entries[2]]);
-		expect(moveSection(entries, sections, 0, -1)).toBe(entries);
-		expect(moveSection(entries, sections, 3, 1)).toBe(entries);
-		expect(entries[0]).toEqual(item('Before'));
-	});
 });
 
 it('validates empty alternatives and resolves them without phantom activities', () => {
@@ -119,14 +102,7 @@ it('collects work alternatives even when dependent evening choices are stored be
 	const before = structuredClone(entries);
 	const sections = timelineSections(entries, choices);
 	expect(sections.map((s) => s.indices)).toEqual([[0], [1, 3], [2, 4], [5]]);
-	expect(moveSection(entries, sections, 1, 1)).toEqual([
-		entries[0],
-		entries[2],
-		entries[4],
-		entries[1],
-		entries[3],
-		entries[5]
-	]);
+
 	expect(entries).toEqual(before);
 });
 
@@ -195,5 +171,5 @@ it('keeps an unrelated extra condition as a label rather than inventing a child 
 	const choices: Record<string, Choice> = { location, gym: { type: 'toggle', default: true } };
 	const view = branchView([item('Lift', { gym: true, location: 'office' })], choices, { gym: true });
 	expect(view.sections.map((s) => s.choice)).toEqual([undefined]);
-	expect(view.entries[0].when).toEqual({ location: 'office' });
+	expect((view.entries[0] as Branch).when).toEqual({ location: 'office' });
 });

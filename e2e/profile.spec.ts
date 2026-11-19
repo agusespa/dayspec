@@ -32,6 +32,9 @@ test("Profile saves holiday preferences across devices and preserves settings on
     await expect(page.getByTestId("Profile-version")).toContainText(
       /Version dev\s*Built .*\d{4}/,
     );
+    const holiday = page.getByTestId("Profile-holiday-template");
+    await expect(holiday.locator("option")).toHaveText(["Weekdays", "Weekend"]);
+    await expect(holiday).toHaveValue("off");
     const setting = page.getByTestId("Profile-automatic-holidays");
     await expect(setting).toBeChecked();
     await expect(setting).toBeEnabled();
@@ -84,4 +87,27 @@ test("Profile saves holiday preferences across devices and preserves settings on
       ).ok(),
     ).toBeTruthy();
   }
+});
+
+test("holiday selector only offers existing templates and is disabled for an empty library", async ({
+  page,
+}) => {
+  const routine = { days: { monday: { on: ["mon"], items: [] } } };
+  await page.route("**/api/routine", (route) =>
+    route.fulfill({ json: { routine, revision: '\"holiday-options\"' } }),
+  );
+  await page.goto("/profile");
+  const selector = page.getByTestId("Profile-holiday-template");
+  await expect(selector.locator("option")).toHaveText(["Monday"]);
+  await expect(selector).toHaveValue("");
+  await expect(selector).toBeEnabled();
+  await page.unroute("**/api/routine");
+  await page.route("**/api/routine", (route) =>
+    route.fulfill({
+      json: { routine: { days: {} }, revision: '\"empty-options\"' },
+    }),
+  );
+  await page.reload();
+  await expect(selector.locator("option")).toHaveCount(0);
+  await expect(selector).toBeDisabled();
 });

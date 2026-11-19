@@ -249,7 +249,7 @@
       "name": "Gym session",
       "items": [
         {
-          "title": "Dress \u2014 go to gym \u2014 Strength training (55\u2032)",
+          "title": "Dress — go to gym — Strength training (55′)",
           "category": "health",
           "link": "https://example.com/notion/page-4",
           "duration": 5
@@ -260,7 +260,7 @@
       "name": "Stretching",
       "items": [
         {
-          "title": "Stretching (\u22485+5\u2032)",
+          "title": "Stretching (≈5+5′)",
           "category": "health",
           "link": "https://example.com/notion/page-4",
           "duration": 5
@@ -271,7 +271,7 @@
       "name": "Dress go home",
       "items": [
         {
-          "title": "Dress \u2014 go home",
+          "title": "Dress — go home",
           "duration": 5
         }
       ]
@@ -337,7 +337,7 @@
       "name": "Dishes log",
       "items": [
         {
-          "title": "Dishes, prepare tomorrow's food \u2014 Log",
+          "title": "Dishes, prepare tomorrow's food — Log",
           "link": "https://example.com/notion/page-5",
           "duration": 5
         }
@@ -371,12 +371,7 @@
   },
   "days": {
     "weekday": {
-      "on": [
-        "mon",
-        "tue",
-        "wed",
-        "thu"
-      ],
+      "on": ["mon", "tue", "wed", "thu"],
       "theme": "Career + Personal Development",
       "choices": {
         "location": {
@@ -401,9 +396,7 @@
             "dance_class": {},
             "gym": {},
             "workshop": {
-              "only_on": [
-                "mon"
-              ]
+              "only_on": ["mon"]
             }
           },
           "default": {
@@ -449,7 +442,7 @@
             {
               "title": "Bathroom, shower + grooming",
               "time": "07:25",
-              "note": "Dress, pack\nSoda mouthwash\nBrush teeth\nHead & face shaving\nBeard trimming 3 mm\nBody trimming \u00b7 Legs 7 mm, upper body 7 mm, crotch 11 mm/min \u00b7 When: {\"days\": [\"tue\"]}\nBack trimming \u00b7 When: {\"days\": [\"tue\"]}\nNails \u00b7 When: {\"days\": [\"thu\"]}\nProtective cream \u00b7 SPF face cream / winter cream\nVaseline lip balm\nBeard oil",
+              "note": "Dress, pack\nSoda mouthwash\nBrush teeth\nHead & face shaving\nBeard trimming 3 mm\nBody trimming · Legs 7 mm, upper body 7 mm, crotch 11 mm/min · When: {\"days\": [\"tue\"]}\nBack trimming · When: {\"days\": [\"tue\"]}\nNails · When: {\"days\": [\"thu\"]}\nProtective cream · SPF face cream / winter cream\nVaseline lip balm\nBeard oil",
               "duration": 5
             },
             {
@@ -487,7 +480,7 @@
             },
             {
               "time": "19:00",
-              "title": "Commute home \u2014 undress",
+              "title": "Commute home — undress",
               "duration": 5
             },
             {
@@ -536,7 +529,7 @@
             {
               "title": "Bathroom, shower + grooming",
               "time": "08:00",
-              "note": "Soda mouthwash\nHead & face shaving\nFacial hair \u00b7 When: {\"days\": [\"wed\"]}",
+              "note": "Soda mouthwash\nHead & face shaving\nFacial hair · When: {\"days\": [\"wed\"]}",
               "duration": 5
             },
             {
@@ -553,7 +546,11 @@
           "when": {
             "gym": true
           },
-          "use": "gym_evening"
+          "items": [
+            {
+              "use": "gym_evening"
+            }
+          ]
         },
         {
           "when": {
@@ -619,9 +616,7 @@
       ]
     },
     "friday": {
-      "on": [
-        "fri"
-      ],
+      "on": ["fri"],
       "choices": {
         "evening": {
           "options": {
@@ -720,9 +715,7 @@
       ]
     },
     "saturday": {
-      "on": [
-        "sat"
-      ],
+      "on": ["sat"],
       "theme": "Projects",
       "choices": {
         "going_out": {
@@ -755,7 +748,7 @@
         {
           "title": "Bathroom, shower + grooming",
           "approx": true,
-          "note": "Dress\nSoda mouthwash\nHead & face shaving\nTake body measurements \u00b7 Weight, body fat %, muscles",
+          "note": "Dress\nSoda mouthwash\nHead & face shaving\nTake body measurements · Weight, body fat %, muscles",
           "duration": 5
         },
         {
@@ -783,12 +776,16 @@
           "duration": 5
         },
         {
-          "title": "Bathroom, shower + grooming",
           "when": {
             "going_out": true
           },
-          "note": "Head shaving\nBack shaving\nBeard oil",
-          "duration": 5
+          "items": [
+            {
+              "title": "Bathroom, shower + grooming",
+              "note": "Head shaving\nBack shaving\nBeard oil",
+              "duration": 5
+            }
+          ]
         },
         {
           "time": "19:00",
@@ -813,9 +810,7 @@
       ]
     },
     "sunday": {
-      "on": [
-        "sun"
-      ],
+      "on": ["sun"],
       "theme": "Creative writing + Introspect",
       "items": [
         {
@@ -874,7 +869,7 @@
         },
         {
           "time": "17:30",
-          "title": "Strength training (55\u2032)",
+          "title": "Strength training (55′)",
           "category": "health",
           "duration": 5
         },
@@ -890,7 +885,7 @@
           "duration": 5
         },
         {
-          "title": "Dishes, prepare tomorrow's food \u2014 Log",
+          "title": "Dishes, prepare tomorrow's food — Log",
           "link": "https://example.com/notion/page-5",
           "time": "20:50",
           "note": "Pods",
@@ -899,7 +894,7 @@
         {
           "time": "21:30",
           "approx": true,
-          "title": "\u00dcbermensch Review",
+          "title": "Übermensch Review",
           "category": "productivity",
           "link": "https://example.com/notion/page-11",
           "duration": 5

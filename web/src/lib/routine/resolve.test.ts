@@ -52,7 +52,10 @@ describe('resolveDay', () => {
 				blocks: {
 					b: {
 						name: 'B',
-						items: [{ title: 'Tea', duration: 5 }, { items: [{ title: 'Toast', duration: 5 }] }]
+						items: [
+							{ title: 'Tea', duration: 5 },
+							{ title: 'Toast', duration: 5 }
+						]
 					}
 				},
 				days: {
@@ -60,7 +63,7 @@ describe('resolveDay', () => {
 						on: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
 						items: [
 							{ title: 'Wake', time: '06:00', duration: 5 },
-							{ items: [{ title: 'Run', time: '06:30', duration: 5 }] },
+							{ when: { days: ['mon'] }, items: [{ title: 'Run', time: '06:30', duration: 5 }] },
 							{ use: 'b', time: '07:00' }
 						]
 					}
@@ -72,14 +75,14 @@ describe('resolveDay', () => {
 			['Wake', { path: [0] }, undefined],
 			['Run', { path: [1, 0] }, undefined],
 			['Tea', { block: 'b', path: [0] }, 'b'],
-			['Toast', { block: 'b', path: [1, 0] }, 'b']
+			['Toast', { block: 'b', path: [1] }, 'b']
 		]);
 	});
 	it('says why each item is in the day, using the choice labels', () => {
 		const day = resolveDay(
 			routine({
 				categories: { chores: { name: 'Chores', color: 'orange' } },
-				blocks: { b: { name: 'B', items: [{ title: 'Inner', duration: 5, when: { days: ['mon'] } }] } },
+				blocks: { b: { name: 'B', items: [{ title: 'Inner', duration: 5 }] } },
 				days: {
 					all: {
 						on: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
@@ -89,8 +92,14 @@ describe('resolveDay', () => {
 						},
 						items: [
 							{ title: 'Always', duration: 5, category: 'chores' },
-							{ when: { gym: true }, items: [{ title: 'Lift', duration: 5, when: { place: 'office' } }] },
-							{ use: 'b', time: '08:00', when: { place: 'office' } }
+							{
+								when: { gym: true },
+								items: [{ when: { place: 'office' }, items: [{ title: 'Lift', duration: 5 }] }]
+							},
+							{
+								when: { place: 'office' },
+								items: [{ when: { days: ['mon'] }, items: [{ use: 'b', time: '08:00' }] }]
+							}
 						]
 					}
 				}
@@ -118,7 +127,7 @@ describe('resolveDay', () => {
 						items: [
 							{ title: 'Stretch', duration: 5 },
 							{ title: 'Make bed', duration: 5, category: 'chores' },
-							{ items: [{ title: 'Yoga', duration: 5 }] },
+							{ title: 'Yoga', duration: 5 },
 							{ use: 'plain' }
 						]
 					},
@@ -155,8 +164,8 @@ describe('resolveDay', () => {
 				evening: {
 					name: 'Evening',
 					items: [
-						{ time: '20:00', title: 'Read', duration: 5 },
-						{ time: '19:00', title: 'Cook', duration: 5 }
+						{ title: 'Cook', duration: 60 },
+						{ title: 'Read', duration: 5 }
 					]
 				}
 			},
@@ -164,8 +173,8 @@ describe('resolveDay', () => {
 				all: {
 					on: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
 					items: [
-						{ use: 'evening' },
-						{ time: '08:00', use: 'tea', note: 'Black' },
+						{ use: 'evening', time: '19:00' },
+						{ time: '08:00', use: 'tea' },
 						{ title: 'Untimed', duration: 5 },
 						{ time: '07:00', title: 'Wake', duration: 5 }
 					]
@@ -203,8 +212,8 @@ describe('resolveDay', () => {
 						plan: { options: { a: {}, b: { only_on: ['mon'] } }, default: 'b' }
 					},
 					items: [
-						{ title: 'Office', when: { place: 'office' }, duration: 5 },
-						{ title: 'Extra', when: { extra: true }, duration: 5 }
+						{ when: { place: 'office' }, items: [{ title: 'Office', duration: 5 }] },
+						{ when: { extra: true }, items: [{ title: 'Extra', duration: 5 }] }
 					]
 				}
 			}
@@ -368,7 +377,7 @@ describe('holiday templates', () => {
 				weekend: {
 					on: ['sat'],
 					choices: { meal: { options: { a: { only_on: ['sat'] }, b: { only_on: ['sat'] } }, default: 'a' } },
-					items: [{ title: 'Conditional', duration: 5, when: { meal: 'a' } }]
+					items: [{ when: { meal: 'a' }, items: [{ title: 'Conditional', duration: 5 }] }]
 				}
 			}
 		};
