@@ -74,8 +74,7 @@
 	}
 </script>
 
-<section class="masthead">
-	<p class="eyebrow">Preferences</p>
+<section class="masthead page-header">
 	<h1>Profile</h1>
 </section>
 <section class="settings">

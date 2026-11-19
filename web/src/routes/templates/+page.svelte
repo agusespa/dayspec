@@ -59,8 +59,7 @@
 		}}
 	/>
 {:else}
-	<section class="masthead">
-		<p class="eyebrow">Routine library</p>
+	<section class="masthead page-header">
 		<h1>Templates</h1>
 	</section>
 	{#if saved}<p class="saved-note" role="status" data-testid="Templates-saved">Templates saved</p>{/if}

@@ -28,7 +28,7 @@ async function pull(page: Page, distance: number) {
     };
     fire("touchstart", 100);
     for (let y = 110; y <= 100 + distance; y += 10) fire("touchmove", y);
-    // Released after evaluate returns, since letting go may reload the page.
+    // Release after the gesture has been dispatched.
     setTimeout(() => fire("touchend", 100 + distance));
   }, distance);
 }
@@ -41,14 +41,35 @@ async function mark(page: Page) {
 const marked = (page: Page) =>
   page.evaluate(() => document.body.dataset.marked ?? null);
 
-test("pulling down far enough reloads the app", async ({ page }) => {
+test("pulling refreshes in place and keeps the selected day", async ({
+  page,
+}) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await page.getByTestId("Day-next").click();
+  const heading = await page.getByRole("heading", { level: 1 }).textContent();
   await mark(page);
-
-  await Promise.all([page.waitForEvent("load"), pull(page, 220)]);
-  expect(await marked(page)).toBeNull();
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/routine", async (route) => {
+    await gate;
+    await route.continue();
+  });
+  const refreshed = page.waitForResponse((response) =>
+    response.url().endsWith("/api/routine"),
+  );
+  await pull(page, 220);
+  await expect(page.getByTestId("pull-to-refresh")).toHaveClass(/refreshing/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(heading!);
+  await expect(page.getByText("Loading routine…")).toHaveCount(0);
+  expect(await marked(page)).toBe("yes");
+  release();
+  await refreshed;
+  await expect(page.getByTestId("pull-to-refresh")).toHaveCSS("opacity", "0");
+  expect(await marked(page)).toBe("yes");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(heading!);
 });
 
 test("a short pull springs back without reloading", async ({ page }) => {
@@ -73,4 +94,18 @@ test("an open template editor never reloads, so its draft survives", async ({
   await page.waitForTimeout(300);
   expect(await marked(page)).toBe("yes");
   await expect(page.getByTestId("pull-to-refresh")).toHaveCSS("opacity", "0");
+});
+
+test("a failed pull keeps content visible and offers retry", async ({
+  page,
+}) => {
+  await page.goto("/profile");
+  await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
+  await page.route("**/api/routine", (route) => route.abort());
+  await mark(page);
+  await pull(page, 220);
+  await expect(page.getByTestId("RoutineSync-toast")).toBeVisible();
+  await expect(page.getByTestId("pull-to-refresh")).toHaveCSS("opacity", "0");
+  await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
+  expect(await marked(page)).toBe("yes");
 });

@@ -81,69 +81,74 @@
 	});
 </script>
 
-<section class="masthead">
-	<p class="eyebrow">{formatDate(date, 'long')}</p>
-	<h1>{isToday ? 'Today' : formatDate(date, 'long').split(' ')[0]}</h1>
-	{#if day.theme}
-		<p class="theme">{day.theme}</p>
-	{/if}
-	<div class="strip" aria-hidden="true">
-		{#each day.items as item, i (item.id)}
-			<span class="seg tone-{item.color ?? 'none'}" class:passed={i < passed} class:now={i === current.index}
-			></span>
-		{/each}
-	</div>
-</section>
+<div class="page-header">
+	<section class="masthead">
+		<p class="eyebrow">{formatDate(date, 'long')}</p>
+		<h1>{isToday ? 'Today' : formatDate(date, 'long').split(' ')[0]}</h1>
+		{#if day.theme}
+			<p class="theme">{day.theme}</p>
+		{/if}
+		<div class="strip" aria-hidden="true">
+			{#each day.items as item, i (item.id)}
+				<span
+					class="seg tone-{item.color ?? 'none'}"
+					class:passed={i < passed}
+					class:now={i === current.index}
+				></span>
+			{/each}
+		</div>
+	</section>
 
-<section class="choices" aria-label="Day options">
-	{#each day.choices as choice (choice.name)}
-		{#if choice.type === 'toggle'}
-			<label class="choice">
-				<span class="choice-label">{choice.label}</span>
+	<section class="choices" aria-label="Day options">
+		<label class="choice">
+			<span class="choice-label">Holiday</span>
+			<span class="holiday-control">
 				<input
 					type="checkbox"
 					role="switch"
 					class="switch"
-					data-testid={`Day-choice-${choice.name}`}
-					checked={choice.value === true}
-					onchange={(e) => choose(choice.name, e.currentTarget.checked)}
+					data-testid="Day-holiday-toggle"
+					checked={day.holiday}
+					onchange={(e) => setHoliday(e.currentTarget.checked)}
 				/>
-			</label>
-		{:else}
-			<div class="choice">
-				<span class="choice-label" id="choice-{choice.name}">{choice.label}</span>
-				<div class="options" role="radiogroup" aria-labelledby="choice-{choice.name}">
-					{#each choice.options as option (String(option.value))}
-						<button
-							data-testid={`Day-choice-${choice.name}-${String(option.value)}`}
-							role="radio"
-							aria-checked={option.value === choice.value}
-							onclick={() => choose(choice.name, option.value)}>{option.label}</button
-						>
-					{/each}
+				{#if stored.holiday === undefined && day.holiday && holidayName && routine.settings?.automatic_swedish_holidays !== false}
+					<span class="holiday-source" data-testid="Day-holiday-source">
+						Automatic · {holidayName}
+					</span>
+				{/if}
+			</span>
+		</label>
+		{#each day.choices as choice (choice.name)}
+			{#if choice.type === 'toggle'}
+				<label class="choice">
+					<span class="choice-label">{choice.label}</span>
+					<input
+						type="checkbox"
+						role="switch"
+						class="switch"
+						data-testid={`Day-choice-${choice.name}`}
+						checked={choice.value === true}
+						onchange={(e) => choose(choice.name, e.currentTarget.checked)}
+					/>
+				</label>
+			{:else}
+				<div class="choice">
+					<span class="choice-label" id="choice-{choice.name}">{choice.label}</span>
+					<div class="options" role="radiogroup" aria-labelledby="choice-{choice.name}">
+						{#each choice.options as option (String(option.value))}
+							<button
+								data-testid={`Day-choice-${choice.name}-${String(option.value)}`}
+								role="radio"
+								aria-checked={option.value === choice.value}
+								onclick={() => choose(choice.name, option.value)}>{option.label}</button
+							>
+						{/each}
+					</div>
 				</div>
-			</div>
-		{/if}
-	{/each}
-	<label class="choice">
-		<span class="choice-label">Holiday</span>
-		<span class="holiday-control">
-			<input
-				type="checkbox"
-				role="switch"
-				class="switch"
-				data-testid="Day-holiday-toggle"
-				checked={day.holiday}
-				onchange={(e) => setHoliday(e.currentTarget.checked)}
-			/>
-			{#if stored.holiday === undefined && day.holiday && holidayName && routine.settings?.automatic_swedish_holidays !== false}
-				<span class="holiday-source" data-testid="Day-holiday-source">
-					Automatic · {holidayName}
-				</span>
 			{/if}
-		</span>
-	</label>
-</section>
+		{/each}
+	</section>
+</div>
 
 {#if !day.items.length}
 	<section class="empty-state" data-testid="Day-empty">
@@ -196,7 +201,80 @@
 </BottomNav>
 
 <style>
+	.masthead {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		align-items: baseline;
+		column-gap: 0.75rem;
+	}
+
+	.masthead h1 {
+		grid-column: 1;
+		grid-row: 1;
+		margin: 0;
+	}
+
+	.eyebrow {
+		grid-column: 2;
+		grid-row: 1;
+		text-align: right;
+		line-height: 1.4;
+	}
+
+	.theme {
+		grid-column: 1 / -1;
+	}
+
+	.choices {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.2rem 1.25rem;
+		padding: 0.3rem 0;
+		overflow: hidden;
+		border-bottom: 1px solid var(--rule);
+	}
+
+	.choice {
+		display: flex;
+		flex-wrap: wrap;
+		position: relative;
+		max-width: 100%;
+		min-width: 0;
+		min-height: 40px;
+		gap: 0.5rem;
+		padding: 0.1rem 0;
+		border-bottom: 0;
+	}
+
+	.choice::before {
+		content: '';
+		position: absolute;
+		left: -0.625rem;
+		top: 50%;
+		height: 20px;
+		border-left: 1px solid var(--rule);
+		transform: translateY(-50%);
+	}
+
+	.choice-label {
+		overflow-wrap: anywhere;
+	}
+
+	.options {
+		min-width: 0;
+		gap: 0.3rem;
+	}
+
+	.options button {
+		min-height: 32px;
+		padding: 0.15rem 0.6rem;
+		font-size: var(--text-xs);
+		overflow-wrap: anywhere;
+	}
+
 	.strip {
+		grid-column: 1 / -1;
 		display: flex;
 		gap: 2px;
 		height: 8px;
@@ -224,7 +302,7 @@
 	.holiday-control {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
+		gap: 0.5rem;
 		min-width: 0;
 	}
 

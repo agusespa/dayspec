@@ -6,8 +6,8 @@ import { chromium } from '@playwright/test';
 
 // A centered sunrise arc around three aligned timeline bars.
 // Maskable icons keep the mark inside the central 80% safe circle.
-const DEFS = `<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#211619"/><stop offset="1" stop-color="#080607"/></linearGradient>
-<linearGradient id="frame" x1="0" y1="0" x2="0.8" y2="1"><stop stop-color="#ffb18c"/><stop offset="1" stop-color="#ff8a65"/></linearGradient>`;
+const DEFS = `<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff3df"/><stop offset="1" stop-color="#f3dfc4"/></linearGradient>
+<linearGradient id="frame" x1="0" y1="0" x2="0.8" y2="1"><stop stop-color="#d67b52"/><stop offset="1" stop-color="#b9553c"/></linearGradient>`;
 
 /** rounded: transparent corners (favicon, manifest "any"); otherwise a full square (iOS, maskable). */
 function svg(rounded, maskable = false) {
@@ -15,11 +15,11 @@ function svg(rounded, maskable = false) {
 	return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
 <defs>${DEFS}</defs>
 <rect width="512" height="512"${rounded ? ' rx="112"' : ''} fill="url(#bg)"/>
-<g transform="translate(256 256) scale(${scale}) translate(-256 -224)">
+<g transform="translate(256 256) scale(${scale}) translate(-256 -231)">
 <path d="M 149.934 358.066 A 150 150 0 0 1 200 116.807 M 312 116.807 A 150 150 0 0 1 362.066 358.066"
   fill="none" stroke="url(#frame)" stroke-width="28" stroke-linecap="round"/>
-<circle cx="256" cy="106" r="29" fill="#ffd166"/>
-<g fill="none" stroke="#f5a3c7" stroke-linecap="round" stroke-width="28">
+<circle cx="256" cy="106" r="29" fill="#db9a25"/>
+<g fill="none" stroke="#af547b" stroke-linecap="round" stroke-width="28">
   <path d="M 210 232 H 302"/>
   <path d="M 210 295 H 278"/>
   <path d="M 210 358 H 302"/>

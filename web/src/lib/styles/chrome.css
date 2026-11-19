@@ -38,7 +38,7 @@
 
 :root {
 	--nav-bottom: calc(max(env(safe-area-inset-bottom), 24px) + 8px);
-	--nav-height: 54px;
+	--nav-height: 60px;
 	--floating-bg: rgba(28, 28, 30, 0.58);
 	--floating-filter: saturate(200%) blur(28px);
 	--floating-shadow:
@@ -123,7 +123,7 @@
 .bottombar .nav-destination {
 	width: auto;
 	min-width: 0;
-	min-height: 48px;
+	min-height: calc(var(--nav-height) - 6px);
 	gap: 2px;
 	padding: 4px 6px;
 	font-size: var(--text-2xs);
@@ -144,7 +144,7 @@
 	display: flex;
 	align-items: center;
 	min-width: 0;
-	min-height: 48px;
+	min-height: calc(var(--nav-height) - 6px);
 	border-radius: 999px;
 	color: var(--accent);
 }
@@ -243,9 +243,21 @@
 
 /* ---- Masthead ---- */
 
+/* Keep only the page-level heading and Daily controls above scrolling content. */
+.page-header {
+	position: sticky;
+	top: 0;
+	z-index: 4;
+	margin: 0 -1rem;
+	padding-right: 1rem;
+	padding-bottom: 0.8rem;
+	padding-left: 1rem;
+	background: var(--bg);
+}
+
 /* Share the status-bar clearance with editors and loading messages. */
 .masthead {
-	padding: var(--page-top) 0 0;
+	padding-top: var(--page-top);
 }
 
 .eyebrow {
@@ -265,6 +277,10 @@
 	line-height: 1.15;
 	letter-spacing: -0.03em;
 	margin: 0.35rem 0 0;
+}
+
+.masthead.page-header h1 {
+	margin-top: 0;
 }
 
 .theme {

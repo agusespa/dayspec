@@ -1,14 +1,14 @@
 <!-- Pull-to-refresh, ported from Gympass. -->
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { loadRoutine } from '#lib/routine/client.ts';
 
 	/**
-	 * Pull down from the top of the page to reload, like a browser tab. Only in the home-screen
-	 * app: Safari and Chrome tabs have their own, and two would reload twice. A reload picks up a
-	 * new app version, renews an expired login and loads the latest routine.
+	 * Pull down to fetch the latest routine without replacing the visible page. Only in the
+	 * home-screen app: browser tabs already provide their own refresh gesture.
 	 */
 
-	/** How far (px) the indicator has to come down before letting go reloads. */
+	/** How far (px) the indicator has to come down before letting go refreshes. */
 	const THRESHOLD = 72;
 	const MAX = 110;
 	/** Finger travel (px) ignored before a pull starts, so taps and small jitters don't count. */
@@ -35,7 +35,7 @@
 
 		const start = (e: TouchEvent) => {
 			const atTop = scrollY <= 0;
-			// Not while a template is open: a reload would throw away the draft.
+			// Leave an open editor alone while the user is working on a draft.
 			const busy =
 				refreshing || e.touches.length !== 1 || document.querySelector('dialog[open], .template-editor');
 			startY = atTop && !busy ? e.touches[0].clientY : null;
@@ -55,14 +55,19 @@
 			pull = Math.min(MAX, Math.max(0, dy - SLOP) * 0.5);
 		};
 
-		const end = () => {
+		const end = async () => {
 			if (!dragging) return void (startY = null);
 			if (pull < THRESHOLD) return reset();
 			startY = null;
 			dragging = false;
 			pull = THRESHOLD;
 			refreshing = true;
-			location.reload();
+			try {
+				await loadRoutine();
+			} finally {
+				refreshing = false;
+				reset();
+			}
 		};
 
 		addEventListener('touchstart', start, { passive: true });
