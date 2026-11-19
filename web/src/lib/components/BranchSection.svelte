@@ -25,7 +25,7 @@
 			options.find((o) => o.value === preferred)?.value ??
 			options[0]?.value
 	);
-	// Keep an activity visible when its branch condition changes during editing.
+	// Keep an activity visible when its selected path changes during editing.
 	$effect(() => {
 		if (preferred !== undefined) selected = preferred;
 	});

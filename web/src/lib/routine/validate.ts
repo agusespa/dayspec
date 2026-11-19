@@ -9,9 +9,9 @@ import {
 	isUse,
 	type Choice,
 	type Entry,
-	type ItemDef,
-	type Routine,
-	type When
+	type Activity,
+	type SharedEntry,
+	type Routine
 } from './types.ts';
 
 export function validateRoutine(data: unknown, schema: object): string[] {
@@ -51,12 +51,12 @@ export function checkReferences(routine: Routine): string[] {
 		errors.add(`settings.holiday: there is no day template "${holiday}"`);
 
 	const categories = routine.categories ?? {};
-	const checkItem = (item: ItemDef, where: string) => {
+	const checkItem = (item: Activity, where: string) => {
 		if (item.category !== undefined && !Object.hasOwn(categories, item.category))
 			errors.add(`${where}: unknown category "${item.category}"`);
-		for (const ref of item.link === undefined ? [] : Array.isArray(item.link) ? item.link : [item.link]) {
+		if (item.link !== undefined) {
 			try {
-				const url = new URL(ref);
+				const url = new URL(item.link);
 				if (!['http:', 'https:'].includes(url.protocol) || !url.hostname) throw new Error();
 			} catch {
 				errors.add(`${where}: invalid link URL`);
@@ -64,36 +64,14 @@ export function checkReferences(routine: Routine): string[] {
 		}
 	};
 
-	const checkWhen = (when: When | undefined, choices: Record<string, Choice>, where: string) => {
-		for (const [key, cond] of Object.entries(when ?? {})) {
-			if (key === 'days' || cond === undefined) continue;
-			const choice = choices[key];
-			if (!choice) {
-				errors.add(`${where}: "${key}" is not a choice of this day`);
-				continue;
-			}
-			if (choice.type === 'toggle') {
-				if (typeof cond !== 'boolean') errors.add(`${where}.${key}: a toggle takes true or false`);
-				continue;
-			}
-			if (typeof cond === 'boolean') {
-				errors.add(`${where}.${key}: "${key}" is not a toggle`);
-				continue;
-			}
-			const values = typeof cond === 'string' ? [cond] : Array.isArray(cond) ? cond : [cond.not].flat();
-			for (const value of values) {
-				if (!choice.options?.[value]) errors.add(`${where}.${key}: "${value}" is not an option`);
-			}
-		}
-	};
-
 	let remaining = 10_000;
 	const walk = (
-		entries: Entry[],
+		entries: (Entry | SharedEntry)[],
 		choices: Record<string, Choice> | undefined,
 		where: string,
 		stack: string[],
-		depth = 0
+		depth = 0,
+		forks: string[] = []
 	) => {
 		if (depth > 64 && entries.length) {
 			errors.add(`${where}: nesting or block expansion exceeds 64 levels`);
@@ -106,8 +84,15 @@ export function checkReferences(routine: Routine): string[] {
 			}
 			const at = `${where}[${i}]`;
 			if (isBranch(entry)) {
-				if (choices) checkWhen(entry.when, choices, `${at}.when`);
-				walk(entry.items, choices, `${at}.items`, stack, depth + 1);
+				const definition = choices?.[entry.alternative];
+				if (!definition) errors.add(`${at}: unknown alternative "${entry.alternative}"`);
+				if (forks.includes(entry.alternative))
+					errors.add(`${at}: an alternative cannot be nested inside itself`);
+				for (const [option, items] of Object.entries(entry.paths)) {
+					if (definition && !Object.hasOwn(definition.options, option))
+						errors.add(`${at}.paths: "${option}" is not an option of "${entry.alternative}"`);
+					walk(items, choices, `${at}.paths.${option}`, stack, depth + 1, [...forks, entry.alternative]);
+				}
 				return;
 			}
 			if (isUse(entry)) {
@@ -130,15 +115,10 @@ export function checkReferences(routine: Routine): string[] {
 
 	for (const [dayKey, day] of Object.entries(routine.days)) {
 		const choices = day.choices ?? {};
-		const earlier: Record<string, Choice> = {};
 		for (const [name, choice] of Object.entries(choices)) {
 			const where = `days.${dayKey}.choices.${name}`;
-			// A choice can only depend on the ones listed before it.
-			checkWhen(choice.active_when, earlier, `${where}.active_when`);
 			const options = choice.options ?? {};
-			const isToggle = choice.type === 'toggle';
 			const valid = (value: unknown, weekday: string) => {
-				if (isToggle) return typeof value === 'boolean';
 				const option = options[value as string];
 				return !!option && (!option.only_on || option.only_on.includes(weekday as never));
 			};
@@ -155,7 +135,6 @@ export function checkReferences(routine: Routine): string[] {
 						errors.add(`${where}.default: "${choice.default}" is not available on ${weekday}`);
 				}
 			}
-			earlier[name] = choice;
 		}
 		walk(day.items, choices, `days.${dayKey}.items`, []);
 	}

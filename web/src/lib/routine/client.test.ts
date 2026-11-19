@@ -5,7 +5,7 @@ const routine: Routine = {
 	days: {
 		saturday: {
 			on: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
-			items: [{ title: 'Wake', duration: 5 }]
+			items: [{ time: '08:00', title: 'Wake', duration: 5 }]
 		}
 	}
 };

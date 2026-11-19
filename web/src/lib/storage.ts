@@ -22,9 +22,7 @@ export function loadDay(date: string): StoredDay {
 		if (saved && typeof saved === 'object') {
 			if (saved.choices && typeof saved.choices === 'object' && !Array.isArray(saved.choices)) {
 				day.choices = Object.fromEntries(
-					Object.entries(saved.choices).filter(
-						([, value]) => typeof value === 'string' || typeof value === 'boolean'
-					)
+					Object.entries(saved.choices).filter(([, value]) => typeof value === 'string')
 				) as Record<string, ChoiceValue>;
 			}
 			if (typeof saved.holiday === 'boolean') day.holiday = saved.holiday;

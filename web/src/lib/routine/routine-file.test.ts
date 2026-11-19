@@ -44,14 +44,14 @@ describe('routine fixture', () => {
 		expect(all.indexOf('Dance class')).toBeLessThan(all.indexOf('Cook dinner'));
 		expect(all).not.toContain('Daily news pods, Swedish news, Personal Development');
 	});
-	it('Wednesday defaults to WFH with the gym on and grooming notes', () => {
+	it('Wednesday defaults to WFH with the gym selected and grooming notes', () => {
 		const day = resolveDay(routine, WED);
 		expect(choice(day, 'location')).toBe('wfh');
-		expect(choice(day, 'gym')).toBe(true);
+		expect(choice(day, 'gym')).toBe('yes');
 		expect(day.choices.map((c) => c.name)).not.toContain('evening');
 		expect(day.items.find((i) => i.time === '08:00')?.note).toContain('Facial hair');
 		expect(titles(day)).toContain('Dress — go to gym — Strength training (55′)');
-		const off = resolveDay(routine, WED, { choices: { gym: false } });
+		const off = resolveDay(routine, WED, { choices: { gym: 'no' } });
 		expect(titles(off)).not.toContain('Dress — go to gym — Strength training (55′)');
 		for (const t of SHARED_EVENING) expect(titles(off)).toContain(t);
 	});
@@ -82,7 +82,7 @@ describe('routine fixture', () => {
 		expect(titles(day).at(-1)).toBe('Lucid dreaming');
 		expect(day.items.some((i) => i.note?.includes('Head shaving'))).toBe(false);
 		expect(
-			resolveDay(routine, SAT, { choices: { going_out: true } }).items.some((i) =>
+			resolveDay(routine, SAT, { choices: { going_out: 'going_out' } }).items.some((i) =>
 				i.note?.includes('Head shaving')
 			)
 		).toBe(true);
@@ -92,7 +92,7 @@ describe('routine fixture', () => {
 		expect(day.template).toBe('saturday');
 		expect(day.theme).toBe('Projects');
 	});
-	it('Sunday keeps untimed items where they are written', () => {
+	it('Sunday orders activities by their explicit start times', () => {
 		const all = titles(resolveDay(routine, SUN));
 		expect(all.indexOf('Personal Development')).toBe(all.indexOf('Breakfast + magazine articles') + 1);
 		expect(all.at(-1)).toBe('Light reading');
@@ -100,16 +100,12 @@ describe('routine fixture', () => {
 	it('the weekday template shows every variant with its conditions', () => {
 		const day = outlineDay(routine, 'weekday');
 		const find = (time: string, title: string) => day.items.find((i) => i.time === time && i.title === title);
-		expect(find('07:25', 'Bathroom, shower + grooming')?.conditions).toEqual(['Location: Office']);
-		expect(find('08:00', 'Bathroom, shower + grooming')?.conditions).toEqual(['Location: WFH']);
-		expect(find('19:30', 'Cook dinner')?.conditions).toEqual(['Evening: not Workshop']);
 		expect(find('07:25', 'Bathroom, shower + grooming')?.note).toContain('Back trimming');
 		const location = day.choices.find((c) => c.name === 'location');
 		expect(location?.options.map((o) => [o.label, o.defaultOn])).toEqual([
 			['Office', ['mon', 'tue', 'thu']],
 			['WFH', ['wed']]
 		]);
-		expect(day.choices.find((c) => c.name === 'evening')?.activeWhen).toEqual(['Location: Office']);
 	});
 	it('every template can be outlined', () => {
 		for (const key of Object.keys(routine.days))

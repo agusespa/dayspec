@@ -123,33 +123,19 @@
 			</span>
 		</label>
 		{#each day.choices as choice (choice.name)}
-			{#if choice.type === 'toggle'}
-				<label class="choice">
-					<span class="choice-label">{choice.label}</span>
-					<input
-						type="checkbox"
-						role="switch"
-						class="switch"
-						data-testid={`Day-choice-${choice.name}`}
-						checked={choice.value === true}
-						onchange={(e) => choose(choice.name, e.currentTarget.checked)}
-					/>
-				</label>
-			{:else}
-				<div class="choice">
-					<span class="choice-label" id="choice-{choice.name}">{choice.label}</span>
-					<div class="options" role="radiogroup" aria-labelledby="choice-{choice.name}">
-						{#each choice.options as option (String(option.value))}
-							<button
-								data-testid={`Day-choice-${choice.name}-${String(option.value)}`}
-								role="radio"
-								aria-checked={option.value === choice.value}
-								onclick={() => choose(choice.name, option.value)}>{option.label}</button
-							>
-						{/each}
-					</div>
+			<div class="choice">
+				<span class="choice-label" id="choice-{choice.name}">{choice.label}</span>
+				<div class="options" role="radiogroup" aria-labelledby="choice-{choice.name}">
+					{#each choice.options as option (String(option.value))}
+						<button
+							data-testid={`Day-choice-${choice.name}-${String(option.value)}`}
+							role="radio"
+							aria-checked={option.value === choice.value}
+							onclick={() => choose(choice.name, option.value)}>{option.label}</button
+						>
+					{/each}
 				</div>
-			{/if}
+			</div>
 		{/each}
 	</section>
 </div>

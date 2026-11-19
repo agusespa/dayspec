@@ -17,7 +17,7 @@ func TestResourceEditsPreserveOrderAndOtherData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	template := json.RawMessage(`{"on":["mon","tue","wed","thu","fri","sat","sun"],"choices":{"z_location":{"options":{"home":{},"office":{}},"default":"office"},"a_gym":{"type":"toggle","default":true,"active_when":{"z_location":"office"}}},"items":[{"use":"stable","time":"07:00"}]}`)
+	template := json.RawMessage(`{"on":["mon","tue","wed","thu","fri","sat","sun"],"choices":{"z_location":{"options":{"home":{},"office":{}},"default":"office"},"a_gym":{"options":{"yes":{"label":"Yes"},"no":{"label":"No"}},"default":"yes"}},"items":[{"use":"stable","time":"07:00"}]}`)
 	saved, err := s.ChangeResource("days", "saturday", template, added.Revision, false)
 	if err != nil {
 		t.Fatal(err)

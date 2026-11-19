@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-
 for (const width of [390, 1440]) {
   test(`delete confirmations use app dialogs and preserve cancelled changes at ${width}px`, async ({
     page,
@@ -16,14 +15,22 @@ for (const width of [390, 1440]) {
       days: {
         daily: {
           on: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
-          choices: { gym: { label: "Gym", type: "toggle", default: true } },
+          choices: {
+            gym: {
+              label: "Gym",
+              options: { yes: { label: "Yes" }, no: { label: "No" } },
+              default: "yes",
+            },
+          },
           items: [
             { title: "Breakfast", time: "07:00", duration: 15 },
             {
-              when: { gym: true },
-              items: [{ title: "Workout", time: "08:00", duration: 30 }],
+              alternative: "gym",
+              paths: {
+                yes: [{ title: "Workout", time: "08:00", duration: 30 }],
+                no: [],
+              },
             },
-            { when: { gym: false }, items: [] },
           ],
         },
       },
@@ -71,7 +78,6 @@ for (const width of [390, 1440]) {
       expect(
         (await (await request.get("/api/routine")).json()).routine,
       ).toEqual(routine);
-
       await page.getByTestId("Templates-blocks").click();
       const removeBlock = page.getByRole("button", {
         name: "Delete shared block Spare block",
@@ -99,7 +105,6 @@ for (const width of [390, 1440]) {
         .click();
       await expect(removeBlock).toHaveCount(0);
       await page.getByTestId("TemplateEditor-cancel").click();
-
       await page.getByTestId("Templates-edit").click();
       const branch = page.getByRole("region", { name: "Gym", exact: true });
       const removeBranch = branch.getByRole("button", {

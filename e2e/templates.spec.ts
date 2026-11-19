@@ -480,7 +480,6 @@ test("manages shared blocks directly from the library and protects blocks that a
   await page.getByTestId("Templates-blocks").click();
   await expect(page.getByTestId("TemplateEditor-block-block")).toHaveCount(0);
 });
-
 test("cancel returns to shared blocks and discards only confirmed edits", async ({
   page,
   request,
@@ -531,7 +530,6 @@ test("cancel returns to shared blocks and discards only confirmed edits", async 
     testRoutine,
   );
 });
-
 test("new activities and shared blocks follow their start times in the editor", async ({
   page,
   request,
@@ -604,7 +602,6 @@ test("new activities and shared blocks follow their start times in the editor", 
     routine.days.saturday.items[1],
   ]);
 });
-
 test("events and blocks have no per-item condition controls", async ({
   page,
 }) => {
@@ -639,7 +636,6 @@ test("events and blocks have no per-item condition controls", async ({
     page.locator(".editor-timeline").getByText("Show when", { exact: true }),
   ).toHaveCount(0);
 });
-
 test("shared block contents retain sequence controls without fixed times", async ({
   page,
   request,
@@ -677,7 +673,6 @@ test("shared block contents retain sequence controls without fixed times", async
     { title: "Wash", duration: 5 },
   ]);
 });
-
 test("browser back uses the discard modal and resumes only after confirmation", async ({
   page,
   request,
@@ -714,7 +709,6 @@ test("browser back uses the discard modal and resumes only after confirmation", 
     testRoutine,
   );
 });
-
 test("browser reload and tab close warn only for unsaved changes", async ({
   page,
 }) => {
@@ -752,7 +746,6 @@ test("browser reload and tab close warn only for unsaved changes", async ({
   await expect(page.getByTestId("Templates-list")).toBeVisible();
   expect(unexpected).toEqual([]);
 });
-
 test("deletes a template directly from its card and preserves the rest of the library", async ({
   page,
   request,
@@ -786,7 +779,6 @@ test("deletes a template directly from its card and preserves the rest of the li
     page.getByTestId("Templates-list").locator("article"),
   ).toHaveCount(Object.keys(expected.days).length);
 });
-
 test("existing shared blocks are time ordered on open, including inside branches and edit links", async ({
   page,
   request,
@@ -799,17 +791,25 @@ test("existing shared blocks are time ordered on open, including inside branches
     days: {
       saturday: {
         on: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
-        choices: { gym: { label: "Gym", type: "toggle", default: true } },
+        choices: {
+          gym: {
+            label: "Gym",
+            options: { yes: { label: "Yes" }, no: { label: "No" } },
+            default: "yes",
+          },
+        },
         items: [
           { title: "Dinner", time: "19:00", duration: 30 },
           {
-            when: { gym: true },
-            items: [
-              { title: "Workout", time: "10:00", duration: 30 },
-              { use: "wake", time: "08:00" },
-            ],
+            alternative: "gym",
+            paths: {
+              yes: [
+                { title: "Workout", time: "10:00", duration: 30 },
+                { use: "wake", time: "08:00" },
+              ],
+              no: [],
+            },
           },
-          { when: { gym: false }, items: [] },
           { use: "wake", time: "06:50" },
         ],
       },
@@ -847,7 +847,7 @@ test("existing shared blocks are time ordered on open, including inside branches
   await save(page);
   const saved = (await (await request.get("/api/routine")).json()).routine;
   expect(saved.days.saturday.items[0]).toEqual({ use: "wake", time: "06:50" });
-  expect(saved.days.saturday.items[1].items[0]).toEqual({
+  expect(saved.days.saturday.items[1].paths.yes[0]).toEqual({
     use: "wake",
     time: "08:00",
   });

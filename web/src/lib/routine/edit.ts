@@ -7,18 +7,18 @@ import {
 	type CategoryColor,
 	type Weekday,
 	type Entry,
-	type ItemDef,
+	type SharedEntry,
+	type Activity,
 	type Routine
 } from './types.ts';
 import { dayMinutes } from './date.ts';
-import { branchParents, timelineSections } from './branches.ts';
 
 /** A detached draft so cancel and failed saves never mutate the active routine. */
 export function cloneRoutine(routine: Routine): Routine {
 	return JSON.parse(JSON.stringify(routine)) as Routine;
 }
 
-export function moveEntry(entries: Entry[], index: number, direction: -1 | 1): Entry[] {
+export function moveEntry<T>(entries: T[], index: number, direction: -1 | 1): T[] {
 	const target = index + direction;
 	if (index < 0 || index >= entries.length || target < 0 || target >= entries.length) return entries;
 	const next = [...entries];
@@ -26,16 +26,14 @@ export function moveEntry(entries: Entry[], index: number, direction: -1 | 1): E
 	return next;
 }
 
-/** Sort timed entries while keeping each alternative section together and untimed entries in place. */
-export function sortEntriesByTime(
-	entries: Entry[],
-	dayStart = DEFAULT_DAY_STARTS_AT,
-	choices: Record<string, Choice> = {},
-	excluded: string[] = []
-): Entry[] {
+/** Sort timed entries while keeping each alternative section together and incomplete drafts in place. */
+export function sortEntriesByTime(entries: Entry[], dayStart = DEFAULT_DAY_STARTS_AT): Entry[] {
 	const start = (entry: Entry): number | undefined => {
 		if (isBranch(entry)) {
-			const times = entry.items.map(start).filter((time) => time !== undefined);
+			const times = Object.values(entry.paths)
+				.flat()
+				.map(start)
+				.filter((time) => time !== undefined);
 			return times.length ? Math.min(...times) : undefined;
 		}
 		return entry.time && /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(entry.time)
@@ -47,33 +45,26 @@ export function sortEntriesByTime(
 		let index = 0;
 		return items.map((item) => (time(item) === undefined ? item : timed[index++]));
 	};
-	const units = timelineSections(entries, choices, excluded, branchParents(choices, excluded)).flatMap(
-		(section) => {
-			const items = section.indices.map((i) => entries[i]);
-			return section.choice ? [ordered(items, start)] : items.map((entry) => [entry]);
-		}
-	);
-	return ordered(units, (items) => {
-		const times = items.map(start).filter((time) => time !== undefined);
-		return times.length ? Math.min(...times) : undefined;
-	}).flat();
+	return ordered(entries, start);
 }
 
 /** Present every saved template in schedule order, without changing reusable block sequences. */
 export function sortRoutineByTime(routine: Routine): Routine {
 	const days = Object.fromEntries(
 		Object.entries(routine.days).map(([key, day]) => {
-			const choices = day.choices ?? {};
-			const sort = (entries: Entry[], excluded: string[] = []): Entry[] =>
+			const sort = (entries: Entry[]): Entry[] =>
 				sortEntriesByTime(
 					entries.map((entry) =>
 						isBranch(entry)
-							? { ...entry, items: sort(entry.items, [...excluded, ...Object.keys(entry.when)]) }
+							? {
+									...entry,
+									paths: Object.fromEntries(
+										Object.entries(entry.paths).map(([option, items]) => [option, sort(items)])
+									)
+								}
 							: entry
 					),
-					routine.settings?.day_starts_at,
-					choices,
-					excluded
+					routine.settings?.day_starts_at
 				);
 			return [key, { ...day, items: sort(day.items) }];
 		})
@@ -82,7 +73,7 @@ export function sortRoutineByTime(routine: Routine): Routine {
 }
 
 /** New drafts start with a duration that can be adjusted before saving. */
-export function newEntry(_routine?: Routine): ItemDef {
+export function newEntry(_routine?: Routine): Activity {
 	return { title: 'New item', duration: 5 };
 }
 
@@ -142,9 +133,10 @@ export function removeTemplate(routine: Routine, key: string): Routine {
 export function blockReferences(routine: Routine, key: string): string[] {
 	const references: string[] = [];
 
-	function uses(entries: Entry[]): boolean {
+	function uses(entries: (Entry | SharedEntry)[]): boolean {
 		return entries.some(
-			(entry) => ('use' in entry && entry.use === key) || ('items' in entry && uses(entry.items))
+			(entry) =>
+				('use' in entry && entry.use === key) || (isBranch(entry) && Object.values(entry.paths).some(uses))
 		);
 	}
 	for (const day of Object.values(routine.days)) if (uses(day.items)) references.push(templateName(day.on));
@@ -185,9 +177,9 @@ export function renameBlock(routine: Routine, key: string, name: string): Routin
 /** Names of the items and shared blocks in a category, each once, so the editor can say what still uses it. */
 export function categoryReferences(routine: Routine, key: string): string[] {
 	const titles = new Set<string>();
-	const visit = (entries: Entry[]) => {
+	const visit = (entries: (Entry | SharedEntry)[]) => {
 		for (const entry of entries) {
-			if ('items' in entry) visit(entry.items);
+			if (isBranch(entry)) Object.values(entry.paths).forEach(visit);
 			else if ('title' in entry && entry.category === key) titles.add(entry.title);
 		}
 	};

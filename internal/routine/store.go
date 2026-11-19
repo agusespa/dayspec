@@ -16,7 +16,7 @@ import (
 
 var ErrConflict = errors.New("templates changed on the server; reload before saving")
 
-// Snapshot keeps the original JSON order: choices can depend on earlier choices.
+// Snapshot is a detached copy of the template library and its revision.
 type Snapshot struct {
 	Routine  json.RawMessage `json:"routine"`
 	Revision string          `json:"revision"`
@@ -89,7 +89,7 @@ func (s *Store) Validate(data []byte) error {
 	if err := s.schema.Validate(value); err != nil {
 		return err
 	}
-	return checkReferences(value.(map[string]any), data)
+	return checkReferences(value.(map[string]any))
 }
 
 func (s *Store) Save(data []byte, revision string) (Snapshot, error) {

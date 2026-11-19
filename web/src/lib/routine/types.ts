@@ -23,39 +23,35 @@ export interface Category {
 	color: CategoryColor;
 }
 
-export type ChoiceValue = string | boolean;
+export type ChoiceValue = string;
 
-export type Condition = string | boolean | string[] | { not: string | string[] };
-
-export interface When {
-	days?: Weekday[];
-	[choice: string]: Condition | Weekday[] | undefined;
-}
-
-export interface ItemDef {
+export interface Activity {
 	duration: number;
-	time?: string;
-	approx?: boolean;
 	title: string;
 	category?: string;
 	alert?: boolean;
-	link?: string | string[];
+	link?: string;
 	note?: string;
+}
+
+export interface ItemDef extends Activity {
+	time: string;
+	approx?: boolean;
 }
 
 export interface UseEntry {
 	use: string;
-	time?: string;
+	time: string;
 }
 
 export interface Branch {
-	when: When;
-	items: Entry[];
+	alternative: string;
+	paths: Record<string, Entry[]>;
 }
 
 export type Entry = ItemDef | UseEntry | Branch;
 
-export type SharedEntry = Omit<ItemDef, 'time' | 'approx'> | Pick<UseEntry, 'use'>;
+export type SharedEntry = Activity | Pick<UseEntry, 'use'>;
 
 export interface Block {
 	name: string;
@@ -71,10 +67,8 @@ export interface ChoiceOption {
 
 export interface Choice {
 	label?: string;
-	type?: 'select' | 'toggle';
-	options?: Record<string, ChoiceOption>;
+	options: Record<string, ChoiceOption>;
 	default: ChoiceValue | Partial<Record<Weekday, ChoiceValue>>;
-	active_when?: When;
 }
 
 export interface DayTemplate {
@@ -96,11 +90,11 @@ export interface Routine {
 	days: Record<string, DayTemplate>;
 }
 
-export function isBranch(entry: Entry): entry is Branch {
-	return 'items' in entry;
+export function isBranch(entry: Entry | SharedEntry): entry is Branch {
+	return 'paths' in entry;
 }
 
-export function isUse(entry: Entry): entry is UseEntry {
+export function isUse<T extends Entry | SharedEntry>(entry: T): entry is Extract<T, { use: string }> {
 	return 'use' in entry;
 }
 

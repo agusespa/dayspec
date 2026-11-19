@@ -1,4 +1,4 @@
-<!-- What an opened timeline row shows: its duration, time range, category, conditions, note, links, edit and calendar links. -->
+<!-- What an opened timeline row shows: its duration, time range, category, note, link, edit and calendar links. -->
 <script lang="ts" module>
 	import type { ResolvedItem } from '#lib/routine/resolve.ts';
 
@@ -16,15 +16,12 @@
 	let {
 		item,
 		calendarDate,
-		showConditions = true,
 		editTemplate
 	}: {
 		item: ResolvedItem;
 		calendarDate?: string;
 		/** The day's template; with it the details get an edit link. */
 		editTemplate?: string;
-		/** Off where the conditions are already on show, as in template previews. */
-		showConditions?: boolean;
 	} = $props();
 	const range = $derived(timeRange(item.time, item.end, item.approx));
 	const canEdit = $derived(!!editTemplate && !!item.source);
@@ -48,17 +45,12 @@
 			{#if calendarDate}<CalendarLink date={calendarDate} items={[item]} title={item.title} />{/if}
 		</span>
 	</div>
-	{#if showConditions && item.conditions.length}<p class="when" data-testid="ItemDetails-when">
-			When {item.conditions.join(' · ')}
-		</p>{/if}
 	{#if item.note}<p class="note" data-testid="Activity-note">{item.note}</p>{/if}
-	{#if item.links.length}
+	{#if item.link}
 		<div class="links">
-			{#each item.links as link (link.url)}
-				<a href={link.url} target="_blank" rel="noopener noreferrer"
-					>{link.label}<span aria-hidden="true"> ↗</span></a
-				>
-			{/each}
+			<a href={item.link.url} target="_blank" rel="noopener noreferrer"
+				>{item.link.label}<span aria-hidden="true"> ↗</span></a
+			>
 		</div>
 	{/if}
 </div>
@@ -121,10 +113,6 @@
 		display: flex;
 		margin-left: auto;
 		flex: none;
-	}
-	.when {
-		color: var(--muted);
-		font-size: var(--text-xs);
 	}
 	.note {
 		color: var(--muted);

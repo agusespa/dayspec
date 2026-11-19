@@ -10,7 +10,9 @@ function withDay(day: object, extra: object = {}) {
 }
 describe('validateRoutine', () => {
 	it('accepts a minimal routine', () => {
-		expect(validateRoutine(withDay({ items: [{ title: 'Wake', duration: 5 }] }), schema)).toEqual([]);
+		expect(
+			validateRoutine(withDay({ items: [{ time: '08:00', title: 'Wake', duration: 5 }] }), schema)
+		).toEqual([]);
 	});
 	it('reports schema errors with their location', () => {
 		const errors = validateRoutine(
@@ -27,27 +29,30 @@ describe('validateRoutine', () => {
 	it('reports unknown blocks and choices', () => {
 		const errors = validateRoutine(
 			withDay({
-				items: [{ use: 'nope' }, { when: { place: 'office' }, items: [{ title: 'B', duration: 5 }] }]
+				items: [
+					{ time: '08:00', use: 'nope' },
+					{ alternative: 'place', paths: { office: [{ time: '08:00', title: 'B', duration: 5 }] } }
+				]
 			}),
 			schema
 		);
 		expect(errors).toEqual([
 			'days.saturday.items[0]: unknown block "nope"',
-			'days.saturday.items[1].when: "place" is not a choice of this day'
+			'days.saturday.items[1]: unknown alternative "place"'
 		]);
 	});
 	it('requires item categories to exist, in templates and blocks', () => {
 		const categories = { chores: { name: 'Chores', color: 'orange' } };
 		expect(
 			validateRoutine(
-				withDay({ items: [{ title: 'A', duration: 5, category: 'chores' }] }, { categories }),
+				withDay({ items: [{ time: '08:00', title: 'A', duration: 5, category: 'chores' }] }, { categories }),
 				schema
 			)
 		).toEqual([]);
 		expect(
 			validateRoutine(
 				withDay(
-					{ items: [{ title: 'A', duration: 5, category: 'gone' }] },
+					{ items: [{ time: '08:00', title: 'A', duration: 5, category: 'gone' }] },
 					{ categories, blocks: { b: { name: 'B', items: [{ title: 'C', duration: 5, category: 'gone' }] } } }
 				),
 				schema
@@ -69,13 +74,16 @@ describe('validateRoutine', () => {
 				.length
 		).toBeGreaterThan(0);
 		expect(
-			validateRoutine(withDay({ items: [{ title: 'A', duration: 5, kind: 'maintenance' }] }), schema)
+			validateRoutine(
+				withDay({ items: [{ time: '08:00', title: 'A', duration: 5, kind: 'maintenance' }] }),
+				schema
+			)
 		).toContain('days.saturday.items.0: must NOT have additional properties "kind"');
 	});
 	it('rejects malformed activity URLs', () => {
 		for (const link of ['missing', 'https://', 'javascript:alert(1)'])
 			expect(
-				validateRoutine(withDay({ items: [{ title: 'A', duration: 5, link }] }), schema).length
+				validateRoutine(withDay({ items: [{ time: '08:00', title: 'A', duration: 5, link }] }), schema).length
 			).toBeGreaterThan(0);
 	});
 	it('reports invalid choice values and defaults', () => {
@@ -87,11 +95,11 @@ describe('validateRoutine', () => {
 						options: { office: {}, home: { only_on: ['mon'] } },
 						default: { mon: 'home', tue: 'home' }
 					},
-					gym: { type: 'toggle', default: true }
+					gym: { options: { yes: { label: 'Yes' }, no: { label: 'No' } }, default: 'yes' }
 				},
 				items: [
-					{ when: { place: 'beach' }, items: [{ title: 'A', duration: 5 }] },
-					{ when: { gym: 'yes' }, items: [{ title: 'B', duration: 5 }] }
+					{ alternative: 'place', paths: { beach: [{ time: '08:00', title: 'A', duration: 5 }] } },
+					{ alternative: 'gym', paths: { unknown: [{ time: '08:00', title: 'B', duration: 5 }] } }
 				]
 			}),
 			schema
@@ -100,8 +108,8 @@ describe('validateRoutine', () => {
 			expect.arrayContaining([
 				'days.saturday.choices.place.default.tue: "home" is not available on tue',
 				'days.saturday.choices.place.default: missing a value for wed',
-				'days.saturday.items[0].when.place: "beach" is not an option',
-				'days.saturday.items[1].when.gym: a toggle takes true or false'
+				'days.saturday.items[0].paths: "beach" is not an option of "place"',
+				'days.saturday.items[1].paths: "unknown" is not an option of "gym"'
 			])
 		);
 	});
@@ -109,7 +117,7 @@ describe('validateRoutine', () => {
 		expect(
 			validateRoutine(
 				withDay(
-					{ items: [{ use: 'loop' }] },
+					{ items: [{ time: '08:00', use: 'loop' }] },
 					{ blocks: { loop: { name: 'Loop', items: [{ use: 'loop' }] } } }
 				),
 				schema
@@ -121,8 +129,8 @@ describe('validateRoutine', () => {
 			validateRoutine(
 				withDay({
 					items: [
-						{ title: 'Tea', duration: 5 },
-						{ title: 'Tea', duration: 10 }
+						{ time: '08:00', title: 'Tea', duration: 5 },
+						{ time: '08:00', title: 'Tea', duration: 10 }
 					]
 				}),
 				schema
@@ -149,7 +157,7 @@ describe('validateRoutine', () => {
 			{
 				settings: { holiday: 'nope' },
 				days: {
-					weekday: { on: ['mon'], items: [{ title: 'A', duration: 5 }] },
+					weekday: { on: ['mon'], items: [{ time: '08:00', title: 'A', duration: 5 }] },
 					other: { on: ['mon'], items: [] }
 				}
 			},
@@ -167,7 +175,7 @@ it('bounds repeated shared-block expansion before it can freeze the editor', () 
 	const blocks: Record<string, Block> = { b16: { name: 'Leaf', items: [{ title: 'Leaf', duration: 5 }] } };
 	for (let n = 15; n >= 0; n--)
 		blocks[`b${n}`] = { name: `Block ${n}`, items: [{ use: `b${n + 1}` }, { use: `b${n + 1}` }] };
-	expect(validateRoutine(withDay({ items: [{ use: 'b0' }] }, { blocks }), schema)).toContain(
+	expect(validateRoutine(withDay({ items: [{ time: '08:00', use: 'b0' }] }, { blocks }), schema)).toContain(
 		'routine: expanded routine exceeds 10000 entries'
 	);
 });
@@ -286,12 +294,17 @@ it('rejects checklist fields on activities and shared-block references', () => {
 		).toContain('children');
 	}
 	expect(
-		validateRoutine(withDay({ items: [{ title: 'Morning', note: 'Water\nWash face', duration: 5 }] }), schema)
+		validateRoutine(
+			withDay({ items: [{ time: '08:00', title: 'Morning', note: 'Water\nWash face', duration: 5 }] }),
+			schema
+		)
 	).toEqual([]);
 });
 
 it('requires durations and rejects fixed start times inside shared blocks', () => {
-	expect(validateRoutine(withDay({ items: [{ title: 'Missing' }] }), schema).join(' ')).toContain('duration');
+	expect(
+		validateRoutine(withDay({ items: [{ time: '08:00', title: 'Missing' }] }), schema).join(' ')
+	).toContain('duration');
 	const value = { days: {}, blocks: { b: { name: 'Block', items: [{ title: 'Missing' }] } } };
 	expect(validateRoutine(value, schema).join(' ')).toContain('duration');
 	expect(
@@ -336,16 +349,20 @@ describe('branch-only conditions and reusable block contents', () => {
 		for (const items of [[], [{ use: 'shared', time: '08:00' }]])
 			expect(validateRoutine(withDay({ items }, { blocks }), schema).length).toBeGreaterThan(0);
 	});
-	it('accepts nested branches around activities and reusable block occurrences', () => {
+	it('accepts explicit nested forks around activities and shared block occurrences', () => {
+		const choice = { options: { a: {}, b: {} }, default: 'a' };
 		const routine = withDay(
 			{
+				choices: { outer: choice, inner: choice },
 				items: [
 					{
-						when: { days: ['mon'] },
-						items: [
-							{ title: 'Work', time: '07:00', duration: 10 },
-							{ when: { days: ['mon', 'tue'] }, items: [{ use: 'shared', time: '08:00' }] }
-						]
+						alternative: 'outer',
+						paths: {
+							a: [
+								{ title: 'Work', time: '07:00', duration: 10 },
+								{ alternative: 'inner', paths: { a: [{ use: 'shared', time: '08:00' }] } }
+							]
+						}
 					}
 				]
 			},
@@ -358,4 +375,88 @@ describe('branch-only conditions and reusable block contents', () => {
 		);
 		expect(validateRoutine(routine, schema)).toEqual([]);
 	});
+});
+
+it('requires named options and rejects toggle definitions and boolean conditions/defaults', () => {
+	const choice = {
+		options: { stay_home: { label: 'Stay home' }, going_out: { label: 'Going out' } },
+		default: 'stay_home'
+	};
+	const routine = withDay({
+		choices: { evening: choice },
+		items: [{ alternative: 'evening', paths: { going_out: [] } }]
+	});
+	expect(validateRoutine(routine, schema)).toEqual([]);
+	for (const bad of [
+		{ ...choice, type: 'toggle' },
+		{ ...choice, type: 'select' },
+		{ default: 'stay_home' },
+		{ ...choice, options: { stay_home: {} } },
+		{ ...choice, default: false },
+		{ ...choice, default: { sat: true } }
+	]) {
+		expect(validateRoutine(withDay({ choices: { evening: bad }, items: [] }), schema).length).toBeGreaterThan(
+			0
+		);
+	}
+	expect(
+		validateRoutine(
+			withDay({ choices: { evening: choice }, items: [{ when: { evening: true }, items: [] }] }),
+			schema
+		).length
+	).toBeGreaterThan(0);
+});
+
+it('requires valid start times for template activities and block occurrences, including branches', () => {
+	const blocks = { morning: { name: 'Morning', items: [{ title: 'Wash', duration: 5 }] } };
+	for (const entry of [{ title: 'Walk', duration: 10 }, { use: 'morning' }]) {
+		for (const items of [[entry], [{ alternative: 'plan', paths: { a: [entry] } }]]) {
+			expect(
+				validateRoutine(
+					{
+						days: {
+							day: { on: ['mon'], choices: { plan: { options: { a: {}, b: {} }, default: 'a' } }, items }
+						},
+						blocks
+					},
+					schema
+				).length
+			).toBeGreaterThan(0);
+		}
+		expect(
+			validateRoutine(
+				{ days: { day: { on: ['mon'], items: [{ ...entry, time: '08:00' }] } }, blocks },
+				schema
+			)
+		).toEqual([]);
+	}
+});
+
+it('accepts one optional HTTP link on activities and rejects URL lists in templates and shared blocks', () => {
+	const item = { title: 'Read', duration: 10, link: 'https://example.com/read' };
+	const routine = {
+		days: { day: { on: ['mon'], items: [{ ...item, time: '08:00' }] } },
+		blocks: { reading: { name: 'Reading', items: [item] } }
+	};
+	expect(validateRoutine(routine, schema)).toEqual([]);
+	for (const link of [
+		[],
+		['https://example.com/read'],
+		['https://example.com/read', 'https://example.com/other'],
+		'javascript:alert(1)',
+		'https://'
+	]) {
+		expect(
+			validateRoutine(
+				{ ...routine, days: { day: { on: ['mon'], items: [{ ...item, time: '08:00', link }] } } },
+				schema
+			).length
+		).toBeGreaterThan(0);
+		expect(
+			validateRoutine(
+				{ ...routine, blocks: { reading: { name: 'Reading', items: [{ ...item, link }] } } },
+				schema
+			).length
+		).toBeGreaterThan(0);
+	}
 });

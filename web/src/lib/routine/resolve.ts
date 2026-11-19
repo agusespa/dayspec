@@ -1,7 +1,7 @@
 import { endTime, scheduleBlock } from './timing.ts';
 /**
  * Turns the routine into one flat, time-ordered day: picks the day template, settles the
- * choices, expands blocks and keeps the entries whose `when` holds.
+ * options, follows their fork paths and expands shared blocks.
  */
 import { dayMinutes, weekdayOf } from './date.ts';
 import { getSwedishPublicHolidayName } from './swedish-holidays.ts';
@@ -13,12 +13,11 @@ import {
 	type Choice,
 	type ChoiceValue,
 	type Entry,
-	type ItemDef,
+	type SharedEntry,
+	type Activity,
 	type CategoryColor,
 	type Routine,
-	type UseEntry,
-	type Weekday,
-	type When
+	type Weekday
 } from './types.ts';
 
 export interface DayOverrides {
@@ -34,7 +33,6 @@ export interface ResolvedOption {
 export interface ResolvedChoice {
 	name: string;
 	label: string;
-	type: 'select' | 'toggle';
 	options: ResolvedOption[];
 	value: ChoiceValue;
 }
@@ -72,14 +70,12 @@ export interface ResolvedItem {
 	/** The palette colour of the item's category; none when it has no category. */
 	color?: CategoryColor;
 	categoryName?: string;
-	/** Why the item is in the day, e.g. "Location: Office" or "Tue"; empty when it always is. */
-	conditions: string[];
 	/** Where to edit the item; template previews leave it out. */
 	source?: ItemSource;
 	alert: boolean;
-	links: ResolvedLink[];
+	link?: ResolvedLink;
 	note?: string;
-	/** Minutes on the day's clock used for ordering; untimed items take the previous item's. */
+	/** Minutes on the day's clock used for ordering; incomplete editor drafts follow the previous activity. */
 	sortKey: number;
 }
 
@@ -112,100 +108,71 @@ export function templateFor(routine: Routine, weekday: Weekday, holiday: boolean
 	return key ?? '';
 }
 
-export function matches(
-	when: When | undefined,
-	values: Record<string, ChoiceValue>,
-	weekday: Weekday
-): boolean {
-	if (!when) return true;
-	for (const [key, cond] of Object.entries(when)) {
-		if (cond === undefined) continue;
-		if (key === 'days') {
-			if (!(cond as Weekday[]).includes(weekday)) return false;
-			continue;
-		}
-		const value = values[key];
-		if (Array.isArray(cond)) {
-			if (value === undefined || !(cond as string[]).includes(value as string)) return false;
-		} else if (typeof cond === 'object') {
-			// `not` also holds when the choice doesn't apply today.
-			const excluded = Array.isArray(cond.not) ? cond.not : [cond.not];
-			if (value !== undefined && excluded.includes(value as string)) return false;
-		} else if (value !== cond) {
-			return false;
-		}
-	}
-	return true;
-}
-
-function resolveChoices(
-	routine: Routine,
-	template: string,
+function resolveChoice(
+	name: string,
+	choice: Choice,
 	weekday: Weekday,
-	overrides: Record<string, ChoiceValue>
-): { values: Record<string, ChoiceValue>; choices: ResolvedChoice[] } {
-	const values: Record<string, ChoiceValue> = {};
-	const choices: ResolvedChoice[] = [];
-	for (const [name, choice] of Object.entries(routine.days[template].choices ?? {})) {
-		if (!matches(choice.active_when, values, weekday)) continue;
-		const type = choice.type ?? 'select';
-		const options: ResolvedOption[] =
-			type === 'toggle'
-				? [
-						{ value: false, label: 'Off' },
-						{ value: true, label: 'On' }
-					]
-				: Object.entries(choice.options ?? {})
-						.filter(([, o]) => !o.only_on || o.only_on.includes(weekday))
-						.map(([value, o]) => ({ value, label: o.label ?? humanize(value) }));
-		if (!options.length) continue;
-		const allowed = (v: ChoiceValue | undefined) => v !== undefined && options.some((o) => o.value === v);
-		const fallback = typeof choice.default === 'object' ? choice.default[weekday] : choice.default;
-		const value = allowed(overrides[name])
-			? overrides[name]
-			: allowed(fallback)
-				? (fallback as ChoiceValue)
-				: options[0].value;
-		values[name] = value;
-		choices.push({ name, label: choice.label ?? humanize(name), type, options, value });
-	}
-	return { values, choices };
+	override?: ChoiceValue
+): ResolvedChoice | undefined {
+	const options = Object.entries(choice.options)
+		.filter(([, option]) => !option.only_on || option.only_on.includes(weekday))
+		.map(([value, option]) => ({ value, label: option.label ?? humanize(value) }));
+	if (!options.length) return undefined;
+	const allowed = (value: ChoiceValue | undefined) => options.some((option) => option.value === value);
+	const fallback = typeof choice.default === 'object' ? choice.default[weekday] : choice.default;
+	const value = allowed(override) ? override! : allowed(fallback) ? fallback! : options[0].value;
+	return { name, label: choice.label ?? humanize(name), options, value };
 }
 
 interface Context {
 	routine: Routine;
-	values: Record<string, ChoiceValue>;
 	weekday: Weekday;
-	/** The template's choices, for describing conditions with their labels. */
+	overrides: Record<string, ChoiceValue>;
+	resolved: Map<string, ResolvedChoice>;
+	/** Definitions for the alternatives referenced by forks. */
 	choices: Record<string, Choice>;
 }
 
-/** Expands groups and blocks into the item definitions whose `when` holds, in file order. */
-type CollectedItem = ItemDef & { sharedBlock?: SharedBlock; whens: When[]; source: ItemSource };
+/** Follow selected fork paths and expand shared blocks. */
+type CollectedItem = Activity & { time?: string; approx?: boolean } & {
+	sharedBlock?: SharedBlock;
+	source: ItemSource;
+};
 
 /** Items without a category take the one of the block they sit in. */
-export function withCategory(item: ItemDef, inherited: string | undefined): ItemDef {
+export function withCategory<T extends Activity>(item: T, inherited: string | undefined): T {
 	return inherited && !item.category ? { ...item, category: inherited } : item;
 }
 
-/** Where `collect` is in the routine: what the entries inherit and where they're defined. */
+/** The current path, inherited category, and editable source. */
 interface Scope {
 	/** Stable location of the occurrence, used for block group IDs. */
 	location: string;
 	category?: string;
-	whens: When[];
 	source: ItemSource;
 }
 
-function collect(entries: Entry[], ctx: Context, scope: Scope): CollectedItem[] {
+function collect(entries: (Entry | SharedEntry)[], ctx: Context, scope: Scope): CollectedItem[] {
 	const out: CollectedItem[] = [];
 	for (const [index, entry] of entries.entries()) {
 		const location = `${scope.location}/${index}`;
-		const whens = isBranch(entry) ? [...scope.whens, entry.when] : scope.whens;
 		const source = { ...scope.source, path: [...scope.source.path, index] };
 		if (isBranch(entry)) {
-			if (!matches(entry.when, ctx.values, ctx.weekday)) continue;
-			out.push(...collect(entry.items, ctx, { ...scope, location, whens, source }));
+			const definition = ctx.choices[entry.alternative];
+			if (!definition) throw new Error(`Unknown alternative "${entry.alternative}"`);
+			const selected =
+				ctx.resolved.get(entry.alternative) ??
+				resolveChoice(entry.alternative, definition, ctx.weekday, ctx.overrides[entry.alternative]);
+			if (!selected) continue;
+			ctx.resolved.set(entry.alternative, selected);
+			const optionIndex = Object.keys(definition.options).indexOf(selected.value);
+			out.push(
+				...collect(entry.paths[selected.value] ?? [], ctx, {
+					...scope,
+					location: `${location}/${selected.value}`,
+					source: { ...source, path: [...source.path, optionIndex] }
+				})
+			);
 		} else if (isUse(entry)) {
 			const block = ctx.routine.blocks?.[entry.use];
 			if (!block) throw new Error(`Unknown block "${entry.use}"`);
@@ -219,12 +186,16 @@ function collect(entries: Entry[], ctx: Context, scope: Scope): CollectedItem[] 
 			const inner = collect(block.items, ctx, {
 				location,
 				category: block.category ?? scope.category,
-				whens,
 				source: { block: entry.use, path: [] }
 			});
-			out.push(...scheduleBlock(inner, entry.time).map((item) => ({ ...item, sharedBlock })));
+			out.push(
+				...scheduleBlock(inner, 'time' in entry ? entry.time : undefined).map((item) => ({
+					...item,
+					sharedBlock
+				}))
+			);
 		} else {
-			out.push({ ...withCategory(entry, scope.category), whens, source });
+			out.push({ ...withCategory(entry, scope.category), source });
 		}
 	}
 	return out;
@@ -252,26 +223,8 @@ export function weekdayLabel(day: Weekday): string {
 	return day.charAt(0).toUpperCase() + day.slice(1);
 }
 
-/** A `when` as short labels, using the template's own choice and option labels. */
-export function describeWhen(when: When | undefined, choices: Record<string, Choice>): string[] {
-	if (!when) return [];
-	return Object.entries(when).flatMap(([key, cond]) => {
-		if (cond === undefined) return [];
-		if (key === 'days') return [(cond as Weekday[]).map(weekdayLabel).join(', ')];
-		const choice = choices[key];
-		const label = choice?.label ?? humanize(key);
-		if (typeof cond === 'boolean') return [`${label} ${cond ? 'on' : 'off'}`];
-		const option = (value: string) => choice?.options?.[value]?.label ?? humanize(value);
-		if (typeof cond === 'string') return [`${label}: ${option(cond)}`];
-		if (Array.isArray(cond)) return [`${label}: ${cond.map(option).join(' or ')}`];
-		const excluded = Array.isArray(cond.not) ? cond.not : [cond.not];
-		return [`${label}: not ${excluded.map(option).join(' or ')}`];
-	});
-}
-
-export function resolveLinks(link: string | string[] | undefined, _routine?: Routine): ResolvedLink[] {
-	if (!link) return [];
-	return (Array.isArray(link) ? link : [link]).map((url) => ({ label: new URL(url).hostname, url }));
+export function resolveLink(link: string | undefined): ResolvedLink | undefined {
+	return link ? { label: new URL(link).hostname, url: link } : undefined;
 }
 
 function toResolved(def: CollectedItem, ctx: Context, used: Set<string>, sortKey: number): ResolvedItem {
@@ -289,10 +242,9 @@ function toResolved(def: CollectedItem, ctx: Context, used: Set<string>, sortKey
 		title: def.title,
 		color: categoryColor(ctx.routine, def.category),
 		categoryName: categoryOf(ctx.routine, def.category)?.name,
-		conditions: def.whens.flatMap((when) => describeWhen(when, ctx.choices)),
 		source: def.source,
 		alert: def.alert ?? false,
-		links: resolveLinks(def.link, ctx.routine),
+		link: resolveLink(def.link),
 		note: def.note,
 		sortKey
 	};
@@ -306,15 +258,19 @@ export function resolveDay(routine: Routine, date: string, overrides: DayOverrid
 			getSwedishPublicHolidayName(date) !== undefined);
 	const template = templateFor(routine, weekday, holiday);
 	if (!template) return { date, weekday, template: '', holiday, choices: [], items: [] };
-	const { values, choices } = resolveChoices(routine, template, weekday, overrides.choices ?? {});
-	const ctx: Context = { routine, values, weekday, choices: routine.days[template].choices ?? {} };
+	const ctx: Context = {
+		routine,
+		weekday,
+		overrides: overrides.choices ?? {},
+		resolved: new Map(),
+		choices: routine.days[template].choices ?? {}
+	};
 	const start = dayStartsAt(routine);
 
 	const used = new Set<string>();
 	let previous = -1;
 	const items = collect(routine.days[template].items, ctx, {
 		location: 'root',
-		whens: [],
 		source: { path: [] }
 	}).map((def) => {
 		const key = def.time ? dayMinutes(def.time, start) : previous;
@@ -324,7 +280,15 @@ export function resolveDay(routine: Routine, date: string, overrides: DayOverrid
 	// Array.prototype.sort is stable, so equal times keep their file order.
 	items.sort((a, b) => a.sortKey - b.sortKey);
 
-	return { date, weekday, template, theme: routine.days[template].theme, holiday, choices, items };
+	return {
+		date,
+		weekday,
+		template,
+		theme: routine.days[template].theme,
+		holiday,
+		choices: [...ctx.resolved.values()],
+		items
+	};
 }
 
 /**

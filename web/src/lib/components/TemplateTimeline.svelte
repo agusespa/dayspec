@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { Routine, Entry, ChoiceValue } from '#lib/routine/types.ts';
+	import type { Routine, Entry } from '#lib/routine/types.ts';
 	import { outlineDay, weekdayLabel, type OutlineOption } from '#lib/routine/outline.ts';
-	import { branchView, inBranch, branchOptions } from '#lib/routine/branches.ts';
+	import { branchOptions } from '#lib/routine/branches.ts';
 	import BranchSection from './BranchSection.svelte';
 	import Timeline from './Timeline.svelte';
 	import TimelineItem from './TimelineItem.svelte';
@@ -16,27 +16,21 @@
 		if (option.onlyOn) notes.push(`Available ${option.onlyOn.map(weekdayLabel).join(', ')}`);
 		return notes.join(' · ');
 	}
-	function outline(entries: Entry[], context: Record<string, ChoiceValue> = {}) {
-		return outlineDay({ ...routine, days: { [template]: { ...day, items: entries } } }, template, context)
-			.items;
+	function outline(entries: Entry[]) {
+		return outlineDay({ ...routine, days: { [template]: { ...day, items: entries } } }, template).items;
 	}
 </script>
 
-{#snippet items(entries: Entry[], context: Record<string, ChoiceValue> = {})}
-	<Timeline items={outline(entries, context)}>
-		{#snippet row(item)}
-			<TimelineItem {item} showConditions={false}>
-				{#if item.conditions.length}<div class="branch-conditions">{item.conditions.join(' · ')}</div>{/if}
-			</TimelineItem>
-		{/snippet}
+{#snippet items(entries: Entry[])}
+	<Timeline items={outline(entries)}>
+		{#snippet row(item)}<TimelineItem {item} />{/snippet}
 	</Timeline>
 {/snippet}
 
-{#snippet flow(entries: Entry[], context: Record<string, ChoiceValue> = {})}
-	{@const view = branchView(entries, choices, context)}
-	{#each view.sections as section (section.start)}
-		{#if section.choice}
-			{@const name = section.choice}
+{#snippet flow(entries: Entry[])}
+	{#each entries as entry, i}
+		{#if 'paths' in entry}
+			{@const name = entry.alternative}
 			<BranchSection {name} choice={choices[name]}>
 				{#snippet details(value)}
 					{@const option = metadata.find((c) => c.name === name)?.options[
@@ -45,29 +39,16 @@
 					{#if option && optionNote(option)}<p class="branch-details">{optionNote(option)}</p>{/if}
 				{/snippet}
 				{#snippet children(value)}
-					{@const selected = section.indices
-						.filter((i) => inBranch(view.entries[i], name, value))
-						.map((i) => view.entries[i])}
-					{#if selected.length && outline(selected).length}
-						{@render flow(selected, { ...context, [name]: value })}
-					{:else}<p class="branch-empty">Continue routine</p>{/if}
+					{#if entry.paths[value]?.length}{@render flow(entry.paths[value])}{:else}<p class="branch-empty">
+							Continue routine
+						</p>{/if}
 				{/snippet}
 			</BranchSection>
-		{:else}
-			{@render items(
-				section.indices.map((i) => view.entries[i]),
-				context
-			)}
+		{:else if i === 0 || 'paths' in entries[i - 1]}
+			{@const end = entries.findIndex((next, index) => index > i && 'paths' in next)}
+			{@render items(entries.slice(i, end < 0 ? entries.length : end))}
 		{/if}
 	{/each}
 {/snippet}
 
 <div class="template-flow">{@render flow(day.items)}</div>
-
-<style>
-	.branch-conditions {
-		margin: -0.2rem 0 0.5rem var(--indent);
-		color: var(--tertiary);
-		font-size: var(--text-2xs);
-	}
-</style>

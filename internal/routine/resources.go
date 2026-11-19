@@ -45,7 +45,7 @@ func (s *Store) ReadResource(section, id string) (json.RawMessage, string, error
 	return value, current.Revision, nil
 }
 
-// ChangeResource edits a detached snapshot, preserving raw nested choice order.
+// ChangeResource edits a detached snapshot.
 // Save validates the complete library and compares revisions under its write lock.
 func (s *Store) ChangeResource(section, id string, value json.RawMessage, revision string, remove bool) (Snapshot, error) {
 	if revision == "" {

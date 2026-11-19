@@ -9,7 +9,6 @@
 </script>
 
 <script lang="ts">
-	import type { Snippet } from 'svelte';
 	import AlertIcon from './AlertIcon.svelte';
 	import ItemDetails from './ItemDetails.svelte';
 
@@ -17,24 +16,18 @@
 		item,
 		current,
 		passed = false,
-		children,
 		calendarDate,
-		showConditions = true,
 		editTemplate
 	}: {
 		item: TimelineEntry;
 		/** Marks the item happening now, or the next one when nothing has started yet. */
 		current?: 'Now' | 'Next';
 		passed?: boolean;
-		/** Extra content under the title, e.g. template condition labels. */
-		children?: Snippet;
 		calendarDate?: string;
-		/** Off where the conditions are already on show, as in template previews. */
-		showConditions?: boolean;
 		/** The day's template; with it opened rows get an edit link. */
 		editTemplate?: string;
 	} = $props();
-	/** The time range, category, conditions, note, links and calendar link stay folded away until the row is tapped. */
+	/** The time range, category, note, link and calendar link stay folded away until the row is tapped. */
 	let open = $state(false);
 </script>
 
@@ -68,8 +61,6 @@
 			{@render itemTitle(item)}
 			<svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
 		</button>
-		{#if open}<ItemDetails {item} {calendarDate} {showConditions} {editTemplate} />{/if}
-
-		{@render children?.()}
+		{#if open}<ItemDetails {item} {calendarDate} {editTemplate} />{/if}
 	</div>
 </li>

@@ -15,11 +15,11 @@ test("Profile saves holiday preferences across devices and preserves settings on
           days: {
             work: {
               on: ["mon", "tue", "wed", "thu", "fri"],
-              items: [{ title: "Work day", duration: 5 }],
+              items: [{ time: "08:00", title: "Work day", duration: 5 }],
             },
             off: {
               on: ["sat", "sun"],
-              items: [{ title: "Rest day", duration: 5 }],
+              items: [{ time: "08:00", title: "Rest day", duration: 5 }],
             },
           },
         },

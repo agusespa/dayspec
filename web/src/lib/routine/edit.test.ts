@@ -33,11 +33,13 @@ const routine: Routine = {
 			on: ['sat'],
 			items: [
 				{
-					when: { days: ['sat'] },
-					items: [
-						{ title: 'New item 2', duration: 5 },
-						{ title: 'New item 3', duration: 5 }
-					]
+					alternative: 'schedule',
+					paths: {
+						regular: [
+							{ time: '08:00', title: 'New item 2', duration: 5 },
+							{ time: '08:00', title: 'New item 3', duration: 5 }
+						]
+					}
 				}
 			]
 		}
@@ -46,7 +48,7 @@ const routine: Routine = {
 describe('template drafts', () => {
 	it('detaches nested entries, shared blocks and weekday assignments from the active routine', () => {
 		const draft = cloneRoutine(routine);
-		draft.days.saturday.items.push({ title: 'Draft only', duration: 5 });
+		draft.days.saturday.items.push({ time: '08:00', title: 'Draft only', duration: 5 });
 		draft.days.saturday.on.push('sun');
 		draft.blocks!.shared.items[0] = { title: 'Changed', duration: 5 };
 		expect(routine.days.saturday.items).toHaveLength(1);
@@ -71,7 +73,7 @@ describe('template creation and naming', () => {
 		days: {
 			daily: {
 				on: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
-				items: [{ title: 'Keep me', duration: 5 }]
+				items: [{ time: '08:00', title: 'Keep me', duration: 5 }]
 			}
 		}
 	};
@@ -88,7 +90,7 @@ describe('template creation and naming', () => {
 		expect(availableDays(partial)).toEqual(['sat', 'sun']);
 		const created = createTemplate(partial, ['sun', 'sat']);
 		expect(created.routine.days[created.key]).toEqual({ on: ['sat', 'sun'], items: [] });
-		expect(created.routine.days.daily.items).toEqual([{ title: 'Keep me', duration: 5 }]);
+		expect(created.routine.days.daily.items).toEqual([{ title: 'Keep me', duration: 5, time: '08:00' }]);
 		expect(created.routine.settings?.holiday).toBe('daily');
 		expect(availableDays(created.routine)).toEqual([]);
 		expect(daily.days.daily.on).toHaveLength(7);
@@ -127,7 +129,12 @@ describe('shared block management', () => {
 				mon: {
 					on: ['mon'],
 					items: [
-						{ when: { use: 'shared' }, items: [{ when: { days: ['mon'] }, items: [{ use: 'shared' }] }] }
+						{
+							alternative: 'use',
+							paths: {
+								shared: [{ alternative: 'schedule', paths: { regular: [{ time: '08:00', use: 'shared' }] } }]
+							}
+						}
 					]
 				}
 			},
@@ -147,10 +154,13 @@ describe('shared block management', () => {
 		expect(removeBlock(used, 'morning').blocks).not.toHaveProperty('morning');
 		expect(used.blocks).toHaveProperty('morning');
 	});
-	it('ignores choice conditions named use and deletes only an unused block', () => {
+	it('ignores alternatives named use and deletes only an unused block', () => {
 		const unused: Routine = {
 			days: {
-				mon: { on: ['mon'], items: [{ when: { use: 'shared' }, items: [{ title: 'One', duration: 5 }] }] }
+				mon: {
+					on: ['mon'],
+					items: [{ alternative: 'use', paths: { shared: [{ time: '08:00', title: 'One', duration: 5 }] } }]
+				}
 			},
 			blocks: {
 				shared: {
@@ -175,7 +185,12 @@ describe('naming shared blocks', () => {
 			stable: { name: 'Before', items: [{ title: 'Stretch', duration: 15 }] },
 			other: { name: 'Other', items: [{ use: 'stable' }] }
 		},
-		days: { mon: { on: ['mon'], items: [{ when: { days: ['mon'] }, items: [{ use: 'stable' }] }] } }
+		days: {
+			mon: {
+				on: ['mon'],
+				items: [{ alternative: 'schedule', paths: { regular: [{ time: '08:00', use: 'stable' }] } }]
+			}
+		}
 	};
 	it('preserves IDs, content, references, punctuation and capitalization', () => {
 		const renamed = renameBlock(source, 'stable', 'Morning — Wake Up!');
@@ -220,9 +235,12 @@ describe('categories', () => {
 			daily: {
 				on: ['mon'],
 				items: [
-					{ title: 'Laundry', duration: 30, category: 'chores' },
-					{ when: { days: ['mon'] }, items: [{ title: 'Laundry', duration: 30, category: 'chores' }] },
-					{ title: 'Nap', duration: 20, category: 'rest' }
+					{ time: '08:00', title: 'Laundry', duration: 30, category: 'chores' },
+					{
+						alternative: 'schedule',
+						paths: { regular: [{ time: '08:00', title: 'Laundry', duration: 30, category: 'chores' }] }
+					},
+					{ time: '08:00', title: 'Nap', duration: 20, category: 'rest' }
 				]
 			}
 		}
@@ -274,76 +292,28 @@ describe('categories', () => {
 	});
 });
 
-describe('editor chronological ordering', () => {
-	it('orders activities and block occurrences using the logical day, with stable ties', () => {
+describe('fork ordering', () => {
+	it('orders activities and whole forks by the earliest path time with stable ties and logical midnight', () => {
 		const entries: Entry[] = [
-			{ title: 'After midnight', time: '01:00', duration: 5 },
-			{ title: 'Evening', time: '20:00', duration: 5 },
-			{ use: 'shared', time: '08:00' },
-			{ title: 'Same start', time: '08:00', duration: 5 },
-			{ title: 'Early', time: '05:00', duration: 5 }
+			{ title: 'Midnight', time: '01:00', duration: 5 },
+			{ title: 'Dinner', time: '19:00', duration: 30 },
+			{
+				alternative: 'location',
+				paths: {
+					home: [{ title: 'Home', time: '09:00', duration: 5 }],
+					office: [{ use: 'shared', time: '08:00' }]
+				}
+			},
+			{ title: 'Breakfast', time: '07:00', duration: 15 },
+			{ title: 'Same start', time: '08:00', duration: 10 }
 		];
 		const before = structuredClone(entries);
-		expect(sortEntriesByTime(entries)).toEqual([entries[4], entries[2], entries[3], entries[1], entries[0]]);
+		expect(sortEntriesByTime(entries)).toEqual([entries[3], entries[2], entries[4], entries[1], entries[0]]);
 		expect(sortEntriesByTime(entries, '00:00')[0]).toBe(entries[0]);
 		expect(entries).toEqual(before);
 	});
-	it('keeps alternative paths together and orders groups by their earliest nested start', () => {
-		const entries: Entry[] = [
-			{ title: 'Dinner', time: '19:00', duration: 30 },
-			{ when: { location: 'home' }, items: [{ title: 'Home', time: '09:00', duration: 5 }] },
-			{
-				when: { location: 'office' },
-				items: [{ when: { days: ['mon'] }, items: [{ use: 'shared', time: '08:00' }] }]
-			},
-			{ title: 'Breakfast', time: '07:00', duration: 15 },
-			{ title: 'Lunch', time: '12:00', duration: 30 }
-		];
-		const choices = { location: { options: { home: {}, office: {} }, default: 'home' } };
-		expect(sortEntriesByTime(entries, '04:00', choices)).toEqual([
-			entries[3],
-			entries[2],
-			entries[1],
-			entries[4],
-			entries[0]
-		]);
-		expect(entries[1]).toHaveProperty('when.location', 'home');
-	});
-	it('keeps a dependent alternative with its parent when a common activity sorts between their times', () => {
-		const entries: Entry[] = [
-			{ when: { location: 'home' }, items: [{ title: 'Home', time: '09:00', duration: 5 }] },
-			{ when: { gym: true }, items: [{ title: 'Lift', time: '18:00', duration: 45 }] },
-			{ when: { location: 'office' }, items: [{ title: 'Office', time: '08:00', duration: 5 }] },
-			{ title: 'Lunch', time: '12:00', duration: 30 }
-		];
-		const choices: Record<string, Choice> = {
-			location: { options: { home: {}, office: {} }, default: 'home' },
-			gym: { type: 'toggle', default: true, active_when: { location: 'office' } }
-		};
-		expect(sortEntriesByTime(entries, '04:00', choices)).toEqual([
-			entries[2],
-			entries[0],
-			entries[1],
-			entries[3]
-		]);
-	});
-	it('leaves untimed entries and empty alternatives in their existing slots', () => {
-		const entries: Entry[] = [
-			{ title: 'Late', time: '20:00', duration: 5 },
-			{ title: 'Untimed', duration: 5 },
-			{ when: { days: ['mon'] }, items: [] },
-			{ title: 'Incomplete', time: '08:', duration: 5 },
-			{ title: 'Early', time: '07:00', duration: 5 }
-		];
-		expect(sortEntriesByTime(entries)).toEqual([entries[4], entries[1], entries[2], entries[3], entries[0]]);
-		expect(sortEntriesByTime([])).toEqual([]);
-	});
-});
-
-describe('saved template chronological ordering', () => {
-	it('orders existing block occurrences and nested branches without mutating the routine or block sequences', () => {
-		const routine: Routine = {
-			settings: { day_starts_at: '00:00' },
+	it('orders nested path activities without moving their containing fork or shared block definitions', () => {
+		const source: Routine = {
 			blocks: {
 				shared: {
 					name: 'Shared',
@@ -356,51 +326,59 @@ describe('saved template chronological ordering', () => {
 			days: {
 				day: {
 					on: ['mon'],
-					choices: { gym: { type: 'toggle', default: true } },
+					choices: {
+						location: { options: { home: {}, office: {} }, default: 'home' },
+						gym: { options: { train: {}, rest: {} }, default: 'train' }
+					},
 					items: [
-						{ title: 'Evening', time: '20:00', duration: 5 },
+						{ title: 'Dinner', time: '19:00', duration: 30 },
 						{
-							when: { gym: true },
-							items: [
-								{ title: 'Later', time: '10:00', duration: 5 },
-								{
-									when: { days: ['mon'] },
-									items: [
-										{ use: 'shared', time: '09:00' },
-										{ use: 'shared', time: '08:00' }
-									]
-								}
-							]
+							alternative: 'location',
+							paths: {
+								home: [
+									{ title: 'Late', time: '10:00', duration: 5 },
+									{
+										alternative: 'gym',
+										paths: {
+											train: [
+												{ use: 'shared', time: '09:00' },
+												{ use: 'shared', time: '08:00' }
+											],
+											rest: []
+										}
+									}
+								],
+								office: []
+							}
 						},
-						{ when: { gym: false }, items: [] },
-						{ use: 'shared', time: '01:00' }
+						{ title: 'Breakfast', time: '07:00', duration: 15 }
 					]
 				}
 			}
 		};
-		const before = structuredClone(routine);
-		const sorted = sortRoutineByTime(routine);
-		expect(sorted.days.day.items).toEqual([
-			{ use: 'shared', time: '01:00' },
-			{
-				when: { gym: true },
-				items: [
-					{
-						when: { days: ['mon'] },
-						items: [
-							{ use: 'shared', time: '08:00' },
-							{ use: 'shared', time: '09:00' }
-						]
-					},
-					{ title: 'Later', time: '10:00', duration: 5 }
-				]
-			},
-			{ when: { gym: false }, items: [] },
-			{ title: 'Evening', time: '20:00', duration: 5 }
+		const before = structuredClone(source),
+			sorted = sortRoutineByTime(source);
+		expect(sorted.days.day.items[0]).toHaveProperty('title', 'Breakfast');
+		const fork = sorted.days.day.items[1];
+		if (!('paths' in fork)) throw Error();
+		const child = fork.paths.home[0];
+		if (!('paths' in child)) throw Error();
+		expect(child.paths.train).toEqual([
+			{ use: 'shared', time: '08:00' },
+			{ use: 'shared', time: '09:00' }
 		]);
-		expect(sorted.blocks).toBe(routine.blocks);
-		expect(routine).toEqual(before);
+		expect(sorted.blocks).toBe(source.blocks);
+		expect(source).toEqual(before);
 		expect(sortRoutineByTime(sorted)).toEqual(sorted);
 		expect(sortRoutineByTime({ days: {} })).toEqual({ days: {} });
+	});
+	it('leaves empty forks and incomplete drafts in place while sorting valid times', () => {
+		const entries: Entry[] = [
+			{ title: 'Late', time: '20:00', duration: 5 },
+			{ alternative: 'place', paths: {} },
+			{ title: 'Incomplete', time: '08:', duration: 5 },
+			{ title: 'Early', time: '07:00', duration: 5 }
+		];
+		expect(sortEntriesByTime(entries)).toEqual([entries[3], entries[1], entries[2], entries[0]]);
 	});
 });

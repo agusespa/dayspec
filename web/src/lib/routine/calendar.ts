@@ -37,7 +37,7 @@ function eventDetails(items: ResolvedItem[], title: string): string {
 			[
 				...(items.length > 1 || title !== item.title ? [`${item.title} · ${item.duration} min`] : []),
 				item.note,
-				...item.links.map((link) => link.url)
+				item.link?.url
 			]
 				.filter(Boolean)
 				.join('\n')

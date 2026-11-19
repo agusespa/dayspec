@@ -79,9 +79,10 @@ describe('reusable durations', () => {
 			days: {
 				mon: {
 					on: ['mon'],
+					choices: { plan: { options: { include: {}, skip: {} }, default: 'skip' } },
 					items: [
 						{ use: 'sequence', time: '08:00' },
-						{ when: { days: ['tue'] }, items: [{ use: 'sequence', time: '10:00' }] },
+						{ alternative: 'plan', paths: { include: [{ use: 'sequence', time: '10:00' }], skip: [] } },
 						{ use: 'single', time: '23:55' }
 					]
 				}

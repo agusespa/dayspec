@@ -1,8 +1,6 @@
 package routine
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"slices"
@@ -17,7 +15,7 @@ func str(v any) string               { s, _ := v.(string); return s }
 func has(values any, value any) bool { return slices.Contains(list(values), value) }
 
 // Schema validation runs first, so this only checks relationships between valid shapes.
-func checkReferences(root map[string]any, raw []byte) error {
+func checkReferences(root map[string]any) error {
 	days, blocks, categories := object(root["days"]), object(root["blocks"]), object(root["categories"])
 	var problems []string
 	add := func(where, message string) { problems = append(problems, where+": "+message) }
@@ -36,59 +34,20 @@ func checkReferences(root map[string]any, raw []byte) error {
 	if str(object(root["settings"])["holiday"]) != "" && days[holiday] == nil {
 		add("settings.holiday", "unknown template "+holiday)
 	}
-	checkWhen := func(when any, choices map[string]any, where string) {
-		for key, cond := range object(when) {
-			if key == "days" {
-				continue
-			}
-			choice := object(choices[key])
-			if choice == nil {
-				add(where, "unknown or later choice "+key)
-				continue
-			}
-			if choice["type"] == "toggle" {
-				if _, ok := cond.(bool); !ok {
-					add(where+"."+key, "a toggle needs true or false")
-				}
-				continue
-			}
-			if _, ok := cond.(bool); ok {
-				add(where+"."+key, "this choice is not a toggle")
-				continue
-			}
-			if neg := object(cond); neg != nil {
-				cond = neg["not"]
-			}
-			values := list(cond)
-			if values == nil {
-				values = []any{cond}
-			}
-			for _, value := range values {
-				if object(choice["options"])[str(value)] == nil {
-					add(where+"."+key, "unknown option "+str(value))
-				}
-			}
-		}
-	}
-	checkLinks := func(item map[string]any, where string) {
+
+	checkLink := func(item map[string]any, where string) {
 		if item["link"] == nil {
 			return
 		}
-		refs := list(item["link"])
-		if refs == nil {
-			refs = []any{item["link"]}
-		}
-		for _, ref := range refs {
-			name := str(ref)
-			parsed, err := url.Parse(name)
-			if err != nil || (parsed.Scheme != "https" && parsed.Scheme != "http") || parsed.Hostname() == "" {
-				add(where, "invalid link URL")
-			}
+		name := str(item["link"])
+		parsed, err := url.Parse(name)
+		if err != nil || (parsed.Scheme != "https" && parsed.Scheme != "http") || parsed.Hostname() == "" {
+			add(where, "invalid link URL")
 		}
 	}
 	remaining := 10_000
-	var walk func([]any, map[string]any, string, []string, int)
-	walk = func(entries []any, choices map[string]any, where string, stack []string, depth int) {
+	var walk func([]any, map[string]any, string, []string, int, []string)
+	walk = func(entries []any, choices map[string]any, where string, stack []string, depth int, forks []string) {
 		if depth > 64 && len(entries) > 0 {
 			add(where, "nesting or block expansion exceeds 64 levels")
 			return
@@ -104,9 +63,21 @@ func checkReferences(root map[string]any, raw []byte) error {
 			remaining--
 			e := object(value)
 			at := fmt.Sprintf("%s[%d]", where, i)
-			if nested := list(e["items"]); nested != nil {
-				checkWhen(e["when"], choices, at+".when")
-				walk(nested, choices, at+".items", stack, depth+1)
+			if paths := object(e["paths"]); paths != nil {
+				name := str(e["alternative"])
+				definition := object(choices[name])
+				if definition == nil {
+					add(at, "unknown alternative "+name)
+				}
+				if slices.Contains(forks, name) {
+					add(at, "an alternative cannot be nested inside itself")
+				}
+				for option, items := range paths {
+					if definition != nil && object(definition["options"])[option] == nil {
+						add(at+".paths", "unknown option "+option)
+					}
+					walk(list(items), choices, at+".paths."+option, stack, depth+1, append(slices.Clone(forks), name))
+				}
 				continue
 			}
 			if name := str(e["use"]); name != "" {
@@ -120,37 +91,26 @@ func checkReferences(root map[string]any, raw []byte) error {
 					continue
 				}
 				next := append(slices.Clone(stack), name)
-				walk(list(object(block)["items"]), nil, "blocks."+name, next, depth+1)
+				walk(list(object(block)["items"]), nil, "blocks."+name, next, depth+1, nil)
 			} else {
-				checkLinks(e, at)
+				checkLink(e, at)
 				if key, ok := e["category"].(string); ok && categories[key] == nil {
 					add(at, "unknown category "+key)
 				}
 			}
 		}
 	}
-	// Raw choice order is significant and must survive both validation and persistence.
-	var rawRoot struct {
-		Days map[string]struct{ Choices json.RawMessage }
-	}
-	_ = json.Unmarshal(raw, &rawRoot)
 	for name, value := range days {
 		day := object(value)
 		choices := object(day["choices"])
 		if choices == nil {
 			choices = map[string]any{}
 		}
-		earlier := map[string]any{}
-		for _, key := range orderedKeys(rawRoot.Days[name].Choices) {
-			choice := object(choices[key])
+		for key, value := range choices {
+			choice := object(value)
 			where := "days." + name + ".choices." + key
-			checkWhen(choice["active_when"], earlier, where+".active_when")
 			options := object(choice["options"])
 			valid := func(v any, wd any) bool {
-				if choice["type"] == "toggle" {
-					_, ok := v.(bool)
-					return ok
-				}
 				opt := object(options[str(v)])
 				return opt != nil && (opt["only_on"] == nil || has(opt["only_on"], wd))
 			}
@@ -163,9 +123,8 @@ func checkReferences(root map[string]any, raw []byte) error {
 					add(where+".default", "no valid default for "+str(wd))
 				}
 			}
-			earlier[key] = choice
 		}
-		walk(list(day["items"]), choices, "days."+name+".items", nil, 0)
+		walk(list(day["items"]), choices, "days."+name+".items", nil, 0, nil)
 	}
 	// Blocks store relative durations; start times belong to template occurrences.
 	for name, block := range blocks {
@@ -173,31 +132,11 @@ func checkReferences(root map[string]any, raw []byte) error {
 			add("blocks."+name, "unknown category "+key)
 		}
 		entries := list(object(block)["items"])
-		walk(entries, nil, "blocks."+name, []string{name}, 0)
+		walk(entries, nil, "blocks."+name, []string{name}, 0, nil)
 	}
 
 	if len(problems) > 0 {
 		return fmt.Errorf("%s", strings.Join(problems, "\n"))
 	}
 	return nil
-}
-
-func orderedKeys(raw []byte) []string {
-	d := json.NewDecoder(bytes.NewReader(raw))
-	if _, err := d.Token(); err != nil {
-		return nil
-	}
-	var keys []string
-	for d.More() {
-		token, err := d.Token()
-		if err != nil {
-			break
-		}
-		keys = append(keys, token.(string))
-		var value json.RawMessage
-		if err := d.Decode(&value); err != nil {
-			break
-		}
-	}
-	return keys
 }

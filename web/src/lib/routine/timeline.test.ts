@@ -61,6 +61,7 @@ describe('shared block timeline groups', () => {
 			days: {
 				daily: {
 					on: ['mon'],
+					choices: { plan: { options: { include: {}, skip: {} }, default: 'skip' } },
 					items: [
 						{ use: 'nested', time: '07:00' },
 						{ use: 'tea', time: '08:00' }
@@ -82,9 +83,10 @@ describe('shared block timeline groups', () => {
 			days: {
 				daily: {
 					on: ['mon'],
+					choices: { plan: { options: { include: {}, skip: {} }, default: 'skip' } },
 					items: [
-						{ when: { days: ['tue'] }, items: [{ use: 'morning', time: '07:00' }] },
-						{ title: 'Work', duration: 5 }
+						{ alternative: 'plan', paths: { include: [{ use: 'morning', time: '07:00' }], skip: [] } },
+						{ time: '08:00', title: 'Work', duration: 5 }
 					]
 				}
 			},
@@ -97,15 +99,16 @@ describe('shared block timeline groups', () => {
 		};
 		expect(groupTimeline(resolveDay(filtered, '2026-11-16').items).map((g) => g.name)).toEqual([undefined]);
 	});
-	it('does not merge identical blocks used in different conditional groups', () => {
+	it('does not merge identical blocks used in different occurrences', () => {
 		const grouped: Routine = {
 			...routine,
 			days: {
 				daily: {
 					on: ['mon'],
+					choices: { plan: { options: { include: {}, skip: {} }, default: 'skip' } },
 					items: [
-						{ when: { days: ['mon'] }, items: [{ use: 'tea' }] },
-						{ when: { days: ['mon'] }, items: [{ use: 'tea' }] }
+						{ use: 'tea', time: '08:00' },
+						{ use: 'tea', time: '08:00' }
 					]
 				}
 			}
@@ -193,8 +196,13 @@ describe('timeline group duration', () => {
 	it('spans the clock when the block is timed', () => {
 		expect(timelineDuration(blockItems([{ use: 'morning', time: '07:00' }]))).toBe(30);
 	});
-	it('sums item durations when the block has no time', () => {
-		expect(timelineDuration(blockItems([{ use: 'morning' }]))).toBe(30);
+	it('sums durations while an editor draft has no valid start time', () => {
+		const draft = blockItems([{ time: '08:00', use: 'morning' }]).map((item) => ({
+			...item,
+			time: undefined,
+			end: undefined
+		}));
+		expect(timelineDuration(draft)).toBe(30);
 	});
 	it('has no duration for an empty group', () => expect(timelineDuration([])).toBeUndefined());
 });

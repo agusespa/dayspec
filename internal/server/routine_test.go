@@ -15,7 +15,7 @@ import (
 )
 
 func TestRoutineAPI(t *testing.T) {
-	const initial = `{"days":{"saturday":{"on":["mon","tue","wed","thu","fri","sat","sun"],"items":[{"title":"Wake","duration":5}]}},"settings":{"holiday":"saturday"}}`
+	const initial = `{"days":{"saturday":{"on":["mon","tue","wed","thu","fri","sat","sun"],"items":[{"title":"Wake","duration":5,"time":"08:00"}]}},"settings":{"holiday":"saturday"}}`
 	schema, err := os.ReadFile("../../routine.schema.json")
 	if err != nil {
 		t.Fatal(err)
@@ -57,7 +57,7 @@ func TestRoutineAPI(t *testing.T) {
 		{"rejects cross-origin", payload, current.Revision, "application/json", "https://evil.example", 403},
 		{"requires JSON", payload, current.Revision, "text/plain", "", 415},
 		{"bad JSON", `{`, current.Revision, "application/json", "", 400},
-		{"trailing JSON", payload + ` {}`, current.Revision, "application/json", "", 400},
+		{"trailing JSON", payload + `{}`, current.Revision, "application/json", "", 400},
 		{"invalid routine", `{"routine":{}}`, current.Revision, "application/json", "", 422},
 		{"too large", `{"routine":"` + strings.Repeat("a", 1<<20) + `"}`, current.Revision, "application/json", "", 413},
 		{"same-origin behind tunnel", payload, current.Revision, "application/json", "https://dayspec.local", 200},

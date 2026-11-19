@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
 	addChoice,
 	removeChoice,
-	changeChoiceType,
 	removeOption,
 	setChoiceDefault,
 	setChoiceDefaultMode,
@@ -28,36 +27,21 @@ describe('choice editing', () => {
 			}
 		};
 		routine.days.daily.items = [
-			{
-				when: { choice: { not: ['option_2'] } },
-				items: [{ when: { days: ['mon'] }, items: [{ use: 'outer', time: '08:00' }] }]
-			}
+			{ alternative: 'choice', paths: { option: [{ use: 'outer', time: '08:00' }], option_2: [] } }
 		];
-		expect(choiceUsed(routine, 'daily', 'choice', 'option_2')).toBe(true);
-		expect(() => removeChoice(routine, 'daily', 'choice')).toThrow('conditions');
-		expect(() => changeChoiceType(routine, 'daily', 'choice', 'toggle')).toThrow('conditions');
-		routine.days.daily.items = [];
-		routine.days.daily.choices!.dependent = {
-			type: 'toggle',
-			default: false,
-			active_when: { choice: 'option' }
-		};
-		expect(() => removeChoice(routine, 'daily', 'choice')).toThrow('conditions');
-	});
-	it('changes unused choice types without retaining incompatible options or defaults', () => {
-		const toggle = changeChoiceType(addChoice(base, 'daily'), 'daily', 'choice', 'toggle');
-		expect(toggle.days.daily.choices!.choice).toMatchObject({ type: 'toggle', default: false });
-		expect(toggle.days.daily.choices!.choice.options).toBeUndefined();
-		const selection = changeChoiceType(toggle, 'daily', 'choice', 'select');
-		expect(selection.days.daily.choices!.choice.default).toBe('option');
+		expect(choiceUsed(routine, 'daily', 'choice', 'option')).toBe(true);
+		expect(choiceUsed(routine, 'daily', 'choice', 'option_2')).toBe(false);
+		expect(() => removeChoice(routine, 'daily', 'choice')).toThrow('forks');
 	});
 	it('protects defaults and referenced options while allowing unused options to be removed', () => {
 		const routine = addChoice(base, 'daily');
 		const choice = routine.days.daily.choices!.choice;
 		choice.options!.third = { label: 'Third' };
 		expect(() => removeOption(routine, 'daily', 'choice', 'option')).toThrow('defaults');
-		routine.days.daily.items = [{ when: { choice: ['third'] }, items: [{ title: 'Work', duration: 10 }] }];
-		expect(() => removeOption(routine, 'daily', 'choice', 'third')).toThrow('conditions');
+		routine.days.daily.items = [
+			{ alternative: 'choice', paths: { third: [{ time: '08:00', title: 'Work', duration: 10 }] } }
+		];
+		expect(() => removeOption(routine, 'daily', 'choice', 'third')).toThrow('paths');
 		routine.days.daily.items = [];
 		const removed = removeOption(routine, 'daily', 'choice', 'third');
 		expect(removed.days.daily.choices!.choice.options).not.toHaveProperty('third');
@@ -65,9 +49,12 @@ describe('choice editing', () => {
 		expect(() => removeOption(removed, 'daily', 'choice', 'option_2')).toThrow('two options');
 	});
 	it('updates one weekday default without erasing other weekday values', () => {
-		const choice = { type: 'toggle' as const, default: { mon: true, tue: false } };
-		expect(setChoiceDefault(choice, false, 'mon').default).toEqual({ mon: false, tue: false });
-		expect(choice.default.mon).toBe(true);
+		const choice = {
+			options: { yes: { label: 'Yes' }, no: { label: 'No' } },
+			default: { mon: 'yes', tue: 'no' }
+		};
+		expect(setChoiceDefault(choice, 'no', 'mon').default).toEqual({ mon: 'no', tue: 'no' });
+		expect(choice.default.mon).toBe('yes');
 	});
 });
 
@@ -82,8 +69,8 @@ describe('choice default modes', () => {
 		expect(setChoiceDefaultMode(edited, ['mon', 'wed', 'fri'], true).default).toEqual(edited.default);
 		expect(setChoiceDefaultMode(edited, ['mon', 'wed', 'fri'], false).default).toBe('office');
 	});
-	it.each([false, true])('preserves a toggle default of %s in both modes', (value) => {
-		const choice: Choice = { type: 'toggle', default: value };
+	it.each(['yes', 'no'])('preserves a named option default of %s in both modes', (value) => {
+		const choice: Choice = { options: { yes: { label: 'Yes' }, no: { label: 'No' } }, default: value };
 		const weekdays = setChoiceDefaultMode(choice, ['wed', 'fri'], true);
 		expect(weekdays.default).toEqual({ wed: value, fri: value });
 		expect(setChoiceDefaultMode(weekdays, ['wed', 'fri'], false).default).toBe(value);

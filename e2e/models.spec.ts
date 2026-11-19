@@ -84,12 +84,11 @@ test("edits choices, conditional activities, durations and Notion links, then se
       "Office",
     );
     const office = persisted.days.work.items.find(
-      (entry) => entry.when?.choice === "option_2",
+      (entry) => entry.alternative === "choice",
     );
-    expect(office).toEqual({
-      when: { choice: "option_2" },
-      items: [{ title: "Commute", duration: 20, time: "08:15" }],
-    });
+    expect(office.paths.option_2).toEqual([
+      { title: "Commute", duration: 20, time: "08:15" },
+    ]);
     await page.goto("/");
     await expect(page.getByTestId("TimelineItem")).toHaveCount(1);
     await page.getByTestId("Day-choice-choice-option_2").click();
@@ -170,7 +169,6 @@ test("edits choices, conditional activities, durations and Notion links, then se
     ).toBeTruthy();
   }
 });
-
 test("refuses a missing block duration without replacing the saved block", async ({
   page,
   request,

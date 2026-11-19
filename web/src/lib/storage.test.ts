@@ -25,11 +25,11 @@ describe('holiday overrides', () => {
 		expect(loadDay(date).holiday).toBe(holiday);
 	});
 	it('clears an override without removing choices', () => {
-		saveDay(date, { choices: { gym: true }, holiday: false });
+		saveDay(date, { choices: { gym: 'yes' }, holiday: false });
 		const day = loadDay(date);
 		delete day.holiday;
 		saveDay(date, day);
-		expect(loadDay(date)).toEqual({ choices: { gym: true } });
+		expect(loadDay(date)).toEqual({ choices: { gym: 'yes' } });
 	});
 	it('removes storage when the final override is cleared', () => {
 		saveDay(date, { choices: {}, holiday: false });
@@ -56,10 +56,19 @@ it('keeps only supported choice values from browser storage', () => {
 	values.set(
 		key,
 		JSON.stringify({
-			choices: { place: 'home', gym: false, count: 3, nested: {}, empty: null, list: [] }
+			choices: {
+				place: 'home',
+				gym: 'no',
+				enabled: true,
+				disabled: false,
+				count: 3,
+				nested: {},
+				empty: null,
+				list: []
+			}
 		})
 	);
-	expect(loadDay(date)).toEqual({ choices: { place: 'home', gym: false } });
+	expect(loadDay(date)).toEqual({ choices: { place: 'home', gym: 'no' } });
 	for (const choices of [[], ['home'], null, 'home']) {
 		values.set(key, JSON.stringify({ choices }));
 		expect(loadDay(date).choices).toEqual({});

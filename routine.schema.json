@@ -148,87 +148,14 @@
       ],
       "description": "A colour from the app's palette, tuned for its dark theme."
     },
-    "link": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/url"
-        },
-        {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "$ref": "#/$defs/url"
-          }
-        }
-      ]
-    },
-    "when": {
-      "type": "object",
-      "description": "All conditions must hold. `days` lists weekdays; any other key is a choice of the day template.",
-      "propertyNames": {
-        "$ref": "#/$defs/id"
-      },
-      "properties": {
-        "days": {
-          "$ref": "#/$defs/weekdays"
-        }
-      },
-      "additionalProperties": {
-        "$ref": "#/$defs/condition"
-      },
-      "minProperties": 1
-    },
-    "condition": {
-      "oneOf": [
-        {
-          "type": "string",
-          "description": "The choice has this value."
-        },
-        {
-          "type": "boolean",
-          "description": "A toggle is on (true) or off (false)."
-        },
-        {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "type": "string"
-          },
-          "description": "The choice has any of these values."
-        },
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "not"
-          ],
-          "properties": {
-            "not": {
-              "oneOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "array",
-                  "minItems": 1,
-                  "items": {
-                    "type": "string"
-                  }
-                }
-              ]
-            }
-          },
-          "description": "The choice has none of these values, or is not active."
-        }
-      ]
-    },
     "item": {
       "type": "object",
       "description": "A new item.",
       "additionalProperties": false,
       "required": [
         "title",
-        "duration"
+        "duration",
+        "time"
       ],
       "properties": {
         "duration": {
@@ -257,7 +184,7 @@
           "description": "Marks the item with a bell on the timeline."
         },
         "link": {
-          "$ref": "#/$defs/link"
+          "$ref": "#/$defs/url"
         },
         "note": {
           "type": "string",
@@ -270,7 +197,8 @@
       "description": "Places a shared block at a start time.",
       "additionalProperties": false,
       "required": [
-        "use"
+        "use",
+        "time"
       ],
       "properties": {
         "use": {
@@ -315,13 +243,6 @@
           "type": "string",
           "minLength": 1
         },
-        "type": {
-          "enum": [
-            "select",
-            "toggle"
-          ],
-          "default": "select"
-        },
         "options": {
           "type": "object",
           "minProperties": 2,
@@ -332,73 +253,27 @@
             "$ref": "#/$defs/option"
           }
         },
-        "default": true,
-        "active_when": {
-          "$ref": "#/$defs/when"
-        }
-      },
-      "if": {
-        "required": [
-          "type"
-        ],
-        "properties": {
-          "type": {
-            "const": "toggle"
-          }
-        }
-      },
-      "then": {
-        "required": [
-          "default"
-        ],
-        "not": {
-          "required": [
-            "options"
-          ]
-        },
-        "properties": {
-          "default": {
-            "oneOf": [
-              {
-                "type": "boolean"
+        "default": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "object",
+              "propertyNames": {
+                "$ref": "#/$defs/weekday"
               },
-              {
-                "type": "object",
-                "propertyNames": {
-                  "$ref": "#/$defs/weekday"
-                },
-                "additionalProperties": {
-                  "type": "boolean"
-                }
-              }
-            ]
-          }
-        }
-      },
-      "else": {
-        "required": [
-          "options",
-          "default"
-        ],
-        "properties": {
-          "default": {
-            "oneOf": [
-              {
+              "additionalProperties": {
                 "$ref": "#/$defs/id"
-              },
-              {
-                "type": "object",
-                "propertyNames": {
-                  "$ref": "#/$defs/weekday"
-                },
-                "additionalProperties": {
-                  "$ref": "#/$defs/id"
-                }
               }
-            ]
-          }
+            }
+          ]
         }
-      }
+      },
+      "required": [
+        "options",
+        "default"
+      ]
     },
     "day": {
       "type": "object",
@@ -418,10 +293,7 @@
         "choices": {
           "type": "object",
           "propertyNames": {
-            "$ref": "#/$defs/id",
-            "not": {
-              "const": "days"
-            }
+            "$ref": "#/$defs/id"
           },
           "additionalProperties": {
             "$ref": "#/$defs/choice"
@@ -437,46 +309,65 @@
     },
     "branch": {
       "type": "object",
-      "description": "A conditional branch containing activities, block occurrences, or nested branches. Empty branches add no activities.",
+      "description": "A fork using one alternative. Each option has its own sequence; missing or empty paths continue the routine.",
       "additionalProperties": false,
       "required": [
-        "when",
-        "items"
+        "alternative",
+        "paths"
       ],
       "properties": {
-        "when": {
-          "$ref": "#/$defs/when"
+        "alternative": {
+          "$ref": "#/$defs/id"
         },
-        "items": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/entry"
+        "paths": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/id"
+          },
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/entry"
+            }
           }
         }
       }
     },
     "shared_item": {
-      "allOf": [
-        {
-          "$ref": "#/$defs/item"
+      "type": "object",
+      "description": "A duration-based activity inside a shared block.",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "duration"
+      ],
+      "properties": {
+        "duration": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440,
+          "description": "Duration in minutes."
         },
-        {
-          "not": {
-            "anyOf": [
-              {
-                "required": [
-                  "time"
-                ]
-              },
-              {
-                "required": [
-                  "approx"
-                ]
-              }
-            ]
-          }
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "category": {
+          "$ref": "#/$defs/id",
+          "description": "Key of a category in `categories`; sets the item's colour."
+        },
+        "alert": {
+          "type": "boolean",
+          "description": "Marks the item with a bell on the timeline."
+        },
+        "link": {
+          "$ref": "#/$defs/url"
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
         }
-      ]
+      }
     },
     "shared_use": {
       "type": "object",
