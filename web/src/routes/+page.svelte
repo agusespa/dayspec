@@ -49,13 +49,16 @@
 	/** Brings the current item into view, leaving the page alone when its row is already visible. */
 	async function scrollToCurrent(behavior: ScrollBehavior) {
 		await tick();
+		// Let a changed day's layout settle before measuring the scroll destination.
+		await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 		const current = document.querySelector('[data-current]');
 		if (!current) return;
 		const row = (current.querySelector('.row') ?? current).getBoundingClientRect();
 		const headerBottom = document.querySelector('.page-header')?.getBoundingClientRect().bottom ?? 0;
 		const barTop = document.querySelector('.bottombar')?.getBoundingClientRect().top ?? innerHeight;
 		if (row.top >= headerBottom && row.bottom <= barTop) return;
-		(current.querySelector('.row') ?? current).scrollIntoView({ block: 'center', behavior });
+		const room = Math.max(0, barTop - headerBottom - row.height);
+		window.scrollTo({ top: scrollY + row.top - headerBottom - room / 2, behavior });
 	}
 
 	function goToday() {
