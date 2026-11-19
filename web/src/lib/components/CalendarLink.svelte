@@ -35,8 +35,8 @@
 		display: inline-grid;
 		place-items: center;
 		flex: none;
-		width: 36px;
-		height: 36px;
+		width: 32px;
+		height: 32px;
 		border-radius: 50%;
 		color: var(--accent);
 	}

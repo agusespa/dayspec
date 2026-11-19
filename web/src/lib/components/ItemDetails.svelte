@@ -80,10 +80,10 @@
 	.details {
 		display: flex;
 		flex-direction: column;
-		gap: 0.3rem;
-		margin: -0.35rem 0 0.55rem var(--indent);
+		gap: 0.1rem;
+		margin: -0.9rem 0 0.2rem var(--indent);
 		font-size: var(--text-sm);
-		line-height: 1.5;
+		line-height: 1.4;
 	}
 	p {
 		margin: 0;
@@ -91,8 +91,8 @@
 	.facts {
 		display: flex;
 		align-items: center;
-		gap: 0.9rem;
-		min-height: 36px;
+		gap: 0.6rem;
+		min-height: 32px;
 		color: var(--muted);
 		font-size: var(--text-xs);
 	}
@@ -141,7 +141,7 @@
 	.links a {
 		display: inline-flex;
 		align-items: center;
-		min-height: 32px;
+		min-height: 28px;
 		font-family: var(--sans);
 		font-size: var(--text-xs);
 		font-weight: 500;
