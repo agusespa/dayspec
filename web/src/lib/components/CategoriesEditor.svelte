@@ -249,9 +249,15 @@
 	}
 	.delete {
 		margin-top: 1rem;
-		padding: 0.5rem 0;
+		padding: 0.5rem 0.9rem;
+		border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--rule));
+		background: color-mix(in srgb, var(--danger) 7%, transparent);
 		color: var(--danger);
 		font-size: var(--text-sm);
+	}
+	.delete:not(:disabled):hover {
+		border-color: color-mix(in srgb, var(--danger) 65%, var(--rule));
+		background: color-mix(in srgb, var(--danger) 13%, transparent);
 	}
 	.delete:disabled {
 		opacity: 0.4;

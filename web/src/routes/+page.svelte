@@ -52,8 +52,9 @@
 		const current = document.querySelector('[data-current]');
 		if (!current) return;
 		const row = (current.querySelector('.row') ?? current).getBoundingClientRect();
+		const headerBottom = document.querySelector('.page-header')?.getBoundingClientRect().bottom ?? 0;
 		const barTop = document.querySelector('.bottombar')?.getBoundingClientRect().top ?? innerHeight;
-		if (row.top >= 0 && row.bottom <= barTop) return;
+		if (row.top >= headerBottom && row.bottom <= barTop) return;
 		current.scrollIntoView({ block: 'center', behavior });
 	}
 
@@ -185,8 +186,17 @@
 		</button>
 		<div class="bar-center">
 			{#if isToday}
-				<span class="day-label" aria-current="page"
+				<span class="day-label current-day-label" aria-current="page"
 					><span>Daily</span><small>{formatDate(date, 'short').split(' ').slice(1).join(' ')}</small></span
+				>
+				<button
+					class="day-label current-day-button"
+					aria-label="Go to current activity"
+					aria-current="page"
+					title="Go to today's current activity"
+					data-testid="Day-current"
+					onclick={goToday}
+					><span>Daily</span><small>{formatDate(date, 'short').split(' ').slice(1).join(' ')}</small></button
 				>
 			{:else}
 				<button class="day-label" aria-label="Back to today" data-testid="Day-today" onclick={goToday}

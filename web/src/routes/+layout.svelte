@@ -109,6 +109,13 @@
 		padding: 0 1rem calc(env(safe-area-inset-bottom) + 2rem);
 	}
 
+	@media (min-width: 1024px) {
+		main:has(:global(.template-list), :global(.editor-workspace), :global(.block-list)) {
+			max-width: 1200px;
+			padding-inline: 2rem;
+		}
+	}
+
 	.banner {
 		background: var(--paper);
 		border: 1px solid var(--danger);

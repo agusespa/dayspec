@@ -60,7 +60,7 @@ test("saves template edits across reloads and devices", async ({
 }) => {
   await openEditor(page);
   await page.getByTestId("TemplateEditor-theme").fill("A quieter Saturday");
-  const index = original.days.saturday.items.findIndex(
+  const index = testRoutine.days.saturday.items.findIndex(
     (entry) => "title" in entry,
   );
   const entry = page
@@ -77,9 +77,9 @@ test("saves template edits across reloads and devices", async ({
   await expect(page.getByText("A quieter Saturday")).toBeVisible();
   await expect(page.getByText("A new Saturday activity")).toBeVisible();
   const persisted = await (await request.get("/api/routine")).json();
-  expect(persisted.routine.blocks).toEqual(original.blocks);
+  expect(persisted.routine.blocks).toEqual(testRoutine.blocks);
   expect(persisted.routine.days.saturday.choices).toEqual(
-    original.days.saturday.choices,
+    testRoutine.days.saturday.choices,
   );
   const other = await browser.newContext();
   try {
@@ -176,7 +176,7 @@ test("cancel protection leaves the saved routine unchanged", async ({
   await page.getByTestId("TemplateEditor-cancel").click();
   await expect(page.getByTestId("TemplateEditor")).toHaveCount(0);
   expect((await (await request.get("/api/routine")).json()).routine).toEqual(
-    original,
+    testRoutine,
   );
 });
 test("edits activity notes and reorders entries without losing details", async ({

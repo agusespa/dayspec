@@ -70,12 +70,15 @@
 	font-size: var(--text-md);
 	font-weight: 400;
 	color: var(--text);
-	background: var(--inset);
+	background-color: var(--inset);
 	border: 1px solid var(--rule);
 	border-radius: 10px;
 	padding: 0.7rem;
 	width: 100%;
 	min-width: 0;
+}
+.template-editor select {
+	padding-right: 2.4rem;
 }
 .template-editor input::placeholder,
 .template-editor textarea::placeholder {
@@ -376,6 +379,16 @@
 	margin-top: 1.75rem;
 }
 
+/* Give destructive buttons a visible boundary even against matching card colours. */
+.template-editor button.danger {
+	border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--rule));
+	background: color-mix(in srgb, var(--danger) 7%, transparent);
+}
+.template-editor button.danger:not(:disabled):hover {
+	border-color: color-mix(in srgb, var(--danger) 65%, var(--rule));
+	background: color-mix(in srgb, var(--danger) 13%, transparent);
+}
+
 /* Destructive actions sit apart, at the end of the form. */
 .template-editor .danger-zone {
 	margin-top: 2rem;
@@ -383,7 +396,6 @@
 	border-top: 1px solid var(--rule);
 }
 .template-editor .danger-zone > button {
-	padding-left: 0;
 	font-size: var(--text-sm);
 }
 .template-editor .danger-zone .help {
@@ -447,6 +459,13 @@
 	opacity: 1;
 }
 
+/* Editor cards do not need the decorative timeline connectors. */
+.template-editor .branch-section::before,
+.template-editor .branch-section::after,
+.template-editor .branch-join {
+	display: none;
+}
+
 .template-editor .branch-content > .entries {
 	margin-left: 0;
 	padding-left: 0;
@@ -475,6 +494,80 @@
 }
 
 .template-editor .branch-tools {
-	margin: -0.7rem 0 1.5rem;
-	justify-content: flex-end;
+	margin-top: 0.85rem;
+	padding: 0.75rem 0 0.85rem;
+	border-top: 1px solid var(--rule);
+}
+
+/* Layout wrappers stay invisible below the desktop breakpoint. */
+.template-editor .editor-toolbar,
+.template-editor .editor-workspace,
+.template-editor .editor-settings,
+.template-editor .editor-timeline {
+	display: contents;
+}
+
+@media (min-width: 1024px) {
+	.template-editor {
+		padding-top: 0;
+		padding-bottom: 3rem;
+	}
+	.template-editor .editor-heading {
+		position: sticky;
+		top: 0;
+		z-index: 5;
+		align-items: center;
+		flex-wrap: nowrap;
+		padding: var(--page-top) 0 1.25rem;
+		margin-bottom: 1.5rem;
+		border-bottom: 1px solid var(--rule);
+		background: var(--bg);
+	}
+	.template-editor .editor-toolbar {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		flex-wrap: wrap;
+		gap: 0.75rem 1.25rem;
+	}
+	.template-editor .editor-actions {
+		position: static;
+		transform: none;
+		flex: none;
+		width: auto;
+		padding: 0;
+		gap: 0.5rem;
+		background: transparent;
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+		box-shadow: none;
+	}
+	.template-editor .editor-actions > button {
+		padding-inline: 1.25rem;
+	}
+	.template-editor .editor-actions > button:first-child {
+		border: 1px solid var(--rule);
+		background: var(--paper);
+	}
+	.template-editor .editor-workspace {
+		display: grid;
+		grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+		align-items: start;
+		gap: 2.5rem;
+	}
+	.template-editor .editor-settings,
+	.template-editor .editor-timeline {
+		display: block;
+		min-width: 0;
+	}
+	.template-editor .editor-settings > label:first-child,
+	.template-editor .editor-timeline > h2:first-child {
+		margin-top: 0;
+	}
+	.template-editor .entry {
+		scroll-margin-top: 10rem;
+	}
+	.template-editor .block-list {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
 }

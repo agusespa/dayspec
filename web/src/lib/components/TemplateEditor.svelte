@@ -192,11 +192,27 @@
 					{templateName(draft.days[key].on)}
 				</p>{/if}
 		</div>
-		{#if saving || dirty}<span class="save-state" role="status">{saving ? 'Saving…' : 'Unsaved changes'}</span
-			>{/if}
+		<div class="editor-toolbar">
+			{#if saving || dirty}<span class="save-state" role="status"
+					>{saving ? 'Saving…' : 'Unsaved changes'}</span
+				>{/if}
+			<div class="editor-actions">
+				<button data-testid="TemplateEditor-cancel" type="button" disabled={saving} onclick={cancel}
+					>Cancel</button
+				>
+				<button
+					data-testid="TemplateEditor-save"
+					class="primary"
+					type="submit"
+					form="routine-editor-form"
+					disabled={saving || !dirty}>{saving ? 'Saving…' : 'Save changes'}</button
+				>
+			</div>
+		</div>
 	</div>
 
 	<form
+		id="routine-editor-form"
 		novalidate
 		onsubmit={(event) => {
 			event.preventDefault();
@@ -232,78 +248,91 @@
 					</section>
 				{/if}
 				{#if !creating}
-					<label
-						>Theme<input
-							data-testid="TemplateEditor-theme"
-							value={draft.days[key].theme ?? ''}
-							placeholder="e.g. Deep work + family time"
-							oninput={(e) => {
-								const value = e.currentTarget.value;
-								if (value) draft.days[key].theme = value;
-								else delete draft.days[key].theme;
-							}}
-						/></label
-					>
-					<span class="field-label">Applies on</span>
-					<div class="day-pills">
-						{#each WEEKDAYS as weekday}<label class="day-pill"
-								><input
-									type="checkbox"
-									checked={draft.days[key].on.includes(weekday)}
-									data-testid={`TemplateEditor-day-${weekday}`}
-									disabled={!availableDays(draft, key).includes(weekday)}
-									onchange={(e) => {
-										changeDay(weekday, e.currentTarget.checked);
-										e.currentTarget.checked = draft.days[key].on.includes(weekday);
+					<div class="editor-workspace">
+						<div class="editor-settings">
+							<label
+								>Theme<input
+									data-testid="TemplateEditor-theme"
+									value={draft.days[key].theme ?? ''}
+									placeholder="e.g. Deep work + family time"
+									oninput={(e) => {
+										const value = e.currentTarget.value;
+										if (value) draft.days[key].theme = value;
+										else delete draft.days[key].theme;
 									}}
-								/>{weekdayLabel(weekday)}</label
-							>{/each}
-					</div>
+								/></label
+							>
+							<span class="field-label">Applies on</span>
+							<div class="day-pills">
+								{#each WEEKDAYS as weekday}<label class="day-pill"
+										><input
+											type="checkbox"
+											checked={draft.days[key].on.includes(weekday)}
+											data-testid={`TemplateEditor-day-${weekday}`}
+											disabled={!availableDays(draft, key).includes(weekday)}
+											onchange={(e) => {
+												changeDay(weekday, e.currentTarget.checked);
+												e.currentTarget.checked = draft.days[key].on.includes(weekday);
+											}}
+										/>{weekdayLabel(weekday)}</label
+									>{/each}
+							</div>
 
-					<ChoiceEditor bind:routine={draft} template={key} />
-					<h2 class="template-section-title timeline-heading">Timeline</h2>
-					<EntryEditor
-						bind:entries={draft.days[key].items}
-						routine={draft}
-						choices={draft.days[key].choices ?? {}}
-						focus={key === templateKey ? focus : undefined}
-					/>
+							<ChoiceEditor bind:routine={draft} template={key} />
+						</div>
+						<div class="editor-timeline">
+							<h2 class="template-section-title timeline-heading">Timeline</h2>
+							<EntryEditor
+								bind:entries={draft.days[key].items}
+								routine={draft}
+								choices={draft.days[key].choices ?? {}}
+								focus={key === templateKey ? focus : undefined}
+							/>
+						</div>
+					</div>
 				{/if}
 			{:else}
 				{#if blockKey && draft.blocks}
-					<label class="block-name-field"
-						>Name<input
-							data-testid="TemplateEditor-block-name"
-							bind:value={blockName}
-							placeholder="e.g. Morning routine"
-						/></label
-					>
-					<label
-						>Category<select
-							data-testid="TemplateEditor-block-category"
-							value={draft.blocks[blockKey].category ?? ''}
-							onchange={(e) => {
-								const block = draft.blocks![blockKey];
-								if (e.currentTarget.value) block.category = e.currentTarget.value;
-								else delete block.category;
-							}}
-							><option value="">None</option
-							>{#each Object.entries(draft.categories ?? {}) as [id, category] (id)}<option value={id}
-									>{category.name}</option
-								>{/each}</select
-						><span class="help">Colours the block, and every activity in it that doesn't set its own.</span
-						></label
-					>
-					<h2 class="block-items-heading">Activities</h2>
-					{#key blockKey}
-						<EntryEditor
-							routine={draft}
-							shared
-							bind:entries={draft.blocks[blockKey].items}
-							choices={Object.assign({}, ...Object.values(draft.days).map((day) => day.choices ?? {}))}
-							focus={blockKey === startBlock ? focus : undefined}
-						/>
-					{/key}
+					<div class="editor-workspace">
+						<div class="editor-settings">
+							<label class="block-name-field"
+								>Name<input
+									data-testid="TemplateEditor-block-name"
+									bind:value={blockName}
+									placeholder="e.g. Morning routine"
+								/></label
+							>
+							<label
+								>Category<select
+									data-testid="TemplateEditor-block-category"
+									value={draft.blocks[blockKey].category ?? ''}
+									onchange={(e) => {
+										const block = draft.blocks![blockKey];
+										if (e.currentTarget.value) block.category = e.currentTarget.value;
+										else delete block.category;
+									}}
+									><option value="">None</option
+									>{#each Object.entries(draft.categories ?? {}) as [id, category] (id)}<option value={id}
+											>{category.name}</option
+										>{/each}</select
+								><span class="help"
+									>Colours the block, and every activity in it that doesn't set its own.</span
+								></label
+							>
+						</div>
+						<div class="editor-timeline">
+							<h2 class="block-items-heading">Activities</h2>
+							{#key blockKey}
+								<EntryEditor
+									routine={draft}
+									shared
+									bind:entries={draft.blocks[blockKey].items}
+									choices={Object.assign({}, ...Object.values(draft.days).map((day) => day.choices ?? {}))}
+									focus={blockKey === startBlock ? focus : undefined}
+								/>
+							{/key}
+						</div>
+					</div>
 					{#if !pendingBlock}
 						<div class="danger-zone">
 							<button
@@ -370,12 +399,6 @@
 					<p class="help">Its items are removed and its days become free for another template.</p>
 				</div>
 			{/if}
-			<div class="editor-actions">
-				<button data-testid="TemplateEditor-cancel" type="button" onclick={cancel}>Cancel</button>
-				<button data-testid="TemplateEditor-save" class="primary" type="submit" disabled={!dirty}
-					>{saving ? 'Saving…' : 'Save changes'}</button
-				>
-			</div>
 		</fieldset>
 	</form>
 </section>

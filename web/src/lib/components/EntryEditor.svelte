@@ -278,29 +278,31 @@
 							>{/if}
 					</div>
 				{/snippet}
+				{#snippet actions()}
+					<div class="entry-tools branch-tools">
+						<button
+							type="button"
+							aria-label="Move branch up"
+							disabled={sections[0] === section}
+							onclick={() => (entries = moveSection(entries, sections, section.start, -1))}>↑</button
+						>
+						<button
+							type="button"
+							aria-label="Move branch down"
+							disabled={sections.at(-1) === section}
+							onclick={() => (entries = moveSection(entries, sections, section.start, 1))}>↓</button
+						>
+						<button
+							type="button"
+							class="danger"
+							onclick={() => {
+								if (confirm('Remove this branch and its activities?'))
+									entries = entries.filter((_, i) => !section.indices.includes(i));
+							}}>Remove section</button
+						>
+					</div>
+				{/snippet}
 			</BranchSection>
-			<div class="entry-tools branch-tools">
-				<button
-					type="button"
-					aria-label="Move branch up"
-					disabled={sections[0] === section}
-					onclick={() => (entries = moveSection(entries, sections, section.start, -1))}>↑</button
-				>
-				<button
-					type="button"
-					aria-label="Move branch down"
-					disabled={sections.at(-1) === section}
-					onclick={() => (entries = moveSection(entries, sections, section.start, 1))}>↓</button
-				>
-				<button
-					type="button"
-					class="danger"
-					onclick={() => {
-						if (confirm('Remove this branch and its activities?'))
-							entries = entries.filter((_, i) => !section.indices.includes(i));
-					}}>Remove section</button
-				>
-			</div>
 		{:else}
 			{#each section.indices as i (i)}{@render row(i)}{/each}
 		{/if}

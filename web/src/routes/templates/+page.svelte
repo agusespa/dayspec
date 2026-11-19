@@ -298,4 +298,11 @@
 		color: var(--accent);
 		font-size: var(--text-xs);
 	}
+	@media (min-width: 1024px) {
+		.template-list {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			align-items: start;
+			gap: 1.25rem;
+		}
+	}
 </style>

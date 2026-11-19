@@ -144,8 +144,8 @@
 	}
 	select {
 		max-width: 55%;
-		padding: 0.7rem;
-		background: var(--inset);
+		padding: 0.7rem 2.4rem 0.7rem 0.7rem;
+		background-color: var(--inset);
 		color: var(--text);
 		border: 1px solid var(--rule);
 		border-radius: 10px;

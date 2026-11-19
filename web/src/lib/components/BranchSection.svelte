@@ -8,12 +8,14 @@
 		choice,
 		preferred,
 		details,
+		actions,
 		children
 	}: {
 		name: string;
 		choice: Choice;
 		preferred?: ChoiceValue;
 		details?: Snippet<[ChoiceValue]>;
+		actions?: Snippet;
 		children: Snippet<[ChoiceValue]>;
 	} = $props();
 	let selected = $state<ChoiceValue>();
@@ -58,5 +60,6 @@
 	<div class="branch-content">
 		{#if value !== undefined}{@render children(value)}{/if}
 	</div>
+	{@render actions?.()}
 	<div class="branch-join" aria-hidden="true"><span></span></div>
 </section>
