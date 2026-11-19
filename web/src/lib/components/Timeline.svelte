@@ -3,6 +3,7 @@
 	import type { ResolvedItem } from '#lib/routine/resolve.ts';
 	import { groupTimeline, timelineDuration, timelineGaps } from '#lib/routine/timeline.ts';
 	import CalendarLink from './CalendarLink.svelte';
+	import AlertIcon from './AlertIcon.svelte';
 	import EditLink from './EditLink.svelte';
 	import ItemDetails, { hasDetails, timeRange } from './ItemDetails.svelte';
 	let {
@@ -37,18 +38,20 @@
 						data-testid="Timeline-block-entry-toggle"
 						aria-expanded={!!openEntries[item.id]}
 						onclick={() => (openEntries[item.id] = !openEntries[item.id])}
-						><span class="contents-title">{item.title}</span>{#if item.duration}<span
-								class="duration"
-								data-testid="Timeline-block-duration">{item.duration} min</span
+						><span class="contents-title"
+							>{#if item.alert}<AlertIcon />{/if}{item.title}</span
+						>{#if item.duration}<span class="duration" data-testid="Timeline-block-duration"
+								>{item.duration} min</span
 							>{/if}<svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg
 						></button
 					>
 					{#if openEntries[item.id]}<ItemDetails {item} {calendarDate} {editTemplate} />{/if}
 				{:else}
 					<div class="contents-row">
-						<span class="contents-title">{item.title}</span>{#if item.duration}<span
-								class="duration"
-								data-testid="Timeline-block-duration">{item.duration} min</span
+						<span class="contents-title"
+							>{#if item.alert}<AlertIcon />{/if}{item.title}</span
+						>{#if item.duration}<span class="duration" data-testid="Timeline-block-duration"
+								>{item.duration} min</span
 							>{/if}
 					</div>
 				{/if}
@@ -77,9 +80,10 @@
 						<span class="body"
 							><span class="row"
 								><span class="dot" aria-hidden="true"></span><span class="title"
-									><span class="title-text">{group.name}</span>{#if duration}<span
-											class="duration"
-											data-testid="Timeline-block-total">{duration} min</span
+									>{#if group.items.some((item) => item.alert)}<AlertIcon />{/if}<span class="title-text"
+										>{group.name}</span
+									>{#if duration}<span class="duration" data-testid="Timeline-block-total"
+											>{duration} min</span
 										>{/if}</span
 								><svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg
 								></span

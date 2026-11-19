@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import type { Routine } from "../web/src/lib/routine/types.ts";
+import { sortRoutineByTime } from "../web/src/lib/routine/edit.ts";
 const testRoutine = JSON.parse(
   readFileSync(new URL("./fixtures/routine.json", import.meta.url), "utf8"),
 );
@@ -59,7 +60,12 @@ test("saves template edits across reloads and devices", async ({
   request,
 }) => {
   await openEditor(page);
-  await page.getByTestId("TemplateEditor-theme").fill("A quieter Saturday");
+  await expect(
+    page.getByRole("textbox", { name: "Theme", exact: true }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("textbox", { name: "Focus", exact: true })
+    .fill("A quieter Saturday");
   const index = testRoutine.days.saturday.items.findIndex(
     (entry) => "title" in entry,
   );
@@ -128,13 +134,15 @@ test("edits only the selected template without editor navigation or JSON control
   await page.getByTestId("TemplateEditor-theme").fill("Focused Saturday");
   await save(page);
   const saved = (await (await request.get("/api/routine")).json()).routine;
-  expect(saved).toEqual({
-    ...testRoutine,
-    days: {
-      ...testRoutine.days,
-      saturday: { ...testRoutine.days.saturday, theme: "Focused Saturday" },
-    },
-  });
+  expect(saved).toEqual(
+    sortRoutineByTime({
+      ...testRoutine,
+      days: {
+        ...testRoutine.days,
+        saturday: { ...testRoutine.days.saturday, theme: "Focused Saturday" },
+      },
+    }),
+  );
 });
 test("a stale save preserves the draft and cannot overwrite another device’s edits", async ({
   page,
@@ -754,7 +762,7 @@ test("deletes a template directly from its card and preserves the rest of the li
   await expect(page.getByTestId("TemplateEditor")).toHaveCount(0);
   await expect(page).toHaveURL(/\/templates$/);
   await expect(page.getByTestId("Templates-unassigned")).toContainText("Sat");
-  const expected = structuredClone(testRoutine);
+  const expected = sortRoutineByTime(structuredClone(testRoutine));
   delete expected.days.saturday;
   delete expected.settings.holiday;
   expect((await (await request.get("/api/routine")).json()).routine).toEqual(
@@ -765,4 +773,91 @@ test("deletes a template directly from its card and preserves the rest of the li
   await expect(
     page.getByTestId("Templates-list").locator("article"),
   ).toHaveCount(Object.keys(expected.days).length);
+});
+
+test("existing shared blocks are time ordered on open, including inside branches and edit links", async ({
+  page,
+  request,
+}) => {
+  const current = await (await request.get("/api/routine")).json();
+  const routine = {
+    blocks: {
+      wake: { name: "Wake up", items: [{ title: "Drink water", duration: 5 }] },
+    },
+    days: {
+      saturday: {
+        on: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+        choices: { gym: { label: "Gym", type: "toggle", default: true } },
+        items: [
+          { title: "Dinner", time: "19:00", duration: 30 },
+          {
+            when: { gym: true },
+            items: [
+              { title: "Workout", time: "10:00", duration: 30 },
+              { use: "wake", time: "08:00" },
+            ],
+          },
+          { when: { gym: false }, items: [] },
+          { use: "wake", time: "06:50" },
+        ],
+      },
+    },
+  };
+  expect(
+    (
+      await request.put("/api/routine", {
+        headers: { "If-Match": current.revision },
+        data: { routine },
+      })
+    ).ok(),
+  ).toBeTruthy();
+  await page.goto("/templates?t=saturday");
+  const flow = page.locator(".template-flow");
+  const previewHeadings = flow.locator(
+    ":scope > .timeline > .item:not(.timeline-gap) .title-text, :scope > .branch-section > .branch-heading > span",
+  );
+  await expect(previewHeadings).toHaveText(["Wake up", "Gym", "Dinner"]);
+  await page.getByTestId("Templates-edit").click();
+  const headings = page.locator(
+    ".editor-timeline > .entries > .entry > summary .summary-title, .editor-timeline > .entries > .branch-section > .branch-heading > span",
+  );
+  await expect(headings).toHaveText(["Wake up", "Gym", "Dinner"]);
+  const gym = page.getByRole("region", { name: "Gym", exact: true });
+  await expect(
+    gym.getByTestId("EntryEditor-open").locator(".summary-title"),
+  ).toHaveText(["Wake up", "Workout"]);
+  await expect(page.getByTestId("TemplateEditor-save")).toBeDisabled();
+  // Merely viewing the sorted routine must not write or change its revision.
+  expect((await (await request.get("/api/routine")).json()).routine).toEqual(
+    routine,
+  );
+  await page.getByTestId("TemplateEditor-theme").fill("Sorted routine");
+  await save(page);
+  const saved = (await (await request.get("/api/routine")).json()).routine;
+  expect(saved.days.saturday.items[0]).toEqual({ use: "wake", time: "06:50" });
+  expect(saved.days.saturday.items[1].items[0]).toEqual({
+    use: "wake",
+    time: "08:00",
+  });
+  const latest = await (await request.get("/api/routine")).json();
+  expect(
+    (
+      await request.put("/api/routine", {
+        headers: { "If-Match": latest.revision },
+        data: { routine },
+      })
+    ).ok(),
+  ).toBeTruthy();
+  // Daily edit paths must use the same loaded order as the editor.
+  await page.goto("/");
+  const workout = page
+    .getByTestId("TimelineItem")
+    .filter({ hasText: "Workout" });
+  await workout.getByTestId("TimelineItem-toggle").click();
+  await workout
+    .getByRole("link", { name: "Edit Workout", exact: true })
+    .click();
+  await expect(
+    page.getByTestId("EntryEditor-title").filter({ visible: true }),
+  ).toHaveValue("Workout");
 });

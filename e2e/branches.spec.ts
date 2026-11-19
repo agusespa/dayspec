@@ -189,7 +189,7 @@ test("opens the correct alternative from a daily edit link and stays within narr
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 740 });
-  await page.goto("/templates?t=weekday&edit=2.1");
+  await page.goto("/templates?t=weekday&edit=1.1");
   const work = page.getByRole("region", { name: "Work location", exact: true });
   await expect(
     work.getByRole("button", { name: "Office", exact: true }),

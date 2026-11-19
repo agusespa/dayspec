@@ -3,6 +3,7 @@ import {
 	cloneRoutine,
 	moveEntry,
 	sortEntriesByTime,
+	sortRoutineByTime,
 	newEntry,
 	createTemplate,
 	assignTemplateDays,
@@ -19,7 +20,7 @@ import {
 	updateCategory,
 	removeCategory
 } from './edit.ts';
-import type { Entry, SharedEntry, Routine } from './types.ts';
+import type { Choice, Entry, SharedEntry, Routine } from './types.ts';
 const routine: Routine = {
 	blocks: {
 		shared: {
@@ -308,6 +309,24 @@ describe('editor chronological ordering', () => {
 		]);
 		expect(entries[1]).toHaveProperty('when.location', 'home');
 	});
+	it('keeps a dependent alternative with its parent when a common activity sorts between their times', () => {
+		const entries: Entry[] = [
+			{ when: { location: 'home' }, items: [{ title: 'Home', time: '09:00', duration: 5 }] },
+			{ when: { gym: true }, items: [{ title: 'Lift', time: '18:00', duration: 45 }] },
+			{ when: { location: 'office' }, items: [{ title: 'Office', time: '08:00', duration: 5 }] },
+			{ title: 'Lunch', time: '12:00', duration: 30 }
+		];
+		const choices: Record<string, Choice> = {
+			location: { options: { home: {}, office: {} }, default: 'home' },
+			gym: { type: 'toggle', default: true, active_when: { location: 'office' } }
+		};
+		expect(sortEntriesByTime(entries, '04:00', choices)).toEqual([
+			entries[2],
+			entries[0],
+			entries[1],
+			entries[3]
+		]);
+	});
 	it('leaves untimed entries and empty alternatives in their existing slots', () => {
 		const entries: Entry[] = [
 			{ title: 'Late', time: '20:00', duration: 5 },
@@ -318,5 +337,70 @@ describe('editor chronological ordering', () => {
 		];
 		expect(sortEntriesByTime(entries)).toEqual([entries[4], entries[1], entries[2], entries[3], entries[0]]);
 		expect(sortEntriesByTime([])).toEqual([]);
+	});
+});
+
+describe('saved template chronological ordering', () => {
+	it('orders existing block occurrences and nested branches without mutating the routine or block sequences', () => {
+		const routine: Routine = {
+			settings: { day_starts_at: '00:00' },
+			blocks: {
+				shared: {
+					name: 'Shared',
+					items: [
+						{ title: 'First', duration: 5 },
+						{ title: 'Second', duration: 10 }
+					]
+				}
+			},
+			days: {
+				day: {
+					on: ['mon'],
+					choices: { gym: { type: 'toggle', default: true } },
+					items: [
+						{ title: 'Evening', time: '20:00', duration: 5 },
+						{
+							when: { gym: true },
+							items: [
+								{ title: 'Later', time: '10:00', duration: 5 },
+								{
+									when: { days: ['mon'] },
+									items: [
+										{ use: 'shared', time: '09:00' },
+										{ use: 'shared', time: '08:00' }
+									]
+								}
+							]
+						},
+						{ when: { gym: false }, items: [] },
+						{ use: 'shared', time: '01:00' }
+					]
+				}
+			}
+		};
+		const before = structuredClone(routine);
+		const sorted = sortRoutineByTime(routine);
+		expect(sorted.days.day.items).toEqual([
+			{ use: 'shared', time: '01:00' },
+			{
+				when: { gym: true },
+				items: [
+					{
+						when: { days: ['mon'] },
+						items: [
+							{ use: 'shared', time: '08:00' },
+							{ use: 'shared', time: '09:00' }
+						]
+					},
+					{ title: 'Later', time: '10:00', duration: 5 }
+				]
+			},
+			{ when: { gym: false }, items: [] },
+			{ title: 'Evening', time: '20:00', duration: 5 }
+		]);
+		expect(sorted.blocks).toBe(routine.blocks);
+		expect(routine).toEqual(before);
+		expect(sortRoutineByTime(sorted)).toEqual(sorted);
+		expect(sortRoutineByTime({ days: {} })).toEqual({ days: {} });
 	});
 });

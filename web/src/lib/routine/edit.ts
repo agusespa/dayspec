@@ -11,7 +11,7 @@ import {
 	type Routine
 } from './types.ts';
 import { dayMinutes } from './date.ts';
-import { timelineSections } from './branches.ts';
+import { branchParents, timelineSections } from './branches.ts';
 
 /** A detached draft so cancel and failed saves never mutate the active routine. */
 export function cloneRoutine(routine: Routine): Routine {
@@ -47,14 +47,38 @@ export function sortEntriesByTime(
 		let index = 0;
 		return items.map((item) => (time(item) === undefined ? item : timed[index++]));
 	};
-	const units = timelineSections(entries, choices, excluded).flatMap((section) => {
-		const items = section.indices.map((i) => entries[i]);
-		return section.choice ? [ordered(items, start)] : items.map((entry) => [entry]);
-	});
+	const units = timelineSections(entries, choices, excluded, branchParents(choices, excluded)).flatMap(
+		(section) => {
+			const items = section.indices.map((i) => entries[i]);
+			return section.choice ? [ordered(items, start)] : items.map((entry) => [entry]);
+		}
+	);
 	return ordered(units, (items) => {
 		const times = items.map(start).filter((time) => time !== undefined);
 		return times.length ? Math.min(...times) : undefined;
 	}).flat();
+}
+
+/** Present every saved template in schedule order, without changing reusable block sequences. */
+export function sortRoutineByTime(routine: Routine): Routine {
+	const days = Object.fromEntries(
+		Object.entries(routine.days).map(([key, day]) => {
+			const choices = day.choices ?? {};
+			const sort = (entries: Entry[], excluded: string[] = []): Entry[] =>
+				sortEntriesByTime(
+					entries.map((entry) =>
+						isBranch(entry)
+							? { ...entry, items: sort(entry.items, [...excluded, ...Object.keys(entry.when)]) }
+							: entry
+					),
+					routine.settings?.day_starts_at,
+					choices,
+					excluded
+				);
+			return [key, { ...day, items: sort(day.items) }];
+		})
+	);
+	return { ...routine, days };
 }
 
 /** New drafts start with a duration that can be adjusted before saving. */

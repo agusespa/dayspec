@@ -2,6 +2,7 @@ import schema from '../../../../routine.schema.json';
 import { get, writable } from 'svelte/store';
 import type { Routine } from './types.ts';
 import { validateRoutine } from './validate.ts';
+import { sortRoutineByTime } from './edit.ts';
 
 export interface Snapshot {
 	routine: Routine;
@@ -32,7 +33,7 @@ function remember(snapshot: Snapshot) {
 	routineState.update((state) => ({
 		...snapshot,
 		// An unchanged routine needn't re-resolve the visible timeline.
-		routine: state.revision === snapshot.revision ? state.routine : snapshot.routine,
+		routine: state.revision === snapshot.revision ? state.routine : sortRoutineByTime(snapshot.routine),
 		loading: false,
 		refreshing: false,
 		online: true,

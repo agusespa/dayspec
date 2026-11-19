@@ -197,3 +197,110 @@ test("an activity's edit link opens the editor at that activity and returns to T
     ).toBeTruthy();
   }
 });
+
+for (const width of [390, 1440]) {
+  test(`shared blocks show alerts from their activities when collapsed and expanded at ${width}px`, async ({
+    page,
+    request,
+  }) => {
+    const original = await (await request.get("/api/routine")).json();
+    const routine = {
+      blocks: {
+        reminders: {
+          name: "Reminders",
+          items: [
+            { title: "Take medication", duration: 5, alert: true },
+            { title: "Drink water", duration: 5 },
+          ],
+        },
+        morning: { name: "Morning", items: [{ use: "reminders" }] },
+        quiet: { name: "Quiet time", items: [{ title: "Read", duration: 10 }] },
+      },
+      days: {
+        daily: {
+          on: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+          items: [
+            { use: "morning", time: "07:00" },
+            { use: "quiet", time: "08:00" },
+            { use: "reminders" },
+          ],
+        },
+      },
+    };
+    try {
+      expect(
+        (
+          await request.put("/api/routine", {
+            headers: { "If-Match": original.revision },
+            data: { routine },
+          })
+        ).ok(),
+      ).toBeTruthy();
+      await page.setViewportSize({ width, height: 900 });
+      await page.clock.setFixedTime(new Date("2026-11-18T06:00:00+01:00"));
+      await page.goto("/");
+      const blocks = page.getByTestId("Timeline-block");
+      await expect(blocks).toHaveCount(3);
+      const quiet = blocks.filter({
+        has: page
+          .getByTestId("Timeline-block-toggle")
+          .filter({ hasText: "Quiet time" }),
+      });
+      await expect(quiet.getByRole("img", { name: "Alert" })).toHaveCount(0);
+      for (const name of ["Morning", "Reminders"]) {
+        const block = blocks.filter({
+          has: page
+            .getByTestId("Timeline-block-toggle")
+            .filter({ hasText: name }),
+        });
+        const summary = block.getByTestId("Timeline-block-toggle");
+        await expect(summary.getByRole("img", { name: "Alert" })).toBeVisible();
+        await summary.click();
+        const medication = block
+          .getByTestId("Timeline-block-entry")
+          .filter({ hasText: "Take medication" });
+        await expect(
+          medication.getByRole("img", { name: "Alert" }),
+        ).toBeVisible();
+        await expect(
+          block
+            .getByTestId("Timeline-block-entry")
+            .filter({ hasText: "Drink water" })
+            .getByRole("img", { name: "Alert" }),
+        ).toHaveCount(0);
+        await expect(summary.getByRole("img", { name: "Alert" })).toBeVisible();
+        await summary.click();
+        await expect(summary.getByRole("img", { name: "Alert" })).toBeVisible();
+      }
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      ).toBe(true);
+      // Removing the activity's alert also clears the inherited block indicator.
+      routine.blocks.reminders.items[0].alert = false;
+      const current = await (await request.get("/api/routine")).json();
+      expect(
+        (
+          await request.put("/api/routine", {
+            headers: { "If-Match": current.revision },
+            data: { routine },
+          })
+        ).ok(),
+      ).toBeTruthy();
+      await page.reload();
+      await expect(blocks).toHaveCount(3);
+      await expect(page.getByRole("img", { name: "Alert" })).toHaveCount(0);
+    } finally {
+      const current = await (await request.get("/api/routine")).json();
+      expect(
+        (
+          await request.put("/api/routine", {
+            headers: { "If-Match": current.revision },
+            data: { routine: original.routine },
+          })
+        ).ok(),
+      ).toBeTruthy();
+    }
+  });
+}

@@ -65,6 +65,28 @@ export function newBranch(key: string, choice: Choice): Branch[] {
 	return branchOptions(choice).map(({ value }) => ({ when: { [key]: value }, items: [] }));
 }
 
+/** Keep dependent alternatives with the decision that makes them available. */
+export function branchParents(
+	choices: Record<string, Choice>,
+	excluded: string[] = []
+): Record<string, string> {
+	const dependencies = (key: string) =>
+		Object.keys(choices[key]?.active_when ?? {}).filter((k) => k !== 'days' && choices[k]);
+	const parents: Record<string, string> = {};
+	for (const name of Object.keys(choices)) {
+		let parent = name;
+		const visited = new Set<string>([name]);
+		while (true) {
+			const keys = dependencies(parent);
+			if (keys.length !== 1 || excluded.includes(keys[0]) || visited.has(keys[0])) break;
+			parent = keys[0];
+			visited.add(parent);
+		}
+		parents[name] = parent;
+	}
+	return parents;
+}
+
 /** A preview's parent selection only applies inside that branch, never to its siblings. */
 export function branchView(
 	entries: Entry[],
@@ -99,18 +121,7 @@ export function branchView(
 			const items = scope(entry.items);
 			return Object.keys(when).length ? [{ when, items }] : items;
 		});
-	const parents: Record<string, string> = {};
-	for (const name of Object.keys(choices)) {
-		let parent = name;
-		const visited = new Set<string>([name]);
-		while (true) {
-			const keys = dependencies(parent);
-			if (keys.length !== 1 || Object.hasOwn(context, keys[0]) || visited.has(keys[0])) break;
-			parent = keys[0];
-			visited.add(parent);
-		}
-		parents[name] = parent;
-	}
+	const parents = branchParents(choices, Object.keys(context));
 	const scoped = scope(entries);
 	const excluded = Object.keys(choices).filter(
 		(key) =>

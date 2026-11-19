@@ -301,7 +301,7 @@
 					<div class="editor-workspace">
 						<div class="editor-settings">
 							<label
-								>Theme<input
+								>Focus<input
 									data-testid="TemplateEditor-theme"
 									value={draft.days[key].theme ?? ''}
 									placeholder="e.g. Deep work + family time"

@@ -35,6 +35,29 @@ describe('routine loading and saving', () => {
 		expect(storage.getItem).not.toHaveBeenCalled();
 		expect(storage.setItem).not.toHaveBeenCalled();
 	});
+	it('orders saved block occurrences on load and after saves, keeping the server revision', async () => {
+		const unsorted: Routine = {
+			days: {
+				day: {
+					on: ['mon'],
+					items: [
+						{ title: 'Dinner', time: '19:00', duration: 30 },
+						{ use: 'wake', time: '07:00' }
+					]
+				}
+			},
+			blocks: { wake: { name: 'Wake', items: [{ title: 'Water', duration: 5 }] } }
+		};
+		fetcher.mockResolvedValueOnce(json({ routine: unsorted, revision: '"one"' }));
+		const client = await import('./client.ts');
+		await client.loadRoutine();
+		expect(client.currentRoutine().routine.days.day.items).toEqual([...unsorted.days.day.items].reverse());
+		expect(client.currentRoutine().revision).toBe('"one"');
+		fetcher.mockResolvedValueOnce(json({ routine: unsorted, revision: '"two"' }));
+		await client.saveRoutine(unsorted, '"one"');
+		expect(client.currentRoutine().routine.days.day.items[0]).toEqual({ use: 'wake', time: '07:00' });
+		expect(client.currentRoutine().revision).toBe('"two"');
+	});
 	it('does not show a cached or bundled routine when the first request fails', async () => {
 		storage.getItem.mockReturnValue(JSON.stringify(routine));
 		fetcher.mockRejectedValue(new TypeError('Offline'));
