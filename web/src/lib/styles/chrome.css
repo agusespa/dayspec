@@ -37,7 +37,7 @@
 /* ---- Bottom bar ---- */
 
 :root {
-	--nav-bottom: calc(max(env(safe-area-inset-bottom), 24px) + 2px);
+	--nav-bottom: calc(env(safe-area-inset-bottom) + 2px);
 	--nav-height: 60px;
 	--floating-bg: rgba(28, 28, 30, 0.58);
 	--floating-filter: saturate(200%) blur(28px);
