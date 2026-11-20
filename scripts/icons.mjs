@@ -6,7 +6,7 @@ import { chromium } from '@playwright/test';
 
 // A sun rising over three timeline bars on a dusk sky, centered on both axes
 // (x 136–376, y 101–411). Maskable icons keep the mark inside the central 80% safe circle.
-const DEFS = `<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f58a6c"/><stop offset="1" stop-color="#9c3f68"/></linearGradient>`;
+const DEFS = `<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffa27f"/><stop offset="1" stop-color="#b64b7a"/></linearGradient>`;
 
 /** rounded: transparent corners (favicon, manifest "any"); otherwise a full square (iOS, maskable). */
 function svg(rounded, maskable = false) {
