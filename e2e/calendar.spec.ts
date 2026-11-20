@@ -23,7 +23,7 @@ test('adds activities and shared blocks to Calendar from their details', async (
 					],
 				},
 			},
-			days: {
+			templates: {
 				daily: {
 					on: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
 					items: [

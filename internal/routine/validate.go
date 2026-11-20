@@ -1,7 +1,9 @@
 package routine
 
 import (
+	"errors"
 	"fmt"
+	"maps"
 	"net/url"
 	"slices"
 	"strings"
@@ -16,23 +18,23 @@ func has(values any, value any) bool { return slices.Contains(list(values), valu
 
 // Schema validation runs first, so this only checks relationships between valid shapes.
 func checkReferences(root map[string]any) error {
-	days, blocks, categories := object(root["days"]), object(root["blocks"]), object(root["categories"])
-	var problems []string
-	add := func(where, message string) { problems = append(problems, where+": "+message) }
+	templates, blocks, categories := object(root["templates"]), object(root["blocks"]), object(root["categories"])
+	// A block used in several places reports each problem once; maps iterate randomly, so sort.
+	problems := map[string]bool{}
+	add := func(where, message string) { problems[where+": "+message] = true }
 	for _, wd := range weekdays {
 		owners := 0
-		for _, d := range days {
+		for _, d := range templates {
 			if has(object(d)["on"], wd) {
 				owners++
 			}
 		}
 		if owners > 1 {
-			add("days", "more than one template covers "+wd)
+			add("templates", "more than one template covers "+wd)
 		}
 	}
-	holiday := str(object(root["settings"])["holiday"])
-	if str(object(root["settings"])["holiday"]) != "" && days[holiday] == nil {
-		add("settings.holiday", "unknown template "+holiday)
+	if holiday := str(object(root["settings"])["holiday_template"]); holiday != "" && templates[holiday] == nil {
+		add("settings.holiday_template", "unknown template "+holiday)
 	}
 
 	checkLink := func(item map[string]any, where string) {
@@ -64,13 +66,13 @@ func checkReferences(root map[string]any) error {
 			e := object(value)
 			at := fmt.Sprintf("%s[%d]", where, i)
 			if paths := object(e["paths"]); paths != nil {
-				name := str(e["alternative"])
+				name := str(e["choice"])
 				definition := object(choices[name])
 				if definition == nil {
-					add(at, "unknown alternative "+name)
+					add(at, "unknown choice "+name)
 				}
 				if slices.Contains(forks, name) {
-					add(at, "an alternative cannot be nested inside itself")
+					add(at, "a choice cannot be nested inside its own branch")
 				}
 				for option, items := range paths {
 					if definition != nil && object(definition["options"])[option] == nil {
@@ -100,7 +102,7 @@ func checkReferences(root map[string]any) error {
 			}
 		}
 	}
-	for name, value := range days {
+	for name, value := range templates {
 		day := object(value)
 		choices := object(day["choices"])
 		if choices == nil {
@@ -108,7 +110,7 @@ func checkReferences(root map[string]any) error {
 		}
 		for key, value := range choices {
 			choice := object(value)
-			where := "days." + name + ".choices." + key
+			where := "templates." + name + ".choices." + key
 			options := object(choice["options"])
 			valid := func(v any, wd any) bool {
 				opt := object(options[str(v)])
@@ -124,7 +126,7 @@ func checkReferences(root map[string]any) error {
 				}
 			}
 		}
-		walk(list(day["items"]), choices, "days."+name+".items", nil, 0, nil)
+		walk(list(day["items"]), choices, "templates."+name+".items", nil, 0, nil)
 	}
 	// Blocks store relative durations; start times belong to template occurrences.
 	for name, block := range blocks {
@@ -136,7 +138,7 @@ func checkReferences(root map[string]any) error {
 	}
 
 	if len(problems) > 0 {
-		return fmt.Errorf("%s", strings.Join(problems, "\n"))
+		return errors.New(strings.Join(slices.Sorted(maps.Keys(problems)), "\n"))
 	}
 	return nil
 }

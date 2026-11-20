@@ -215,3 +215,19 @@ button.row[aria-expanded='false'] .title-text,
 	font-variant-numeric: tabular-nums;
 	white-space: nowrap;
 }
+
+/* Expanded metadata reads as one quiet information strip, separate from activity rows. */
+.metadata-strip {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.15rem 0.6rem;
+	width: fit-content;
+	max-width: 100%;
+	min-height: 32px;
+	padding: 0.15rem 0.35rem 0.15rem 0.6rem;
+	border-radius: 8px;
+	background: color-mix(in srgb, var(--text) 6%, transparent);
+	color: var(--muted);
+	font-size: var(--text-xs);
+}

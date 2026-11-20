@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-const minimal = `{"days":{"saturday":{"on":["mon","tue","wed","thu","fri","sat","sun"],"items":[{"title":"Wake","duration":5,"time":"08:00"}]}}}`
+const minimal = `{"templates":{"saturday":{"on":["mon","tue","wed","thu","fri","sat","sun"],"items":[{"title":"Wake","duration":5,"time":"08:00"}]}}}`
 
 func testStore(t *testing.T) (*Store, []byte) {
 	t.Helper()
@@ -114,9 +114,9 @@ func TestCorruptStoredRoutineFailsStartup(t *testing.T) {
 func TestValidation(t *testing.T) {
 	s, _ := testStore(t)
 	cases := []struct{ name, patch, want string }{
-		{"schema", `{"days":{"saturday":{"on":["mon"],"items":[{"title":"Wake","time":"99:00","duration":5}]}},"settings":{"holiday":"saturday"}}`, "pattern"},
-		{"overlapping weekdays", `{"days":{"saturday":{"on":["mon"],"items":[]},"other":{"on":["mon"],"items":[]}},"settings":{"holiday":"saturday"}}`, "more than one template"},
-		{"holiday", `{"settings":{"holiday":"absent"}}`, "unknown template"},
+		{"schema", `{"templates":{"saturday":{"on":["mon"],"items":[{"title":"Wake","time":"99:00","duration":5}]}},"settings":{"holiday_template":"saturday"}}`, "pattern"},
+		{"overlapping weekdays", `{"templates":{"saturday":{"on":["mon"],"items":[]},"other":{"on":["mon"],"items":[]}},"settings":{"holiday_template":"saturday"}}`, "more than one template"},
+		{"holiday", `{"settings":{"holiday_template":"absent"}}`, "unknown template"},
 		{"block", `{"items":[{"use":"absent","time":"08:00"}]}`, "unknown block"},
 		{"category", `{"categories":{"chores":{"name":"Chores","color":"orange"}},"items":[{"title":"Wake","category":"absent","duration":5,"time":"08:00"}]}`, "unknown category"},
 		{"category in block", `{"blocks":{"b":{"name":"b","items":[{"title":"Wash","category":"absent","duration":5}]}}}`, "unknown category"},
@@ -124,8 +124,9 @@ func TestValidation(t *testing.T) {
 		{"category colour", `{"categories":{"chores":{"name":"Chores","color":"#ff0000"}}}`, "categories"},
 		{"legacy kind", `{"items":[{"title":"Wake","kind":"maintenance","duration":5,"time":"08:00"}]}`, "additional properties"},
 		{"link", `{"items":[{"title":"Wake","link":"absent","duration":5,"time":"08:00"}]}`, "pattern"},
-		{"choice", `{"items":[{"alternative":"place","paths":{"home":[{"title":"Wake","duration":5,"time":"08:00"}]}}]}`, "unknown alternative"},
-		{"option", `{"choices":{"place":{"options":{"home":{},"office":{}},"default":"home"}},"items":[{"alternative":"place","paths":{"beach":[{"title":"Wake","duration":5,"time":"08:00"}]}}]}`, "unknown option"},
+		{"link without host", `{"items":[{"title":"Wake","link":"https://","duration":5,"time":"08:00"}]}`, "pattern"},
+		{"choice", `{"items":[{"choice":"place","paths":{"home":[{"title":"Wake","duration":5,"time":"08:00"}]}}]}`, "unknown choice"},
+		{"option", `{"choices":{"place":{"options":{"home":{},"office":{}},"default":"home"}},"items":[{"choice":"place","paths":{"beach":[{"title":"Wake","duration":5,"time":"08:00"}]}}]}`, "unknown option"},
 		{"default", `{"choices":{"gym":{"options":{"yes":{"label":"Yes"},"no":{"label":"No"}},"default":{"mon":"no"}}}}`, "no valid default"},
 		{"cycle", `{"blocks":{"loop":{"name":"loop","items":[{"use":"loop"}]}},"items":[{"use":"loop","time":"08:00"}]}`, "circular block"},
 		{"list overrides", `{"blocks":{"pair":{"name":"pair","items":[{"title":"Tea","duration":5},{"title":"Coffee","duration":5}]}},"items":[{"use":"pair","end":"08:00","time":"08:00"}]}`, "additional properties"},
@@ -137,7 +138,7 @@ func TestValidation(t *testing.T) {
 			var root, patch map[string]any
 			_ = json.Unmarshal([]byte(minimal), &root)
 			_ = json.Unmarshal([]byte(tc.patch), &patch)
-			day := object(object(root["days"])["saturday"])
+			day := object(object(root["templates"])["saturday"])
 			for k, v := range patch {
 				if k == "items" || k == "choices" {
 					day[k] = v
@@ -189,7 +190,7 @@ func TestBoundsBlockExpansion(t *testing.T) {
 		blocks[fmt.Sprintf("b%d", n)] = map[string]any{"name": name, "items": []any{map[string]any{"use": name}, map[string]any{"use": name}}}
 	}
 	root["blocks"] = blocks
-	object(object(root["days"])["saturday"])["items"] = []any{map[string]any{"use": "b0", "time": "08:00"}}
+	object(object(root["templates"])["saturday"])["items"] = []any{map[string]any{"use": "b0", "time": "08:00"}}
 	raw, _ := json.Marshal(root)
 	if err := s.Validate(raw); err == nil || !strings.Contains(err.Error(), "exceeds 10000") {
 		t.Fatalf("expected bounded expansion: %v", err)
@@ -214,9 +215,9 @@ func TestEmptyTemplateCanBeSavedAndReopened(t *testing.T) {
 func TestPartialAndEmptyLibraryPersist(t *testing.T) {
 	s, schema := testStore(t)
 	for _, value := range []string{
-		`{"days":{"monday":{"on":["mon"],"items":[]}}}`,
-		`{"days":{}}`,
-		`{"days":{"monday":{"on":["mon"],"choices":{"place":{"options":{"home":{},"office":{"only_on":["tue"]}},"default":{"mon":"home","tue":"office"}}},"items":[]}}}`,
+		`{"templates":{"monday":{"on":["mon"],"items":[]}}}`,
+		`{"templates":{}}`,
+		`{"templates":{"monday":{"on":["mon"],"choices":{"place":{"options":{"home":{},"office":{"only_on":["tue"]}},"default":{"mon":"home","tue":"office"}}},"items":[]}}}`,
 	} {
 		if _, err := s.Save([]byte(value), s.Get().Revision); err != nil {
 			t.Fatal(err)
@@ -233,7 +234,7 @@ func TestPartialAndEmptyLibraryPersist(t *testing.T) {
 
 func TestBlockDurationAndStartTime(t *testing.T) {
 	s, _ := testStore(t)
-	value := `{"blocks":{"morning":{"name":"Morning","items":[{"title":"Stretch","duration":15}]}},"days":{"mon":{"on":["mon"],"items":[{"use":"morning","time":"08:00"}]}}}`
+	value := `{"blocks":{"morning":{"name":"Morning","items":[{"title":"Stretch","duration":15}]}},"templates":{"mon":{"on":["mon"],"items":[{"use":"morning","time":"08:00"}]}}}`
 	if _, err := s.Save([]byte(value), s.Get().Revision); err != nil {
 		t.Fatal(err)
 	}
@@ -248,12 +249,12 @@ func TestBlockDurationAndStartTime(t *testing.T) {
 func TestAutomaticHolidayPreference(t *testing.T) {
 	s, _ := testStore(t)
 	for _, value := range []string{"true", "false"} {
-		edited := strings.Replace(minimal, `"days":`, `"settings":{"automatic_swedish_holidays":`+value+`},"days":`, 1)
+		edited := strings.Replace(minimal, `"templates":`, `"settings":{"automatic_swedish_holidays":`+value+`},"templates":`, 1)
 		if _, err := s.Save([]byte(edited), s.Get().Revision); err != nil {
 			t.Fatal(err)
 		}
 	}
-	invalid := strings.Replace(minimal, `"days":`, `"settings":{"automatic_swedish_holidays":"false"},"days":`, 1)
+	invalid := strings.Replace(minimal, `"templates":`, `"settings":{"automatic_swedish_holidays":"false"},"templates":`, 1)
 	if _, err := s.Save([]byte(invalid), s.Get().Revision); err == nil {
 		t.Fatal("accepted a non-boolean holiday preference")
 	}
@@ -267,12 +268,12 @@ func TestUnusedBlocks(t *testing.T) {
 		`{"unused":{"title":"Unused","link":"missing","duration":5}}`,
 		`{"unused":{"title":"Parent","children":[{"title":"Child","time":"08:00","duration":5}],"duration":5}}`,
 	} {
-		raw := []byte(`{"days":{},"blocks":` + blocks + `}`)
+		raw := []byte(`{"templates":{},"blocks":` + blocks + `}`)
 		if err := s.Validate(raw); err == nil {
 			t.Fatalf("accepted invalid unused block: %s", blocks)
 		}
 	}
-	raw := []byte(`{"days":{},"blocks":{"unused":{"name":"Unused","items":[{"title":"Unused","duration":5}]}}}`)
+	raw := []byte(`{"templates":{},"blocks":{"unused":{"name":"Unused","items":[{"title":"Unused","duration":5}]}}}`)
 	if err := s.Validate(raw); err != nil {
 		t.Fatal(err)
 	}
@@ -280,7 +281,7 @@ func TestUnusedBlocks(t *testing.T) {
 
 func TestUnavailableScalarDefault(t *testing.T) {
 	s, _ := testStore(t)
-	raw := []byte(`{"days":{"weekday":{"on":["mon","tue"],"items":[],"choices":{"place":{"options":{"home":{"only_on":["mon"]},"office":{}},"default":"home"}}}}}`)
+	raw := []byte(`{"templates":{"weekday":{"on":["mon","tue"],"items":[],"choices":{"place":{"options":{"home":{"only_on":["mon"]},"office":{}},"default":"home"}}}}}`)
 	if err := s.Validate(raw); err == nil {
 		t.Fatal("accepted default unavailable on Tuesday")
 	}
@@ -288,14 +289,14 @@ func TestUnavailableScalarDefault(t *testing.T) {
 
 func TestRejectsSchemaVersion(t *testing.T) {
 	s, _ := testStore(t)
-	if err := s.Validate([]byte(`{"version":1,"days":{}}`)); err == nil {
+	if err := s.Validate([]byte(`{"version":1,"templates":{}}`)); err == nil {
 		t.Fatal("accepted removed version field")
 	}
 }
 
 func TestActivityNotes(t *testing.T) {
 	s, _ := testStore(t)
-	raw := []byte(`{"days":{"daily":{"on":["mon"],"items":[{"title":"Morning","note":"Water\nWash face","duration":5,"time":"08:00"}]}}}`)
+	raw := []byte(`{"templates":{"daily":{"on":["mon"],"items":[{"title":"Morning","note":"Water\nWash face","duration":5,"time":"08:00"}]}}}`)
 	saved, err := s.Save(raw, s.Get().Revision)
 	if err != nil {
 		t.Fatal(err)
@@ -303,14 +304,14 @@ func TestActivityNotes(t *testing.T) {
 	if !strings.Contains(string(saved.Routine), `"note":"Water\nWash face"`) {
 		t.Fatal("activity note changed")
 	}
-	if err := s.Validate([]byte(`{"blocks":{"morning":{"name":"Morning","items":[{"title":"Wash","duration":5}]}},"days":{"daily":{"on":["mon"],"items":[{"use":"morning","children":[{"title":"Water","duration":5}],"time":"08:00"}]}}}`)); err == nil {
+	if err := s.Validate([]byte(`{"blocks":{"morning":{"name":"Morning","items":[{"title":"Wash","duration":5}]}},"templates":{"daily":{"on":["mon"],"items":[{"use":"morning","children":[{"title":"Water","duration":5}],"time":"08:00"}]}}}`)); err == nil {
 		t.Fatal("accepted checklist override")
 	}
 }
 
 func TestCategories(t *testing.T) {
 	s, _ := testStore(t)
-	raw := []byte(`{"categories":{"chores":{"name":"Chores","color":"orange"}},"blocks":{"b":{"name":"b","category":"chores","items":[{"title":"Wash","category":"chores","duration":5}]}},"days":{"daily":{"on":["mon"],"items":[{"title":"Laundry","category":"chores","duration":5,"time":"08:00"},{"use":"b","time":"08:00"}]}}}`)
+	raw := []byte(`{"categories":{"chores":{"name":"Chores","color":"orange"}},"blocks":{"b":{"name":"b","category":"chores","items":[{"title":"Wash","category":"chores","duration":5}]}},"templates":{"daily":{"on":["mon"],"items":[{"title":"Laundry","category":"chores","duration":5,"time":"08:00"},{"use":"b","time":"08:00"}]}}}`)
 	if _, err := s.Save(raw, s.Get().Revision); err != nil {
 		t.Fatal(err)
 	}
@@ -318,7 +319,7 @@ func TestCategories(t *testing.T) {
 
 func TestCanonicalModels(t *testing.T) {
 	s, schema := testStore(t)
-	good := []byte(`{"blocks":{"stable":{"name":"Wake Up!","items":[{"title":"Same","duration":5}]}},"days":{"daily":{"on":["mon"],"items":[{"title":"Same","duration":60,"time":"07:00"},{"use":"stable","time":"08:00"}]}},"settings":{"holiday":"daily"}}`)
+	good := []byte(`{"blocks":{"stable":{"name":"Wake Up!","items":[{"title":"Same","duration":5}]}},"templates":{"daily":{"on":["mon"],"items":[{"title":"Same","duration":60,"time":"07:00"},{"use":"stable","time":"08:00"}]}},"settings":{"holiday_template":"daily"}}`)
 	saved, err := s.Save(good, s.Get().Revision)
 	if err != nil {
 		t.Fatal(err)
@@ -350,7 +351,7 @@ func TestCalendarPreference(t *testing.T) {
 	s, _ := testStore(t)
 	for _, provider := range []string{"google", "apple", "unsupported"} {
 		t.Run(provider, func(t *testing.T) {
-			data := []byte(fmt.Sprintf(`{"days":{},"settings":{"calendar":%q}}`, provider))
+			data := []byte(fmt.Sprintf(`{"templates":{},"settings":{"calendar":%q}}`, provider))
 			if err := s.Validate(data); (err == nil) != (provider == "google") {
 				t.Fatalf("Validate error = %v for calendar %q", err, provider)
 			}
@@ -358,9 +359,9 @@ func TestCalendarPreference(t *testing.T) {
 	}
 }
 
-func TestEmptyAlternativePersists(t *testing.T) {
+func TestEmptyBranchPathsPersist(t *testing.T) {
 	s, schema := testStore(t)
-	raw := []byte(`{"days":{"saturday":{"on":["mon"],"choices":{"gym":{"options":{"yes":{"label":"Yes"},"no":{"label":"No"}},"default":"no"}},"items":[{"alternative":"gym","paths":{"yes":[{"title":"Lift","duration":45,"time":"08:00"}],"no":[]}}]}}}`)
+	raw := []byte(`{"templates":{"saturday":{"on":["mon"],"choices":{"gym":{"options":{"yes":{"label":"Yes"},"no":{"label":"No"}},"default":"no"}},"items":[{"choice":"gym","paths":{"yes":[{"title":"Lift","duration":45,"time":"08:00"}],"no":[]}}]}}}`)
 	if _, err := s.Save(raw, s.Get().Revision); err != nil {
 		t.Fatal(err)
 	}
@@ -369,35 +370,35 @@ func TestEmptyAlternativePersists(t *testing.T) {
 		t.Fatal(err)
 	}
 	if string(reopened.Get().Routine) != string(raw) {
-		t.Fatal("empty alternative was not preserved")
+		t.Fatal("empty branch was not preserved")
 	}
 }
 
 func TestBranchOnlyConditions(t *testing.T) {
 	s, _ := testStore(t)
 	invalidEntries := []string{
-		`{"title":"Work","duration":10,"when":{"days":["mon"]}}`,
-		`{"use":"shared","when":{"days":["mon"]}}`,
+		`{"title":"Work","duration":10,"when":{"templates":["mon"]}}`,
+		`{"use":"shared","when":{"templates":["mon"]}}`,
 		`{"items":[]}`,
 		`{"when":{},"items":[]}`,
 	}
 	for _, entry := range invalidEntries {
-		raw := []byte(`{"days":{"daily":{"on":["mon"],"items":[` + entry + `]}}}`)
+		raw := []byte(`{"templates":{"daily":{"on":["mon"],"items":[` + entry + `]}}}`)
 		if err := s.Validate(raw); err == nil {
 			t.Fatalf("accepted invalid entry: %s", entry)
 		}
 	}
 	invalidShared := []string{
-		`{"title":"Work","duration":10,"when":{"days":["mon"]}}`,
-		`{"when":{"days":["mon"]},"items":[{"title":"Work","duration":10,"time":"08:00"}]}`,
+		`{"title":"Work","duration":10,"when":{"templates":["mon"]}}`,
+		`{"when":{"templates":["mon"]},"items":[{"title":"Work","duration":10,"time":"08:00"}]}`,
 		`{"title":"Work","duration":10,"time":"08:00"}`,
 		`{"title":"Work","duration":10,"approx":true}`,
 		`{"use":"inner","time":"08:00"}`,
-		`{"use":"inner","when":{"days":["mon"]}}`,
+		`{"use":"inner","when":{"templates":["mon"]}}`,
 	}
 	for _, entry := range invalidShared {
 		for _, items := range []string{`[]`, `[{"use":"shared","time":"08:00"}]`} {
-			raw := []byte(`{"days":{"daily":{"on":["mon"],"items":` + items + `}},"blocks":{"shared":{"name":"Shared","items":[` + entry + `]},"inner":{"name":"Inner","items":[{"title":"Tea","duration":5}]}}}`)
+			raw := []byte(`{"templates":{"daily":{"on":["mon"],"items":` + items + `}},"blocks":{"shared":{"name":"Shared","items":[` + entry + `]},"inner":{"name":"Inner","items":[{"title":"Tea","duration":5}]}}}`)
 			if err := s.Validate(raw); err == nil {
 				t.Fatalf("accepted invalid shared entry: %s", entry)
 			}
@@ -405,7 +406,7 @@ func TestBranchOnlyConditions(t *testing.T) {
 	}
 }
 
-func TestNamedAlternativesOnly(t *testing.T) {
+func TestNamedChoiceOptionsOnly(t *testing.T) {
 	s, _ := testStore(t)
 	for _, choice := range []string{
 		`{"type":"toggle","default":false}`,
@@ -414,12 +415,12 @@ func TestNamedAlternativesOnly(t *testing.T) {
 		`{"options":{"home":{},"out":{}},"default":{"mon":true}}`,
 		`{"options":{"home":{}},"default":"home"}`,
 	} {
-		raw := []byte(`{"days":{"daily":{"on":["mon"],"choices":{"evening":` + choice + `},"items":[]}}}`)
+		raw := []byte(`{"templates":{"daily":{"on":["mon"],"choices":{"evening":` + choice + `},"items":[]}}}`)
 		if err := s.Validate(raw); err == nil {
-			t.Fatalf("accepted invalid alternative: %s", choice)
+			t.Fatalf("accepted invalid choice: %s", choice)
 		}
 	}
-	raw := []byte(`{"days":{"daily":{"on":["mon"],"choices":{"evening":{"options":{"home":{},"out":{}},"default":"home"}},"items":[{"when":{"evening":true},"items":[]}]}}}`)
+	raw := []byte(`{"templates":{"daily":{"on":["mon"],"choices":{"evening":{"options":{"home":{},"out":{}},"default":"home"}},"items":[{"when":{"evening":true},"items":[]}]}}}`)
 	if err := s.Validate(raw); err == nil {
 		t.Fatal("accepted boolean branch condition")
 	}
@@ -428,14 +429,14 @@ func TestNamedAlternativesOnly(t *testing.T) {
 func TestTemplateTimesAndSingleLink(t *testing.T) {
 	s, _ := testStore(t)
 	for _, entry := range []string{`{"title":"Walk","duration":10}`, `{"use":"morning"}`} {
-		for _, items := range []string{`[` + entry + `]`, `[{"when":{"days":["mon"]},"items":[` + entry + `]}]`} {
-			raw := []byte(`{"blocks":{"morning":{"name":"Morning","items":[{"title":"Wash","duration":5}]}},"days":{"day":{"on":["mon"],"items":` + items + `}}}`)
+		for _, items := range []string{`[` + entry + `]`, `[{"when":{"templates":["mon"]},"items":[` + entry + `]}]`} {
+			raw := []byte(`{"blocks":{"morning":{"name":"Morning","items":[{"title":"Wash","duration":5}]}},"templates":{"day":{"on":["mon"],"items":` + items + `}}}`)
 			if err := s.Validate(raw); err == nil {
 				t.Fatalf("accepted missing template time: %s", items)
 			}
 		}
 	}
-	valid := `{"days":{"day":{"on":["mon"],"items":[{"title":"Read","duration":10,"time":"08:00","link":"https://example.com/read"}]}},"blocks":{"morning":{"name":"Morning","items":[{"title":"Wash","duration":5,"link":"https://example.com/read"}]}}}`
+	valid := `{"templates":{"day":{"on":["mon"],"items":[{"title":"Read","duration":10,"time":"08:00","link":"https://example.com/read"}]}},"blocks":{"morning":{"name":"Morning","items":[{"title":"Wash","duration":5,"link":"https://example.com/read"}]}}}`
 	if err := s.Validate([]byte(valid)); err != nil {
 		t.Fatal(err)
 	}
@@ -449,8 +450,8 @@ func TestTemplateTimesAndSingleLink(t *testing.T) {
 func TestExplicitForks(t *testing.T) {
 	s, schema := testStore(t)
 	choices := `{"location":{"options":{"home":{},"office":{}},"default":"home"},"gym":{"options":{"train":{},"rest":{}},"default":"train"}}`
-	fork := `{"alternative":"location","paths":{"home":[{"alternative":"gym","paths":{"train":[{"title":"Lift","time":"17:00","duration":45}],"rest":[]}}],"office":[]}}`
-	raw := []byte(`{"days":{"day":{"on":["mon"],"choices":` + choices + `,"items":[` + fork + `]}}}`)
+	fork := `{"choice":"location","paths":{"home":[{"choice":"gym","paths":{"train":[{"title":"Lift","time":"17:00","duration":45}],"rest":[]}}],"office":[]}}`
+	raw := []byte(`{"templates":{"day":{"on":["mon"],"choices":` + choices + `,"items":[` + fork + `]}}}`)
 	saved, err := s.Save(raw, s.Get().Revision)
 	if err != nil {
 		t.Fatal(err)
@@ -463,13 +464,39 @@ func TestExplicitForks(t *testing.T) {
 		t.Fatal("fork paths changed on reopen")
 	}
 	for _, invalid := range []string{
-		strings.Replace(string(raw), `"alternative":"location"`, `"alternative":"missing"`, 1),
+		strings.Replace(string(raw), `"choice":"location"`, `"choice":"missing"`, 1),
 		strings.Replace(string(raw), `"office":[]`, `"missing":[]`, 1),
-		strings.Replace(string(raw), `"alternative":"gym"`, `"alternative":"location"`, 1),
+		strings.Replace(string(raw), `"choice":"gym"`, `"choice":"location"`, 1),
 		strings.Replace(string(raw), `"default":"home"`, `"default":"home","active_when":{"gym":"train"}`, 1),
 	} {
 		if err := s.Validate([]byte(invalid)); err == nil {
 			t.Fatalf("accepted invalid fork: %s", invalid)
 		}
+	}
+}
+
+func TestBundledRoutinesAreValid(t *testing.T) {
+	s, schema := testStore(t)
+	defaults, err := os.ReadFile("../../routine.default.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Open(filepath.Join(t.TempDir(), "routine.json"), defaults, schema); err != nil {
+		t.Fatalf("default routine: %v", err)
+	}
+	fixture, err := os.ReadFile("../../e2e/fixtures/routine.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Validate(fixture); err != nil {
+		t.Fatalf("e2e fixture: %v", err)
+	}
+}
+
+func TestWeekdayDefaultsSurviveUnassignedDays(t *testing.T) {
+	s, _ := testStore(t)
+	raw := `{"templates":{"monday":{"on":["mon"],"choices":{"place":{"options":{"home":{},"office":{"only_on":["tue"]}},"default":{"mon":"home","tue":"office"}}},"items":[]}}}`
+	if err := s.Validate([]byte(raw)); err != nil {
+		t.Fatal(err)
 	}
 }

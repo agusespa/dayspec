@@ -25,7 +25,7 @@
 		const input = event.currentTarget as HTMLInputElement;
 		const enabled = input.checked;
 		pending = enabled;
-		pendingHoliday = $routineState.routine.settings?.holiday ?? '';
+		pendingHoliday = $routineState.routine.settings?.holiday_template ?? '';
 		const { routine, revision } = $routineState;
 		saving = true;
 		error = '';
@@ -46,7 +46,7 @@
 		pending = automatic;
 		const { routine, revision } = $routineState;
 		const settings = { ...routine.settings };
-		settings.holiday = input.value;
+		settings.holiday_template = input.value;
 		saving = true;
 		error = '';
 		try {
@@ -59,7 +59,7 @@
 	}
 	async function setCalendar() {
 		pending = automatic;
-		pendingHoliday = $routineState.routine.settings?.holiday ?? '';
+		pendingHoliday = $routineState.routine.settings?.holiday_template ?? '';
 		const { routine, revision } = $routineState;
 		saving = true;
 		error = '';
@@ -93,11 +93,11 @@
 	<label class="setting"
 		><span>Holiday template</span><select
 			data-testid="Profile-holiday-template"
-			disabled={saving || !$routineState.online || !Object.keys($routineState.routine.days).length}
-			value={saving ? pendingHoliday : ($routineState.routine.settings?.holiday ?? '')}
+			disabled={saving || !$routineState.online || !Object.keys($routineState.routine.templates).length}
+			value={saving ? pendingHoliday : ($routineState.routine.settings?.holiday_template ?? '')}
 			onchange={setHoliday}
 			>{#each templateKeys($routineState.routine) as id}<option value={id}
-					>{templateName($routineState.routine.days[id].on)}</option
+					>{templateName($routineState.routine.templates[id].on)}</option
 				>{/each}</select
 		></label
 	>

@@ -25,13 +25,13 @@
 		options[key] = { label: 'New option' };
 	}
 	function updateDefault(name: string, choice: Choice, value: string, day?: Weekday) {
-		routine.days[template].choices![name] = setChoiceDefault(choice, value, day);
+		routine.templates[template].choices![name] = setChoiceDefault(choice, value, day);
 	}
 </script>
 
 <section class="choice-editor" data-testid="ChoiceEditor">
-	<h2 class="template-section-title">Alternatives</h2>
-	{#each Object.entries(routine.days[template].choices ?? {}) as [name, choice]}
+	<h2 class="template-section-title">Choices</h2>
+	{#each Object.entries(routine.templates[template].choices ?? {}) as [name, choice]}
 		<details class="entry" data-testid={`ChoiceEditor-${name}`}>
 			<summary data-testid="ChoiceEditor-open"
 				><span class="summary-title">{choice.label ?? name}</span><span class="badge">Options</span><svg
@@ -80,19 +80,19 @@
 							const input = e.currentTarget;
 							apply(() => {
 								const next = $state.snapshot(routine);
-								next.days[template].choices![name] = setChoiceDefaultMode(
+								next.templates[template].choices![name] = setChoiceDefaultMode(
 									choice,
-									next.days[template].on,
+									next.templates[template].on,
 									input.value === 'weekday'
 								);
 								return next;
 							});
 							input.value =
-								typeof routine.days[template].choices![name].default === 'object' ? 'weekday' : 'same';
+								typeof routine.templates[template].choices![name].default === 'object' ? 'weekday' : 'same';
 						}}><option value="same">Same every day</option><option value="weekday">By weekday</option></select
 					></label
 				>
-				{#each typeof choice.default === 'object' ? routine.days[template].on : [undefined] as day}
+				{#each typeof choice.default === 'object' ? routine.templates[template].on : [undefined] as day}
 					<label
 						>Default{day ? ` · ${weekdayLabel(day)}` : ''}<select
 							data-testid="ChoiceEditor-default"
@@ -100,7 +100,7 @@
 							value={String(day && typeof choice.default === 'object' ? choice.default[day] : choice.default)}
 							onchange={(e) => updateDefault(name, choice, e.currentTarget.value, day)}
 						>
-							{#each Object.entries(choice.options ?? {}).filter(([, o]) => !o.only_on || (day ? o.only_on.includes(day) : routine.days[template].on.every( (d) => o.only_on!.includes(d) ))) as [value, option]}<option
+							{#each Object.entries(choice.options ?? {}).filter(([, o]) => !o.only_on || (day ? o.only_on.includes(day) : routine.templates[template].on.every( (d) => o.only_on!.includes(d) ))) as [value, option]}<option
 									{value}>{option.label ?? value}</option
 								>{/each}
 						</select></label
@@ -111,7 +111,7 @@
 					class="danger"
 					data-testid="ChoiceEditor-remove"
 					onclick={() => apply(() => removeChoice($state.snapshot(routine), template, name))}
-					>Remove alternative</button
+					>Remove choice</button
 				>
 			</div>
 		</details>
@@ -120,7 +120,7 @@
 		type="button"
 		class="add"
 		data-testid="ChoiceEditor-add"
-		onclick={() => apply(() => addChoice($state.snapshot(routine), template))}>+ Add alternative</button
+		onclick={() => apply(() => addChoice($state.snapshot(routine), template))}>+ Add choice</button
 	>
 	{#if error}<p role="alert" data-testid="ChoiceEditor-error">{error}</p>{/if}
 </section>

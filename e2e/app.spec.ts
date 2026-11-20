@@ -26,7 +26,7 @@ test("shows activity notes without completion controls", async ({
 }) => {
   const current = await (await request.get("/api/routine")).json();
   const routine = {
-    days: {
+    templates: {
       daily: {
         on: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
         items: [

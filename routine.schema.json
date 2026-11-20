@@ -6,7 +6,7 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "days"
+    "templates"
   ],
   "properties": {
     "settings": {
@@ -17,7 +17,7 @@
           "$ref": "#/$defs/time",
           "description": "Before this time the app still shows the previous day; earlier times sort last. Default 04:00."
         },
-        "holiday": {
+        "holiday_template": {
           "$ref": "#/$defs/id",
           "description": "Template used on holidays. Without a selection, use the regular weekday template."
         },
@@ -90,14 +90,14 @@
         }
       }
     },
-    "days": {
+    "templates": {
       "type": "object",
-      "description": "Day templates, keyed by day type.",
+      "description": "Day templates, keyed by stable ID.",
       "propertyNames": {
         "$ref": "#/$defs/id"
       },
       "additionalProperties": {
-        "$ref": "#/$defs/day"
+        "$ref": "#/$defs/template"
       }
     }
   },
@@ -108,7 +108,7 @@
     },
     "url": {
       "type": "string",
-      "pattern": "^https?://"
+      "pattern": "^https?://[^\\s/?#]+"
     },
     "time": {
       "type": "string",
@@ -148,90 +148,35 @@
       ],
       "description": "A colour from the app's palette, tuned for its dark theme."
     },
-    "item": {
+    "template": {
       "type": "object",
-      "description": "A new item.",
       "additionalProperties": false,
       "required": [
-        "title",
-        "duration",
-        "time"
+        "on",
+        "items"
       ],
       "properties": {
-        "duration": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 1440,
-          "description": "Duration in minutes."
-        },
-        "time": {
-          "$ref": "#/$defs/time"
-        },
-        "approx": {
-          "type": "boolean",
-          "description": "Show the time as approximate (\u2248)."
-        },
-        "title": {
-          "type": "string",
-          "minLength": 1
-        },
-        "category": {
-          "$ref": "#/$defs/id",
-          "description": "Key of a category in `categories`; sets the item's colour."
-        },
-        "alert": {
-          "type": "boolean",
-          "description": "Marks the item with a bell on the timeline."
-        },
-        "link": {
-          "$ref": "#/$defs/url"
-        },
-        "note": {
-          "type": "string",
-          "minLength": 1
-        }
-      }
-    },
-    "use": {
-      "type": "object",
-      "description": "Places a shared block at a start time.",
-      "additionalProperties": false,
-      "required": [
-        "use",
-        "time"
-      ],
-      "properties": {
-        "use": {
-          "$ref": "#/$defs/id"
-        },
-        "time": {
-          "$ref": "#/$defs/time"
-        }
-      }
-    },
-    "entry": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/item"
-        },
-        {
-          "$ref": "#/$defs/use"
-        },
-        {
-          "$ref": "#/$defs/branch"
-        }
-      ]
-    },
-    "option": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "label": {
-          "type": "string",
-          "minLength": 1
-        },
-        "only_on": {
+        "on": {
           "$ref": "#/$defs/weekdays"
+        },
+        "theme": {
+          "type": "string",
+          "minLength": 1
+        },
+        "choices": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/id"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/choice"
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/entry"
+          }
         }
       }
     },
@@ -275,82 +220,49 @@
         "default"
       ]
     },
-    "day": {
+    "option": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "on",
-        "items"
-      ],
       "properties": {
-        "on": {
-          "$ref": "#/$defs/weekdays"
-        },
-        "theme": {
+        "label": {
           "type": "string",
           "minLength": 1
         },
-        "choices": {
-          "type": "object",
-          "propertyNames": {
-            "$ref": "#/$defs/id"
-          },
-          "additionalProperties": {
-            "$ref": "#/$defs/choice"
-          }
-        },
-        "items": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/entry"
-          }
+        "only_on": {
+          "$ref": "#/$defs/weekdays"
         }
       }
     },
-    "branch": {
-      "type": "object",
-      "description": "A fork using one alternative. Each option has its own sequence; missing or empty paths continue the routine.",
-      "additionalProperties": false,
-      "required": [
-        "alternative",
-        "paths"
-      ],
-      "properties": {
-        "alternative": {
-          "$ref": "#/$defs/id"
+    "entry": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/item"
         },
-        "paths": {
-          "type": "object",
-          "propertyNames": {
-            "$ref": "#/$defs/id"
-          },
-          "additionalProperties": {
-            "type": "array",
-            "items": {
-              "$ref": "#/$defs/entry"
-            }
-          }
+        {
+          "$ref": "#/$defs/use"
+        },
+        {
+          "$ref": "#/$defs/branch"
         }
-      }
+      ]
     },
-    "shared_item": {
+    "activity": {
       "type": "object",
-      "description": "A duration-based activity inside a shared block.",
-      "additionalProperties": false,
+      "description": "Fields shared by template activities and shared-block activities.",
       "required": [
         "title",
         "duration"
       ],
       "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
         "duration": {
           "type": "integer",
           "minimum": 1,
           "maximum": 1440,
           "description": "Duration in minutes."
-        },
-        "title": {
-          "type": "string",
-          "minLength": 1
         },
         "category": {
           "$ref": "#/$defs/id",
@@ -369,15 +281,70 @@
         }
       }
     },
-    "shared_use": {
+    "item": {
+      "description": "An activity at a start time.",
+      "$ref": "#/$defs/activity",
+      "required": [
+        "time"
+      ],
+      "properties": {
+        "time": {
+          "$ref": "#/$defs/time"
+        },
+        "approx": {
+          "type": "boolean",
+          "description": "Show the time as approximate (≈)."
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "block_ref": {
       "type": "object",
-      "additionalProperties": false,
       "required": [
         "use"
       ],
       "properties": {
         "use": {
           "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "use": {
+      "description": "Places a shared block at a start time.",
+      "$ref": "#/$defs/block_ref",
+      "required": [
+        "time"
+      ],
+      "properties": {
+        "time": {
+          "$ref": "#/$defs/time"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "branch": {
+      "type": "object",
+      "description": "Follows the path of the option selected for one of the template's choices. Missing or empty paths add nothing.",
+      "additionalProperties": false,
+      "required": [
+        "choice",
+        "paths"
+      ],
+      "properties": {
+        "choice": {
+          "$ref": "#/$defs/id"
+        },
+        "paths": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/id"
+          },
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/entry"
+            }
+          }
         }
       }
     },
@@ -390,6 +357,16 @@
           "$ref": "#/$defs/shared_use"
         }
       ]
+    },
+    "shared_item": {
+      "description": "A duration-based activity inside a shared block.",
+      "$ref": "#/$defs/activity",
+      "unevaluatedProperties": false
+    },
+    "shared_use": {
+      "description": "Includes another shared block.",
+      "$ref": "#/$defs/block_ref",
+      "unevaluatedProperties": false
     }
   }
 }

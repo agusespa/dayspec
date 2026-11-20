@@ -31,13 +31,16 @@
 	<ul class="contents-list">
 		{#each entries as item (item.id)}
 			<li class="tone-{item.color ?? 'none'}" data-testid="Timeline-block-entry">
+				<time class="contents-time mono" datetime={item.time} data-testid="Timeline-block-entry-start"
+					>{item.time ? `${item.approx ? '≈' : ''}${item.time}` : ''}</time
+				>
 				<button
 					type="button"
 					class="contents-row"
 					data-testid="Timeline-block-entry-toggle"
 					aria-expanded={!!openEntries[item.id]}
 					onclick={() => (openEntries[item.id] = !openEntries[item.id])}
-					><span class="contents-title"
+					><span class="contents-dot" aria-hidden="true"></span><span class="contents-title"
 						>{#if item.alert}<AlertIcon />{/if}{item.title}</span
 					><svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button
 				>
@@ -76,7 +79,7 @@
 						>
 					</summary>
 					<div class="block-contents" data-testid="Timeline-block-contents">
-						<div class="block-facts" data-testid="Timeline-block-facts">
+						<div class="block-facts metadata-strip" data-testid="Timeline-block-facts">
 							<div class="metadata">
 								{#if duration}<span class="duration" data-testid="Timeline-block-total">{duration} min</span
 									>{/if}
@@ -168,30 +171,70 @@
 		outline-offset: 3px;
 	}
 	.block-contents {
-		margin: -0.8rem 0 0.25rem calc(var(--time-col) + var(--gap) + var(--node) + 0.75rem);
-		--indent: 0px;
+		margin: -0.8rem 0 0.25rem calc(var(--time-col) + var(--gap));
+		--contents-time-col: 2.8rem;
+		--contents-gap: 0.45rem;
+		--contents-node: 6px;
+		--contents-indent: calc(var(--contents-time-col) + var(--contents-gap) + var(--contents-node) + 0.5rem);
 	}
 	.contents-list {
 		margin: 0;
-		padding-left: 1rem;
-		list-style: disc;
+		padding: 0 0 0 1rem;
+		list-style: none;
 		color: var(--muted);
 	}
-	/* Each entry's bullet shows its own category, which may differ from the block's. */
-	.contents-list li::marker {
-		color: var(--tone);
-		font-size: 1.3em;
-	}
 	.contents-list li {
+		position: relative;
+		display: grid;
+		grid-template-columns: var(--contents-time-col) minmax(0, 1fr);
+		column-gap: var(--contents-gap);
 		padding: 0;
 		font-size: var(--text-sm);
 		line-height: 1.35;
 	}
-	.contents-row {
+	/* A quieter rail connects the block's activities, including when their details are open. */
+	.contents-list li::before {
+		content: '';
+		position: absolute;
+		left: calc(var(--contents-time-col) + var(--contents-gap) + var(--contents-node) / 2 - 0.5px);
+		top: 0;
+		bottom: 0;
+		width: 1px;
+		background: var(--rule);
+	}
+	.contents-list li:first-child::before {
+		top: 14px;
+	}
+	.contents-list li:last-child::before {
+		bottom: calc(100% - 14px);
+	}
+	.contents-time {
 		display: flex;
 		align-items: center;
+		justify-content: flex-end;
+		align-self: start;
+		min-height: 28px;
+		font-size: var(--text-xs);
+		white-space: nowrap;
+	}
+	.contents-dot {
+		position: relative;
+		margin-top: 11px;
+		flex: none;
+		width: var(--contents-node);
+		height: var(--contents-node);
+		border-radius: 50%;
+		background: var(--tone);
+	}
+	.contents-row {
+		display: flex;
+		align-items: flex-start;
 		justify-content: flex-start;
 		gap: 0.5rem;
+		min-width: 0;
+	}
+	.contents-row .chevron {
+		margin-top: 4px;
 	}
 	button.contents-row {
 		width: 100%;
@@ -204,12 +247,7 @@
 	}
 	/* The open block's own time range, category and calendar link, above its activities. */
 	.block-facts {
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
-		min-height: 32px;
-		color: var(--muted);
-		font-size: var(--text-xs);
+		margin: 0 0 0.35rem calc(var(--node) + 0.75rem);
 	}
 	.metadata {
 		display: flex;
@@ -246,10 +284,10 @@
 	}
 	.block-facts .actions {
 		display: flex;
-		margin-left: auto;
 		flex: none;
 	}
 	.contents-title {
+		padding: calc((28px - 1.35em) / 2) 0;
 		min-width: 0;
 		color: var(--text);
 		overflow-wrap: anywhere;
@@ -260,6 +298,7 @@
 		text-overflow: ellipsis;
 	}
 	.block-contents :global(.details) {
-		margin: -0.3rem 0 0.1rem;
+		grid-column: 1 / -1;
+		margin: -0.15rem 0 0.2rem var(--contents-indent);
 	}
 </style>

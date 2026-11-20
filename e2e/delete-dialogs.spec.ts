@@ -3,6 +3,7 @@ for (const width of [390, 1440]) {
   test(`delete confirmations use app dialogs and preserve cancelled changes at ${width}px`, async ({
     page,
     request,
+    browserName,
   }) => {
     const original = await (await request.get("/api/routine")).json();
     const routine = {
@@ -12,7 +13,7 @@ for (const width of [390, 1440]) {
           items: [{ title: "Read", duration: 10 }],
         },
       },
-      days: {
+      templates: {
         daily: {
           on: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
           choices: {
@@ -25,7 +26,7 @@ for (const width of [390, 1440]) {
           items: [
             { title: "Breakfast", time: "07:00", duration: 15 },
             {
-              alternative: "gym",
+              choice: "gym",
               paths: {
                 yes: [{ title: "Workout", time: "08:00", duration: 30 }],
                 no: [],
@@ -61,7 +62,12 @@ for (const width of [390, 1440]) {
       await expect(
         templateDialog.getByRole("button", { name: "Cancel", exact: true }),
       ).toBeFocused();
-      await page.keyboard.press("Tab");
+      // Safari on macOS uses Option-Tab to include buttons in keyboard navigation.
+      await page.keyboard.press(
+        browserName === "webkit" && process.platform === "darwin"
+          ? "Alt+Tab"
+          : "Tab",
+      );
       await expect(
         templateDialog.getByRole("button", { name: "Delete", exact: true }),
       ).toBeFocused();
@@ -131,15 +137,15 @@ for (const width of [390, 1440]) {
       await expect(branch).toHaveCount(0);
       // A branch deletion is still a draft until the template is saved.
       expect(
-        (await (await request.get("/api/routine")).json()).routine.days.daily
+        (await (await request.get("/api/routine")).json()).routine.templates.daily
           .items,
-      ).toEqual(routine.days.daily.items);
+      ).toEqual(routine.templates.daily.items);
       await page.getByTestId("TemplateEditor-save").click();
       await expect(page.getByTestId("Templates-saved")).toBeVisible();
       expect(
-        (await (await request.get("/api/routine")).json()).routine.days.daily
+        (await (await request.get("/api/routine")).json()).routine.templates.daily
           .items,
-      ).toEqual([routine.days.daily.items[0]]);
+      ).toEqual([routine.templates.daily.items[0]]);
       expect(nativeDialogs).toEqual([]);
     } finally {
       const current = await (await request.get("/api/routine")).json();

@@ -11,8 +11,8 @@ test("Profile saves holiday preferences across devices and preserves settings on
       headers: { "If-Match": original.revision },
       data: {
         routine: {
-          settings: { holiday: "off" },
-          days: {
+          settings: { holiday_template: "off" },
+          templates: {
             work: {
               on: ["mon", "tue", "wed", "thu", "fri"],
               items: [{ time: "08:00", title: "Work day", duration: 5 }],
@@ -92,7 +92,7 @@ test("Profile saves holiday preferences across devices and preserves settings on
 test("holiday selector only offers existing templates and is disabled for an empty library", async ({
   page,
 }) => {
-  const routine = { days: { monday: { on: ["mon"], items: [] } } };
+  const routine = { templates: { monday: { on: ["mon"], items: [] } } };
   await page.route("**/api/routine", (route) =>
     route.fulfill({ json: { routine, revision: '\"holiday-options\"' } }),
   );
@@ -104,7 +104,7 @@ test("holiday selector only offers existing templates and is disabled for an emp
   await page.unroute("**/api/routine");
   await page.route("**/api/routine", (route) =>
     route.fulfill({
-      json: { routine: { days: {} }, revision: '\"empty-options\"' },
+      json: { routine: { templates: {} }, revision: '\"empty-options\"' },
     }),
   );
   await page.reload();

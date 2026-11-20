@@ -13,7 +13,7 @@ import (
 
 const maxRequestBody = 1 << 20
 
-// Authentication is supplied by Cloudflare Access, exactly as for Gympass.
+// Authentication is supplied by Cloudflare Access.
 // Production has no published host port; these routes share the existing origin.
 func resourceRoutes(mux *http.ServeMux, store *routine.Store) {
 	mux.HandleFunc("GET /api/schema", func(w http.ResponseWriter, r *http.Request) {
@@ -28,8 +28,8 @@ func resourceRoutes(mux *http.ServeMux, store *routine.Store) {
 		}
 		writeJSON(w, 200, openAPIDocument(store.Schema()))
 	})
-	for _, resource := range []struct{ path, section, singular string }{{"templates", "days", "template"}, {"blocks", "blocks", "block"}, {"settings", "settings", "settings"}} {
-		base := "/api/" + resource.path
+	for _, resource := range []struct{ section, singular string }{{"templates", "template"}, {"blocks", "block"}, {"settings", "settings"}} {
+		base := "/api/" + resource.section
 		read := func(w http.ResponseWriter, r *http.Request) {
 			if !storageAvailable(w, store) {
 				return
@@ -42,7 +42,7 @@ func resourceRoutes(mux *http.ServeMux, store *routine.Store) {
 			}
 			key := resource.singular
 			if id == "" {
-				key = resource.path
+				key = resource.section
 			}
 			w.Header().Set("ETag", revision)
 			writeJSON(w, 200, map[string]any{key: value, "revision": revision})

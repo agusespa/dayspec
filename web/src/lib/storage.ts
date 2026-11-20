@@ -6,7 +6,7 @@
 import type { ChoiceValue } from '#lib/routine/types.ts';
 
 export interface StoredDay {
-	choices: Record<string, ChoiceValue>;
+	choices: Record<string, Record<string, ChoiceValue>>;
 	/** Absent follows the Swedish holiday calendar; either boolean is a manual override. */
 	holiday?: boolean;
 }
@@ -22,8 +22,15 @@ export function loadDay(date: string): StoredDay {
 		if (saved && typeof saved === 'object') {
 			if (saved.choices && typeof saved.choices === 'object' && !Array.isArray(saved.choices)) {
 				day.choices = Object.fromEntries(
-					Object.entries(saved.choices).filter(([, value]) => typeof value === 'string')
-				) as Record<string, ChoiceValue>;
+					Object.entries(saved.choices)
+						.filter(([, choices]) => choices && typeof choices === 'object' && !Array.isArray(choices))
+						.map(([template, choices]) => [
+							template,
+							Object.fromEntries(
+								Object.entries(choices as object).filter(([, value]) => typeof value === 'string')
+							)
+						])
+				) as StoredDay['choices'];
 			}
 			if (typeof saved.holiday === 'boolean') day.holiday = saved.holiday;
 		}

@@ -37,7 +37,10 @@
 	}
 
 	function choose(name: string, value: ChoiceValue) {
-		stored.choices = { ...stored.choices, [name]: value };
+		stored.choices = {
+			...stored.choices,
+			[day.template]: { ...stored.choices[day.template], [name]: value }
+		};
 		persist();
 	}
 
@@ -197,6 +200,10 @@
 </BottomNav>
 
 <style>
+	.page-header {
+		padding-bottom: 0;
+	}
+
 	.masthead {
 		display: grid;
 		grid-template-columns: auto minmax(0, 1fr);

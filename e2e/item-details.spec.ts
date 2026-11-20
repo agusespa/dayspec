@@ -20,7 +20,7 @@ test("tapping an activity shows its time range, category, conditions and calenda
               ],
             },
           },
-          days: {
+          templates: {
             daily: {
               on: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
               choices: {
@@ -33,7 +33,7 @@ test("tapping an activity shows its time range, category, conditions and calenda
               items: [
                 { use: "morning", time: "07:00" },
                 {
-                  alternative: "gym",
+                  choice: "gym",
                   paths: {
                     yes: [
                       {
@@ -139,7 +139,7 @@ test("an activity's edit link opens the editor at that activity and returns to T
               ],
             },
           },
-          days: {
+          templates: {
             daily: {
               on: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
               items: [
@@ -220,7 +220,7 @@ for (const width of [390, 1440]) {
         morning: { name: "Morning", items: [{ use: "reminders" }] },
         quiet: { name: "Quiet time", items: [{ title: "Read", duration: 10 }] },
       },
-      days: {
+      templates: {
         daily: {
           on: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
           items: [

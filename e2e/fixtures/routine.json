@@ -1,7 +1,7 @@
 {
   "settings": {
     "day_starts_at": "04:00",
-    "holiday": "saturday"
+    "holiday_template": "saturday"
   },
   "categories": {
     "chores": {
@@ -365,7 +365,7 @@
       ]
     }
   },
-  "days": {
+  "templates": {
     "weekday": {
       "on": [
         "mon",
@@ -432,7 +432,7 @@
           "use": "breakfast_review"
         },
         {
-          "alternative": "location",
+          "choice": "location",
           "paths": {
             "office": [
               {
@@ -464,7 +464,7 @@
                 "use": "snack"
               },
               {
-                "alternative": "evening",
+                "choice": "evening",
                 "paths": {
                   "dance_class": [
                     {
@@ -629,7 +629,7 @@
                 "use": "snack"
               },
               {
-                "alternative": "gym",
+                "choice": "gym",
                 "paths": {
                   "yes": [
                     {
@@ -732,7 +732,7 @@
           "use": "make_lunch"
         },
         {
-          "alternative": "evening",
+          "choice": "evening",
           "paths": {
             "going_out": [
               {
@@ -869,7 +869,7 @@
           "time": "13:10"
         },
         {
-          "alternative": "going_out",
+          "choice": "going_out",
           "paths": {
             "stay_home": [],
             "going_out": [

@@ -16,7 +16,7 @@ test("edits choices, conditional activities, durations and Notion links, then se
   try {
     const routine = {
       settings: { automatic_swedish_holidays: false },
-      days: {
+      templates: {
         work: { on: ["mon", "tue", "wed", "thu", "fri"], items: [] },
         rest: {
           on: ["sat", "sun"],
@@ -59,7 +59,7 @@ test("edits choices, conditional activities, durations and Notion links, then se
       .last()
       .click();
     await page
-      .getByRole("combobox", { name: "Alternative for new branch" })
+      .getByRole("combobox", { name: "Choice for new branch" })
       .last()
       .selectOption("choice");
     const branch = page.getByRole("region", {
@@ -80,11 +80,11 @@ test("edits choices, conditional activities, durations and Notion links, then se
     await save(page);
     const persisted = (await (await request.get("/api/routine")).json())
       .routine;
-    expect(persisted.days.work.choices.choice.options.option_2.label).toBe(
+    expect(persisted.templates.work.choices.choice.options.option_2.label).toBe(
       "Office",
     );
-    const office = persisted.days.work.items.find(
-      (entry) => entry.alternative === "choice",
+    const office = persisted.templates.work.items.find(
+      (entry) => entry.choice === "choice",
     );
     expect(office.paths.option_2).toEqual([
       { title: "Commute", duration: 20, time: "08:15" },
@@ -176,7 +176,7 @@ test("refuses a missing block duration without replacing the saved block", async
   const original = await (await request.get("/api/routine")).json();
   try {
     const routine = {
-      days: { daily: { on: ["mon"], items: [] } },
+      templates: { daily: { on: ["mon"], items: [] } },
       blocks: {
         stable: { name: "Wake Up!", items: [{ title: "Wash", duration: 5 }] },
       },

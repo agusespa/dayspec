@@ -6,19 +6,19 @@ export function choiceUsed(routine: Routine, template: string, name: string, opt
 		entries.some(
 			(entry) =>
 				isBranch(entry) &&
-				((entry.alternative === name && (option === undefined || (entry.paths[option]?.length ?? 0) > 0)) ||
+				((entry.choice === name && (option === undefined || (entry.paths[option]?.length ?? 0) > 0)) ||
 					Object.values(entry.paths).some(walk))
 		);
-	return walk(routine.days[template].items);
+	return walk(routine.templates[template].items);
 }
 
 export function addChoice(routine: Routine, template: string): Routine {
 	const next = cloneRoutine(routine);
-	const choices = (next.days[template].choices ??= {});
+	const choices = (next.templates[template].choices ??= {});
 	let key = 'choice';
 	for (let n = 2; Object.hasOwn(choices, key); n++) key = `choice_${n}`;
 	choices[key] = {
-		label: 'New alternative',
+		label: 'New choice',
 		options: { option: { label: 'Option 1' }, option_2: { label: 'Option 2' } },
 		default: 'option'
 	};
@@ -26,29 +26,28 @@ export function addChoice(routine: Routine, template: string): Routine {
 }
 
 export function removeChoice(routine: Routine, template: string, name: string): Routine {
-	if (choiceUsed(routine, template, name)) throw new Error('Remove the forks using this alternative first.');
+	if (choiceUsed(routine, template, name)) throw new Error('Remove the branches using this choice first.');
 	const next = cloneRoutine(routine);
-	delete next.days[template].choices?.[name];
+	delete next.templates[template].choices?.[name];
 	return next;
 }
 
 export function removeOption(routine: Routine, template: string, name: string, option: string): Routine {
-	const choice = routine.days[template].choices![name];
-	if (Object.keys(choice.options ?? {}).length <= 2)
-		throw new Error('A selection needs at least two options.');
+	const choice = routine.templates[template].choices![name];
+	if (Object.keys(choice.options ?? {}).length <= 2) throw new Error('A choice needs at least two options.');
 	const defaults = typeof choice.default === 'object' ? Object.values(choice.default) : [choice.default];
 	if (defaults.includes(option) || choiceUsed(routine, template, name, option))
 		throw new Error('Change defaults and empty the paths using this option first.');
 	const next = cloneRoutine(routine);
-	delete next.days[template].choices![name].options[option];
+	delete next.templates[template].choices![name].options[option];
 	const clean = (entries: Entry[]) => {
 		for (const entry of entries)
 			if (isBranch(entry)) {
-				if (entry.alternative === name) delete entry.paths[option];
+				if (entry.choice === name) delete entry.paths[option];
 				Object.values(entry.paths).forEach(clean);
 			}
 	};
-	clean(next.days[template].items);
+	clean(next.templates[template].items);
 	return next;
 }
 

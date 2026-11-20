@@ -12,10 +12,10 @@ export function branchOptions(choice: Choice): BranchOption[] {
 	}));
 }
 
-/** Every option starts as an empty path; nesting is expressed by placing a fork inside one. */
-export function newBranch(alternative: string, choice: Choice): Branch {
+/** Every option starts as an empty path; nesting is expressed by placing a branch inside one. */
+export function newBranch(name: string, choice: Choice): Branch {
 	return {
-		alternative,
+		choice: name,
 		paths: Object.fromEntries(Object.keys(choice.options).map((option) => [option, []]))
 	};
 }

@@ -8,16 +8,16 @@ import {
 	choiceUsed
 } from './choices.ts';
 import type { Choice, Routine } from './types.ts';
-const base: Routine = { days: { daily: { on: ['mon'], items: [] } } };
+const base: Routine = { templates: { daily: { on: ['mon'], items: [] } } };
 describe('choice editing', () => {
 	it('creates stable unique keys without mutating saved data', () => {
 		const one = addChoice(base, 'daily');
 		const two = addChoice(one, 'daily');
-		expect(Object.keys(two.days.daily.choices!)).toEqual(['choice', 'choice_2']);
-		expect(base.days.daily.choices).toBeUndefined();
-		expect(removeChoice(two, 'daily', 'choice').days.daily.choices).not.toHaveProperty('choice');
+		expect(Object.keys(two.templates.daily.choices!)).toEqual(['choice', 'choice_2']);
+		expect(base.templates.daily.choices).toBeUndefined();
+		expect(removeChoice(two, 'daily', 'choice').templates.daily.choices).not.toHaveProperty('choice');
 	});
-	it('protects references in nested branches and dependent alternatives', () => {
+	it('protects references in nested branches and dependent choices', () => {
 		const routine = addChoice(base, 'daily');
 		routine.blocks = {
 			outer: { name: 'Outer', items: [{ use: 'inner' }] },
@@ -26,25 +26,25 @@ describe('choice editing', () => {
 				items: [{ title: 'Commute', duration: 10 }]
 			}
 		};
-		routine.days.daily.items = [
-			{ alternative: 'choice', paths: { option: [{ use: 'outer', time: '08:00' }], option_2: [] } }
+		routine.templates.daily.items = [
+			{ choice: 'choice', paths: { option: [{ use: 'outer', time: '08:00' }], option_2: [] } }
 		];
 		expect(choiceUsed(routine, 'daily', 'choice', 'option')).toBe(true);
 		expect(choiceUsed(routine, 'daily', 'choice', 'option_2')).toBe(false);
-		expect(() => removeChoice(routine, 'daily', 'choice')).toThrow('forks');
+		expect(() => removeChoice(routine, 'daily', 'choice')).toThrow('branches');
 	});
 	it('protects defaults and referenced options while allowing unused options to be removed', () => {
 		const routine = addChoice(base, 'daily');
-		const choice = routine.days.daily.choices!.choice;
+		const choice = routine.templates.daily.choices!.choice;
 		choice.options!.third = { label: 'Third' };
 		expect(() => removeOption(routine, 'daily', 'choice', 'option')).toThrow('defaults');
-		routine.days.daily.items = [
-			{ alternative: 'choice', paths: { third: [{ time: '08:00', title: 'Work', duration: 10 }] } }
+		routine.templates.daily.items = [
+			{ choice: 'choice', paths: { third: [{ time: '08:00', title: 'Work', duration: 10 }] } }
 		];
 		expect(() => removeOption(routine, 'daily', 'choice', 'third')).toThrow('paths');
-		routine.days.daily.items = [];
+		routine.templates.daily.items = [];
 		const removed = removeOption(routine, 'daily', 'choice', 'third');
-		expect(removed.days.daily.choices!.choice.options).not.toHaveProperty('third');
+		expect(removed.templates.daily.choices!.choice.options).not.toHaveProperty('third');
 		expect(choice.options).toHaveProperty('third');
 		expect(() => removeOption(removed, 'daily', 'choice', 'option_2')).toThrow('two options');
 	});

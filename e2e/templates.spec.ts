@@ -66,7 +66,7 @@ test("saves template edits across reloads and devices", async ({
   await page
     .getByRole("textbox", { name: "Focus", exact: true })
     .fill("A quieter Saturday");
-  const index = testRoutine.days.saturday.items.findIndex(
+  const index = testRoutine.templates.saturday.items.findIndex(
     (entry) => "title" in entry,
   );
   const entry = page
@@ -84,8 +84,8 @@ test("saves template edits across reloads and devices", async ({
   await expect(page.getByText("A new Saturday activity")).toBeVisible();
   const persisted = await (await request.get("/api/routine")).json();
   expect(persisted.routine.blocks).toEqual(testRoutine.blocks);
-  expect(persisted.routine.days.saturday.choices).toEqual(
-    testRoutine.days.saturday.choices,
+  expect(persisted.routine.templates.saturday.choices).toEqual(
+    testRoutine.templates.saturday.choices,
   );
   const other = await browser.newContext();
   try {
@@ -137,9 +137,9 @@ test("edits only the selected template without editor navigation or JSON control
   expect(saved).toEqual(
     sortRoutineByTime({
       ...testRoutine,
-      days: {
-        ...testRoutine.days,
-        saturday: { ...testRoutine.days.saturday, theme: "Focused Saturday" },
+      templates: {
+        ...testRoutine.templates,
+        saturday: { ...testRoutine.templates.saturday, theme: "Focused Saturday" },
       },
     }),
   );
@@ -151,7 +151,7 @@ test("a stale save preserves the draft and cannot overwrite another device’s e
   await openEditor(page);
   await page.getByTestId("TemplateEditor-theme").fill("My unsaved draft");
   const latest = await (await request.get("/api/routine")).json();
-  latest.routine.days.saturday.theme = "Changed on another device";
+  latest.routine.templates.saturday.theme = "Changed on another device";
   const update = await request.put("/api/routine", {
     headers: { "If-Match": latest.revision },
     data: { routine: latest.routine },
@@ -167,7 +167,7 @@ test("a stale save preserves the draft and cannot overwrite another device’s e
     "My unsaved draft",
   );
   expect(
-    (await (await request.get("/api/routine")).json()).routine.days.saturday
+    (await (await request.get("/api/routine")).json()).routine.templates.saturday
       .theme,
   ).toBe("Changed on another device");
   await page.getByTestId("TemplateEditor-reload").click();
@@ -225,7 +225,7 @@ test("edits activity notes and orders entries by start time without losing detai
 }) => {
   const current = await (await request.get("/api/routine")).json();
   const routine = {
-    days: {
+    templates: {
       saturday: {
         on: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
         items: [
@@ -258,7 +258,7 @@ test("edits activity notes and orders entries by start time without losing detai
   await expect(page.getByTestId("EntryEditor-down")).toHaveCount(0);
   await save(page);
   const persisted = (await (await request.get("/api/routine")).json()).routine;
-  expect(persisted.days.saturday.items).toEqual([
+  expect(persisted.templates.saturday.items).toEqual([
     { title: "Second", time: "07:00", duration: 5 },
     { title: "First", time: "08:00", note: "Water\nWash face", duration: 5 },
   ]);
@@ -287,7 +287,7 @@ test("reports a connection failure and refreshes on reconnect", async ({
   await context.setOffline(true);
   await expect(page.getByTestId("RoutineSync-toast")).toBeVisible();
   const latest = await (await request.get("/api/routine")).json();
-  latest.routine.days.saturday.theme = "Updated from the computer";
+  latest.routine.templates.saturday.theme = "Updated from the computer";
   expect(
     (
       await request.put("/api/routine", {
@@ -322,7 +322,7 @@ test("refreshes on returning to the app without replacing an open template draft
     document.dispatchEvent(new Event("visibilitychange"));
   });
   const latest = await (await request.get("/api/routine")).json();
-  latest.routine.days.saturday.theme = "Saved on another device";
+  latest.routine.templates.saturday.theme = "Saved on another device";
   expect(
     (
       await request.put("/api/routine", {
@@ -537,7 +537,7 @@ test("new activities and shared blocks follow their start times in the editor", 
   const current = await (await request.get("/api/routine")).json();
   const routine = {
     blocks: { wake_up: testRoutine.blocks.wake_up },
-    days: {
+    templates: {
       saturday: {
         on: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
         items: [
@@ -595,11 +595,11 @@ test("new activities and shared blocks follow their start times in the editor", 
   await expect(block.getByTestId("EntryEditor-time")).toHaveValue("06:30");
   await save(page);
   const saved = (await (await request.get("/api/routine")).json()).routine;
-  expect(saved.days.saturday.items).toEqual([
+  expect(saved.templates.saturday.items).toEqual([
     { use: "wake_up", time: "06:30" },
-    routine.days.saturday.items[0],
+    routine.templates.saturday.items[0],
     { title: "Mid-morning break", time: "10:30", duration: 5 },
-    routine.days.saturday.items[1],
+    routine.templates.saturday.items[1],
   ]);
 });
 test("events and blocks have no per-item condition controls", async ({
@@ -613,7 +613,7 @@ test("events and blocks have no per-item condition controls", async ({
     await expect(page.getByTestId("ConditionsEditor")).toHaveCount(0);
     await expect(page.getByTestId("BranchSection")).toHaveCount(0);
     await expect(
-      page.getByRole("combobox", { name: "Alternative for new branch" }),
+      page.getByRole("combobox", { name: "Choice for new branch" }),
     ).toHaveCount(0);
     await page.getByTestId("TemplateEditor-cancel").click();
   }
@@ -642,7 +642,7 @@ test("shared block contents retain sequence controls without fixed times", async
 }) => {
   const current = await (await request.get("/api/routine")).json();
   const routine = {
-    days: {},
+    templates: {},
     blocks: {
       morning: {
         name: "Morning",
@@ -768,8 +768,8 @@ test("deletes a template directly from its card and preserves the rest of the li
   await expect(page).toHaveURL(/\/templates$/);
   await expect(page.getByTestId("Templates-unassigned")).toContainText("Sat");
   const expected = sortRoutineByTime(structuredClone(testRoutine));
-  delete expected.days.saturday;
-  delete expected.settings.holiday;
+  delete expected.templates.saturday;
+  delete expected.settings.holiday_template;
   expect((await (await request.get("/api/routine")).json()).routine).toEqual(
     expected,
   );
@@ -777,7 +777,7 @@ test("deletes a template directly from its card and preserves the rest of the li
   await expect(card).toHaveCount(0);
   await expect(
     page.getByTestId("Templates-list").locator("article"),
-  ).toHaveCount(Object.keys(expected.days).length);
+  ).toHaveCount(Object.keys(expected.templates).length);
 });
 test("existing shared blocks are time ordered on open, including inside branches and edit links", async ({
   page,
@@ -788,7 +788,7 @@ test("existing shared blocks are time ordered on open, including inside branches
     blocks: {
       wake: { name: "Wake up", items: [{ title: "Drink water", duration: 5 }] },
     },
-    days: {
+    templates: {
       saturday: {
         on: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
         choices: {
@@ -801,7 +801,7 @@ test("existing shared blocks are time ordered on open, including inside branches
         items: [
           { title: "Dinner", time: "19:00", duration: 30 },
           {
-            alternative: "gym",
+            choice: "gym",
             paths: {
               yes: [
                 { title: "Workout", time: "10:00", duration: 30 },
@@ -846,8 +846,8 @@ test("existing shared blocks are time ordered on open, including inside branches
   await page.getByTestId("TemplateEditor-theme").fill("Sorted routine");
   await save(page);
   const saved = (await (await request.get("/api/routine")).json()).routine;
-  expect(saved.days.saturday.items[0]).toEqual({ use: "wake", time: "06:50" });
-  expect(saved.days.saturday.items[1].paths.yes[0]).toEqual({
+  expect(saved.templates.saturday.items[0]).toEqual({ use: "wake", time: "06:50" });
+  expect(saved.templates.saturday.items[1].paths.yes[0]).toEqual({
     use: "wake",
     time: "08:00",
   });
@@ -872,4 +872,89 @@ test("existing shared blocks are time ordered on open, including inside branches
   await expect(
     page.getByTestId("EntryEditor-title").filter({ visible: true }),
   ).toHaveValue("Workout");
+});
+
+test("a shared block draft survives a remote edit and reloads the saved name", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/templates");
+  await page.getByTestId("Templates-blocks").click();
+  await page.getByTestId("TemplateEditor-block-wake_up").click();
+  const name = page.getByTestId("TemplateEditor-block-name");
+  await name.fill("My unsaved name");
+  const latest = await (await request.get("/api/routine")).json();
+  latest.routine.blocks.wake_up.name = "Saved on another device";
+  expect(
+    (
+      await request.put("/api/routine", {
+        headers: { "If-Match": latest.revision },
+        data: { routine: latest.routine },
+      })
+    ).ok(),
+  ).toBeTruthy();
+  const refresh = page.waitForResponse(
+    (res) =>
+      res.url().endsWith("/api/routine") && res.request().method() === "GET",
+  );
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await refresh;
+  await expect(page.getByTestId("TemplateEditor-remote-change")).toBeVisible();
+  const save = page.waitForResponse((res) => res.request().method() === "PUT");
+  await page.getByTestId("TemplateEditor-save").click();
+  expect((await save).status()).toBe(412);
+  await expect(name).toHaveValue("My unsaved name");
+  await page.getByTestId("TemplateEditor-reload").click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Discard changes", exact: true })
+    .click();
+  await expect(name).toHaveValue("Saved on another device");
+  await expect(page.getByTestId("TemplateEditor-save")).toBeDisabled();
+});
+
+test("reloading after another device removes a shared block returns safely to its list", async ({
+  page,
+  request,
+}) => {
+  const current = await (await request.get("/api/routine")).json();
+  current.routine.blocks.spare = {
+    name: "Spare",
+    items: [{ title: "Read", duration: 5 }],
+  };
+  expect(
+    (
+      await request.put("/api/routine", {
+        headers: { "If-Match": current.revision },
+        data: { routine: current.routine },
+      })
+    ).ok(),
+  ).toBeTruthy();
+  await page.goto("/templates");
+  await page.getByTestId("Templates-blocks").click();
+  await page.getByTestId("TemplateEditor-block-spare").click();
+  await page.getByTestId("TemplateEditor-block-name").fill("Unsaved");
+  const latest = await (await request.get("/api/routine")).json();
+  delete latest.routine.blocks.spare;
+  expect(
+    (
+      await request.put("/api/routine", {
+        headers: { "If-Match": latest.revision },
+        data: { routine: latest.routine },
+      })
+    ).ok(),
+  ).toBeTruthy();
+  const refresh = page.waitForResponse(
+    (res) =>
+      res.url().endsWith("/api/routine") && res.request().method() === "GET",
+  );
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await refresh;
+  await page.getByTestId("TemplateEditor-reload").click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Discard changes", exact: true })
+    .click();
+  await expect(page.getByTestId("TemplateEditor-block-list")).toBeVisible();
+  await expect(page.getByTestId("TemplateEditor-block-spare")).toHaveCount(0);
 });

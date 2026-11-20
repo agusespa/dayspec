@@ -4,6 +4,7 @@
 	import { routineState, saveRoutine } from '#lib/routine/client.ts';
 	import { untrack } from 'svelte';
 	import TemplateEditor from '#lib/components/TemplateEditor.svelte';
+	import SharedBlocks from '#lib/components/SharedBlocks.svelte';
 	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
 	import '#lib/styles/editor.css';
 	import { goto, replaceState } from '$app/navigation';
@@ -29,7 +30,7 @@
 	const routine = $derived($routineState.routine);
 	const keys = $derived(templateKeys(routine));
 	const remaining = $derived(availableDays(routine));
-	const holiday = $derived(routine.settings?.holiday ?? '');
+	const holiday = $derived(routine.settings?.holiday_template ?? '');
 	let key = $state(untrack(() => page.url.searchParams.get('t') ?? ''));
 	const selectedKey = $derived(keys.includes(key) ? key : (keys[0] ?? ''));
 	function edit(next: string) {
@@ -57,6 +58,14 @@
 			deleting = false;
 		}
 	}
+	function closeEditor(next: string, didSave: boolean) {
+		if (linked) return void goto('/');
+		key = next;
+		editing = false;
+		saved = didSave;
+		replaceState(key ? `?t=${key}` : '/templates', {});
+	}
+
 	function pick(next: string) {
 		key = key === next ? '' : next;
 		replaceState(key ? `?t=${key}` : '/templates', {});
@@ -78,22 +87,22 @@
 	/>
 {/if}
 {#if editing}
-	<TemplateEditor
-		{routine}
-		templateKey={selectedKey}
-		startCreating={creating}
-		manageBlocks={managingBlocks}
-		startBlock={linked?.block}
-		focus={linked?.path}
-		onclose={(next, didSave) => {
-			// Back to Today when the editor was opened from one of its items.
-			if (linked) return void goto('/');
-			key = next;
-			editing = false;
-			saved = didSave;
-			replaceState(key ? `?t=${key}` : '/templates', {});
-		}}
-	/>
+	{#if managingBlocks}
+		<SharedBlocks
+			{routine}
+			startBlock={linked?.block}
+			focus={linked?.path}
+			onclose={(didSave) => closeEditor(key, didSave)}
+		/>
+	{:else}
+		<TemplateEditor
+			{routine}
+			templateKey={selectedKey}
+			startCreating={creating}
+			focus={linked?.path}
+			onclose={closeEditor}
+		/>
+	{/if}
 {:else}
 	<section class="masthead page-header">
 		<h1>Templates</h1>

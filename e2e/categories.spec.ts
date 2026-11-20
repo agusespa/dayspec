@@ -14,7 +14,7 @@ test("Profile edits categories and the timeline uses their colours", async ({
             chores: { name: "Chores", color: "orange" },
             rest: { name: "Rest", color: "indigo" },
           },
-          days: {
+          templates: {
             daily: {
               on: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
               items: [
@@ -144,7 +144,7 @@ test("a shared block's category colours the block and the activities that don't 
               ],
             },
           },
-          days: {
+          templates: {
             daily: {
               on: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
               items: [{ use: "morning", time: "07:00" }],
@@ -172,7 +172,11 @@ test("a shared block's category colours the block and the activities that don't 
       block
         .getByTestId("Timeline-block-entry")
         .evaluateAll((items) =>
-          items.map((item) => getComputedStyle(item, "::marker").color),
+          items.map(
+            (item) =>
+              getComputedStyle(item.querySelector(".contents-dot")!)
+                .backgroundColor,
+          ),
         );
 
     await page.clock.setFixedTime(new Date("2026-11-18T06:00:00+01:00"));

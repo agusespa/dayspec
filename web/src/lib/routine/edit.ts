@@ -9,6 +9,7 @@ import {
 	type Entry,
 	type SharedEntry,
 	type Activity,
+	type Block,
 	type Routine
 } from './types.ts';
 import { dayMinutes } from './date.ts';
@@ -26,7 +27,7 @@ export function moveEntry<T>(entries: T[], index: number, direction: -1 | 1): T[
 	return next;
 }
 
-/** Sort timed entries while keeping each alternative section together and incomplete drafts in place. */
+/** Sort timed entries while keeping each branch together and incomplete drafts in place. */
 export function sortEntriesByTime(entries: Entry[], dayStart = DEFAULT_DAY_STARTS_AT): Entry[] {
 	const start = (entry: Entry): number | undefined => {
 		if (isBranch(entry)) {
@@ -50,8 +51,8 @@ export function sortEntriesByTime(entries: Entry[], dayStart = DEFAULT_DAY_START
 
 /** Present every saved template in schedule order, without changing reusable block sequences. */
 export function sortRoutineByTime(routine: Routine): Routine {
-	const days = Object.fromEntries(
-		Object.entries(routine.days).map(([key, day]) => {
+	const templates = Object.fromEntries(
+		Object.entries(routine.templates).map(([key, day]) => {
 			const sort = (entries: Entry[]): Entry[] =>
 				sortEntriesByTime(
 					entries.map((entry) =>
@@ -69,7 +70,7 @@ export function sortRoutineByTime(routine: Routine): Routine {
 			return [key, { ...day, items: sort(day.items) }];
 		})
 	);
-	return { ...routine, days };
+	return { ...routine, templates };
 }
 
 /** New drafts start with a duration that can be adjusted before saving. */
@@ -91,41 +92,44 @@ export function templateName(days: readonly Weekday[]): string {
 
 /** Library order follows each template's first assigned day, starting on Monday. */
 export function templateKeys(routine: Routine): string[] {
-	const firstDay = (key: string) => Math.min(7, ...routine.days[key].on.map((day) => WEEKDAYS.indexOf(day)));
-	return Object.keys(routine.days).sort((a, b) => firstDay(a) - firstDay(b));
+	const firstDay = (key: string) =>
+		Math.min(7, ...routine.templates[key].on.map((day) => WEEKDAYS.indexOf(day)));
+	return Object.keys(routine.templates).sort((a, b) => firstDay(a) - firstDay(b));
 }
 
 /** Days are available until assigned to a template. */
 export function availableDays(routine: Routine, except?: string): Weekday[] {
 	return WEEKDAYS.filter(
 		(day) =>
-			!Object.entries(routine.days).some(([key, template]) => key !== except && template.on.includes(day))
+			!Object.entries(routine.templates).some(
+				([key, template]) => key !== except && template.on.includes(day)
+			)
 	);
 }
 
 export function assignTemplateDays(routine: Routine, key: string, days: Weekday[]): Routine {
-	if (!Object.hasOwn(routine.days, key)) throw new Error('Template does not exist.');
+	if (!Object.hasOwn(routine.templates, key)) throw new Error('Template does not exist.');
 	const selected = WEEKDAYS.filter((day) => days.includes(day));
 	if (!selected.length) throw new Error('Select at least one day for this template.');
 	if (selected.some((day) => !availableDays(routine, key).includes(day)))
 		throw new Error('These days already belong to another template. Unselect them there first.');
 	const next = cloneRoutine(routine);
-	next.days[key].on = selected;
+	next.templates[key].on = selected;
 	return next;
 }
 
 export function createTemplate(routine: Routine, days: Weekday[]): { routine: Routine; key: string } {
 	let key = 'template';
-	for (let n = 2; Object.hasOwn(routine.days, key); n++) key = `template_${n}`;
+	for (let n = 2; Object.hasOwn(routine.templates, key); n++) key = `template_${n}`;
 	const next = cloneRoutine(routine);
-	next.days[key] = { on: [], items: [] };
+	next.templates[key] = { on: [], items: [] };
 	return { routine: assignTemplateDays(next, key, days), key };
 }
 
 export function removeTemplate(routine: Routine, key: string): Routine {
 	const next = cloneRoutine(routine);
-	delete next.days[key];
-	if (next.settings?.holiday === key) delete next.settings.holiday;
+	delete next.templates[key];
+	if (next.settings?.holiday_template === key) delete next.settings.holiday_template;
 	return next;
 }
 
@@ -139,11 +143,19 @@ export function blockReferences(routine: Routine, key: string): string[] {
 				('use' in entry && entry.use === key) || (isBranch(entry) && Object.values(entry.paths).some(uses))
 		);
 	}
-	for (const day of Object.values(routine.days)) if (uses(day.items)) references.push(templateName(day.on));
+	for (const day of Object.values(routine.templates))
+		if (uses(day.items)) references.push(templateName(day.on));
 	for (const [name, block] of Object.entries(routine.blocks ?? {}))
 		if (name !== key && uses(block.items)) references.push(block.name);
 
 	return references;
+}
+
+/** Shared blocks in name order, so lists don't depend on the order keys were saved in. */
+export function blocksByName(routine: Routine): [string, Block][] {
+	return Object.entries(routine.blocks ?? {}).sort(
+		([a, x], [b, y]) => x.name.localeCompare(y.name, undefined, { sensitivity: 'base' }) || a.localeCompare(b)
+	);
 }
 
 export function createBlock(routine: Routine, name: string): { routine: Routine; key: string } {
@@ -183,7 +195,7 @@ export function categoryReferences(routine: Routine, key: string): string[] {
 			else if ('title' in entry && entry.category === key) titles.add(entry.title);
 		}
 	};
-	for (const day of Object.values(routine.days)) visit(day.items);
+	for (const day of Object.values(routine.templates)) visit(day.items);
 	for (const block of Object.values(routine.blocks ?? {})) {
 		if (block.category === key) titles.add(block.name);
 		visit(block.items);

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { get } from 'svelte/store';
 import type { Routine } from './types.ts';
 const routine: Routine = {
-	days: {
+	templates: {
 		saturday: {
 			on: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
 			items: [{ time: '08:00', title: 'Wake', duration: 5 }]
@@ -37,7 +37,7 @@ describe('routine loading and saving', () => {
 	});
 	it('orders saved block occurrences on load and after saves, keeping the server revision', async () => {
 		const unsorted: Routine = {
-			days: {
+			templates: {
 				day: {
 					on: ['mon'],
 					items: [
@@ -51,11 +51,13 @@ describe('routine loading and saving', () => {
 		fetcher.mockResolvedValueOnce(json({ routine: unsorted, revision: '"one"' }));
 		const client = await import('./client.ts');
 		await client.loadRoutine();
-		expect(client.currentRoutine().routine.days.day.items).toEqual([...unsorted.days.day.items].reverse());
+		expect(client.currentRoutine().routine.templates.day.items).toEqual(
+			[...unsorted.templates.day.items].reverse()
+		);
 		expect(client.currentRoutine().revision).toBe('"one"');
 		fetcher.mockResolvedValueOnce(json({ routine: unsorted, revision: '"two"' }));
 		await client.saveRoutine(unsorted, '"one"');
-		expect(client.currentRoutine().routine.days.day.items[0]).toEqual({ use: 'wake', time: '07:00' });
+		expect(client.currentRoutine().routine.templates.day.items[0]).toEqual({ use: 'wake', time: '07:00' });
 		expect(client.currentRoutine().revision).toBe('"two"');
 	});
 	it('does not show a cached or bundled routine when the first request fails', async () => {
@@ -64,7 +66,7 @@ describe('routine loading and saving', () => {
 		const client = await import('./client.ts');
 		await client.loadRoutine();
 		expect(get(client.routineState)).toMatchObject({
-			routine: { days: {} },
+			routine: { templates: {} },
 			revision: '',
 			online: false,
 			loading: false,
@@ -76,7 +78,7 @@ describe('routine loading and saving', () => {
 		const client = await import('./client.ts');
 		await client.loadRoutine();
 		const edited = structuredClone(routine);
-		edited.days.saturday.theme = 'Updated';
+		edited.templates.saturday.theme = 'Updated';
 		fetcher.mockResolvedValueOnce(json({ routine: edited, revision: '"two"' }));
 		await client.saveRoutine(edited, snapshot.revision);
 		expect(fetcher).toHaveBeenLastCalledWith(
@@ -142,7 +144,7 @@ describe('automatic routine refresh', () => {
 		const client = await import('./client.ts');
 		const oldRead = client.loadRoutine();
 		const edited = structuredClone(routine);
-		edited.days.saturday.theme = 'Saved on this device';
+		edited.templates.saturday.theme = 'Saved on this device';
 		fetcher.mockResolvedValueOnce(json({ routine: edited, revision: '"two"' }));
 		await client.saveRoutine(edited, snapshot.revision);
 		resolve(json(snapshot));
@@ -205,7 +207,7 @@ describe('automatic routine refresh', () => {
 		const stop = client.startRoutineRefresh();
 		expect(fetcher).not.toHaveBeenCalled();
 		expect(get(client.routineState)).toMatchObject({
-			routine: { days: {} },
+			routine: { templates: {} },
 			revision: '',
 			loading: false,
 			online: false

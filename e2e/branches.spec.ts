@@ -12,7 +12,7 @@ const fixture = {
       items: [{ title: "Stretch legs", duration: 10 }],
     },
   },
-  days: {
+  templates: {
     weekday: {
       on: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
       choices: {
@@ -35,12 +35,12 @@ const fixture = {
       items: [
         activity("Breakfast", "07:00"),
         {
-          alternative: "location",
+          choice: "location",
           paths: {
             home: [
               activity("Work at home", "08:00"),
               {
-                alternative: "gym",
+                choice: "gym",
                 paths: { train: [activity("Lift", "17:00", 45)], rest: [] },
               },
             ],
@@ -52,7 +52,7 @@ const fixture = {
         },
         activity("Lunch", "12:00"),
         {
-          alternative: "evening",
+          choice: "evening",
           paths: {
             out: [activity("Go dancing", "20:00")],
             stay: [activity("Read at home", "20:00")],
@@ -138,7 +138,7 @@ test("edits activities in both paths and saves their actual nesting", async ({
   await office.getByTestId("EntryEditor-title").fill("Office projects");
   await page.getByTestId("TemplateEditor-save").click();
   await expect(page.getByTestId("Templates-saved")).toBeVisible();
-  const saved = (await (await request.get("/api/routine")).json()).routine.days
+  const saved = (await (await request.get("/api/routine")).json()).routine.templates
     .weekday.items;
   expect(saved[1].paths.home[0].title).toBe("Home projects");
   expect(saved[1].paths.office[1].title).toBe("Office projects");
@@ -153,7 +153,7 @@ test("adds an empty fork and inserts an activity only into its selected path", a
     .last()
     .click();
   await page
-    .getByRole("combobox", { name: "Alternative for new branch" })
+    .getByRole("combobox", { name: "Choice for new branch" })
     .selectOption("gym");
   const gym = region(page, "Gym").last();
   await gym.getByRole("button", { name: "Rest", exact: true }).click();
@@ -166,9 +166,9 @@ test("adds an empty fork and inserts an activity only into its selected path", a
   await item.getByTestId("EntryEditor-time").fill("18:00");
   await page.getByTestId("TemplateEditor-save").click();
   await expect(page.getByTestId("Templates-saved")).toBeVisible();
-  const saved = (await (await request.get("/api/routine")).json()).routine.days
+  const saved = (await (await request.get("/api/routine")).json()).routine.templates
     .weekday.items;
-  const fork = saved.find((entry) => entry.alternative === "gym");
+  const fork = saved.find((entry) => entry.choice === "gym");
   expect(fork.paths).toEqual({
     train: [],
     rest: [activity("Evening walk", "18:00", 5)],
@@ -202,7 +202,7 @@ test("opens a deeply nested activity from Daily and returns to the same day", as
     page.getByRole("heading", { name: "Today", exact: true }),
   ).toBeVisible();
 });
-test("child alternatives depend on containment and later forks remain independent", async ({
+test("child choices depend on containment and later forks remain independent", async ({
   page,
 }) => {
   await page.goto("/");
@@ -244,14 +244,14 @@ test("shows defaults in the selected path without rule subtitles or availability
     0,
   );
 });
-test("prevents nesting an alternative inside itself in the editor", async ({
+test("prevents nesting a choice inside itself in the editor", async ({
   page,
 }) => {
   await edit(page);
   const gym = region(page, "Gym");
   await gym.getByRole("button", { name: "+ Add branch", exact: true }).click();
   const select = gym.getByRole("combobox", {
-    name: "Alternative for new branch",
+    name: "Choice for new branch",
   });
   await expect(select.locator('option[value="location"]')).toHaveCount(0);
   await expect(select.locator('option[value="gym"]')).toHaveCount(0);
@@ -281,9 +281,9 @@ test("deleting a fork uses the app modal and removes all its paths only after sa
   );
   await page.getByTestId("TemplateEditor-save").click();
   await expect(page.getByTestId("Templates-saved")).toBeVisible();
-  const items = (await (await request.get("/api/routine")).json()).routine.days
+  const items = (await (await request.get("/api/routine")).json()).routine.templates
     .weekday.items;
-  expect(items.map((entry) => entry.alternative ?? entry.title)).toEqual([
+  expect(items.map((entry) => entry.choice ?? entry.title)).toEqual([
     "Breakfast",
     "Lunch",
     "evening",

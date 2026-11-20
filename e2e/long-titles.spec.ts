@@ -11,7 +11,7 @@ for (const width of [320, 390]) {
 				data: {
 					routine: {
 						blocks: { morning: { name, items: [{ title: name, duration: 15, note: 'Details' }] } },
-						days: {
+						templates: {
 							daily: {
 								on: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
 								items: [

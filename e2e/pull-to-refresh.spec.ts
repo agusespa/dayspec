@@ -11,20 +11,21 @@ test.beforeEach(async ({ page }) => {
 async function pull(page: Page, distance: number) {
   await page.evaluate((distance) => {
     const fire = (type: string, y: number) => {
-      const touch = new Touch({
+      // WebKit doesn't expose a constructible Touch; both engines accept this synthetic event payload.
+      const touch = {
         identifier: 1,
         target: document.body,
         clientX: 180,
         clientY: y,
-      });
-      document.body.dispatchEvent(
-        new TouchEvent(type, {
+      };
+      const event = Object.assign(
+        new Event(type, { bubbles: true, cancelable: true }),
+        {
           touches: type === "touchend" ? [] : [touch],
           changedTouches: [touch],
-          bubbles: true,
-          cancelable: true,
-        }),
+        },
       );
+      document.body.dispatchEvent(event);
     };
     fire("touchstart", 100);
     for (let y = 110; y <= 100 + distance; y += 10) fire("touchmove", y);

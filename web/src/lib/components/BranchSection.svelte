@@ -45,7 +45,7 @@
 		<span>{choice.label ?? humanize(name)}</span>
 		{@render actions?.()}
 	</header>
-	<div class="branch-options" role="group" aria-label={`${choice.label ?? humanize(name)} alternatives`}>
+	<div class="branch-options" role="group" aria-label={`${choice.label ?? humanize(name)} options`}>
 		{#each options as option}
 			<button
 				type="button"

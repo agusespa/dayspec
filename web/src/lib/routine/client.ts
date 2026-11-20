@@ -1,7 +1,5 @@
-import schema from '../../../../routine.schema.json';
 import { get, writable } from 'svelte/store';
 import type { Routine } from './types.ts';
-import { validateRoutine } from './validate.ts';
 import { sortRoutineByTime } from './edit.ts';
 
 export interface Snapshot {
@@ -17,7 +15,7 @@ interface State extends Snapshot {
 const UNAVAILABLE = 'Could not refresh your routine. Check your connection and retry.';
 
 export const routineState = writable<State>({
-	routine: { days: {} },
+	routine: { templates: {} },
 	revision: '',
 	loading: true,
 	refreshing: false,
@@ -47,8 +45,8 @@ async function read(response: Response): Promise<Snapshot> {
 	}
 	const body = await response.json();
 	if (!response.ok) throw new Error(body.error || 'Could not save templates. Try again.');
-	if (typeof body.revision !== 'string' || validateRoutine(body.routine, schema).length) {
-		throw new Error('The server returned invalid templates. Your current routine has been kept.');
+	if (typeof body.revision !== 'string') {
+		throw new Error('The server returned an unexpected response. Your current routine has been kept.');
 	}
 	return body as Snapshot;
 }

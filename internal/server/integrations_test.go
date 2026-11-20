@@ -22,7 +22,7 @@ func integrationServer(t *testing.T) (*routine.Store, *httptest.Server) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	store, err := routine.Open(filepath.Join(t.TempDir(), "routine.json"), []byte(`{"days":{"work":{"on":["mon"],"items":[{"title":"Work","time":"08:00","duration":60}]}}}`), schema)
+	store, err := routine.Open(filepath.Join(t.TempDir(), "routine.json"), []byte(`{"templates":{"work":{"on":["mon"],"items":[{"title":"Work","time":"08:00","duration":60}]}}}`), schema)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +82,7 @@ func TestIntegrationHTTPFlow(t *testing.T) {
 	if code != 422 || store.Get().Revision != before.Revision {
 		t.Fatal("referenced block delete accepted")
 	}
-	code, raw, _ = apiRequest(t, srv.URL, "PUT", "/api/settings", `{"settings":{"holiday":"work"}}`, saved.Revision)
+	code, raw, _ = apiRequest(t, srv.URL, "PUT", "/api/settings", `{"settings":{"holiday_template":"work"}}`, saved.Revision)
 	if code != 200 {
 		t.Fatal(code, string(raw))
 	}
@@ -92,7 +92,7 @@ func TestIntegrationHTTPFlow(t *testing.T) {
 		t.Fatal(code, string(raw))
 	}
 	_ = json.Unmarshal(raw, &saved)
-	if strings.Contains(string(saved.Routine), `"holiday"`) {
+	if strings.Contains(string(saved.Routine), `"holiday_template"`) {
 		t.Fatal("dangling holiday setting")
 	}
 	code, _, _ = apiRequest(t, srv.URL, "DELETE", "/api/blocks/stable", "", saved.Revision)
@@ -201,7 +201,7 @@ func TestMCPIntegrationFlow(t *testing.T) {
 		{"save_block", map[string]any{"id": "stable", "revision": "stale", "block": map[string]any{"name": "Changed", "items": []any{map[string]any{"title": "Wake", "duration": 5}}}}},
 		{"save_template", map[string]any{"id": "work", "template": map[string]any{"on": []string{"mon"}, "items": []any{}}}},
 		{"delete_block", map[string]any{"id": "stable", "revision": before.Revision}},
-		{"save_settings", map[string]any{"settings": map[string]any{"holiday": "missing"}, "revision": before.Revision}},
+		{"save_settings", map[string]any{"settings": map[string]any{"holiday_template": "missing"}, "revision": before.Revision}},
 		{"save_block", map[string]any{"id": "bad", "revision": before.Revision, "block": map[string]any{"name": "Bad", "items": []any{map[string]any{"title": "No duration"}}}}},
 		{"get_routine", map[string]any{"unknown": true}},
 	} {
@@ -213,7 +213,7 @@ func TestMCPIntegrationFlow(t *testing.T) {
 			t.Fatal("rejected tool changed routine")
 		}
 	}
-	result, current = callTool(t, session, "save_settings", map[string]any{"settings": map[string]any{"holiday": "work"}, "revision": current.Revision})
+	result, current = callTool(t, session, "save_settings", map[string]any{"settings": map[string]any{"holiday_template": "work"}, "revision": current.Revision})
 	if result.IsError {
 		t.Fatal(result)
 	}
@@ -225,7 +225,7 @@ func TestMCPIntegrationFlow(t *testing.T) {
 	if result.IsError {
 		t.Fatal(result)
 	}
-	result, _ = callTool(t, session, "update_routine", map[string]any{"routine": json.RawMessage(`{"days":{}}`), "revision": current.Revision})
+	result, _ = callTool(t, session, "update_routine", map[string]any{"routine": json.RawMessage(`{"templates":{}}`), "revision": current.Revision})
 	if result.IsError {
 		t.Fatal(result)
 	}

@@ -8,7 +8,7 @@
 		type Choice,
 		type SharedEntry
 	} from '#lib/routine/types.ts';
-	import { moveEntry, newEntry, sortEntriesByTime } from '#lib/routine/edit.ts';
+	import { blocksByName, moveEntry, newEntry, sortEntriesByTime } from '#lib/routine/edit.ts';
 	import EntryEditor from './EntryEditor.svelte';
 	import BranchSection from './BranchSection.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
@@ -124,7 +124,7 @@
 					data-testid="EntryEditor-use"
 					onclick={(event) => {
 						event.currentTarget.closest('details')!.open = false;
-						const use = Object.keys(routine.blocks!)[0];
+						const [use] = blocksByName(routine)[0];
 						add(use);
 					}}>Shared block</button
 				>
@@ -180,8 +180,7 @@
 							data-testid="EntryEditor-block"
 							value={entry.use}
 							onchange={(e) => set(i, 'use', e.currentTarget.value)}
-							>{#each Object.entries(routine.blocks ?? {}) as [id, block]}<option value={id}
-									>{block.name}</option
+							>{#each blocksByName(routine) as [id, block]}<option value={id}>{block.name}</option
 								>{/each}</select
 						></label
 					>
@@ -293,7 +292,7 @@
 {#if deleteRequest}
 	<ConfirmDialog
 		title="Delete branch?"
-		message={`“${deleteRequest.label}” and all activities in its alternatives will be removed from this template.`}
+		message={`“${deleteRequest.label}” and all activities in its paths will be removed from this template.`}
 		returnFocus={deleteRequest.trigger}
 		oncancel={() => (deleteRequest = undefined)}
 		onconfirm={() => {
@@ -309,7 +308,7 @@
 	{#if !entries.length && ancestors.length}<p class="branch-empty">Continue routine</p>{/if}
 	{#each entries as entry, i (entryKey(entry))}
 		{#if isBranch(entry)}
-			{@const name = entry.alternative}
+			{@const name = entry.choice}
 			{@const choice = choices[name]}
 			{@const target = focus?.[0] === i}
 			<BranchSection {name} {choice} preferred={target ? Object.keys(choice.options)[focus![1]] : undefined}>
@@ -360,8 +359,8 @@
 				>
 			</header>
 			<label
-				>Alternative<select
-					aria-label="Alternative for new branch"
+				>Choice<select
+					aria-label="Choice for new branch"
 					{@attach (node) => node.focus()}
 					onchange={(event) => {
 						const key = event.currentTarget.value;
@@ -371,7 +370,7 @@
 						addingBranch = false;
 					}}
 				>
-					<option value="">Select an alternative…</option>
+					<option value="">Select a choice…</option>
 					{#each Object.entries(choices).filter(([key]) => !ancestors.includes(key)) as [key, choice]}<option
 							value={key}>{choice.label ?? key}</option
 						>{/each}

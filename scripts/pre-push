@@ -7,7 +7,7 @@ set -e
 ./scripts/verify.sh
 
 if [ -f playwright.config.js ] || [ -f playwright.config.ts ]; then
-    npx playwright install chromium
+    npx playwright install chromium webkit
     npm run test:e2e
 else
     echo ">> No Playwright config yet, skipping e2e"

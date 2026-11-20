@@ -18,11 +18,11 @@ func TestResourceEditsPreserveOrderAndOtherData(t *testing.T) {
 		t.Fatal(err)
 	}
 	template := json.RawMessage(`{"on":["mon","tue","wed","thu","fri","sat","sun"],"choices":{"z_location":{"options":{"home":{},"office":{}},"default":"office"},"a_gym":{"options":{"yes":{"label":"Yes"},"no":{"label":"No"}},"default":"yes"}},"items":[{"use":"stable","time":"07:00"}]}`)
-	saved, err := s.ChangeResource("days", "saturday", template, added.Revision, false)
+	saved, err := s.ChangeResource("templates", "saturday", template, added.Revision, false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	value, revision, err := s.ReadResource("days", "saturday")
+	value, revision, err := s.ReadResource("templates", "saturday")
 	if err != nil || revision != saved.Revision || !strings.Contains(string(value), `"z_location":{"options"`) {
 		t.Fatal(string(value), revision, err)
 	}
@@ -59,9 +59,9 @@ func TestResourceValidationAndRevisions(t *testing.T) {
 		remove      bool
 		want        error
 	}{
-		{"days", "new", json.RawMessage(`{}`), "", false, ErrRevisionRequired},
-		{"days", "new", json.RawMessage(`{}`), "stale", false, ErrConflict},
-		{"days", "bad-id", json.RawMessage(`{}`), initial.Revision, false, ErrInvalidResource},
+		{"templates", "new", json.RawMessage(`{}`), "", false, ErrRevisionRequired},
+		{"templates", "new", json.RawMessage(`{}`), "stale", false, ErrConflict},
+		{"templates", "bad-id", json.RawMessage(`{}`), initial.Revision, false, ErrInvalidResource},
 		{"unknown", "x", json.RawMessage(`{}`), initial.Revision, false, ErrInvalidResource},
 		{"settings", "x", json.RawMessage(`{}`), initial.Revision, false, ErrInvalidResource},
 		{"blocks", "missing", nil, initial.Revision, true, ErrNotFound},
@@ -125,15 +125,15 @@ func TestResourceConcurrentEdits(t *testing.T) {
 func TestDeleteHolidayTemplateClearsSetting(t *testing.T) {
 	s, _ := testStore(t)
 	initial := s.Get()
-	settings, err := s.ChangeResource("settings", "", json.RawMessage(`{"holiday":"saturday","automatic_swedish_holidays":false}`), initial.Revision, false)
+	settings, err := s.ChangeResource("settings", "", json.RawMessage(`{"holiday_template":"saturday","automatic_swedish_holidays":false}`), initial.Revision, false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	saved, err := s.ChangeResource("days", "saturday", nil, settings.Revision, true)
+	saved, err := s.ChangeResource("templates", "saturday", nil, settings.Revision, true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(string(saved.Routine), `"holiday"`) || !strings.Contains(string(saved.Routine), `"automatic_swedish_holidays":false`) {
+	if strings.Contains(string(saved.Routine), `"holiday_template"`) || !strings.Contains(string(saved.Routine), `"automatic_swedish_holidays":false`) {
 		t.Fatal(string(saved.Routine))
 	}
 }

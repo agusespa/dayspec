@@ -35,7 +35,7 @@ for (const width of [1024, 1440]) {
       (request) => request.method() === "PUT",
     );
     await page.getByTestId("TemplateEditor-save").click();
-    expect((await response).postDataJSON().routine.days.weekday.theme).toBe(
+    expect((await response).postDataJSON().routine.templates.weekday.theme).toBe(
       "Desktop editing",
     );
     await expect(page.getByTestId("Templates-saved")).toBeVisible();

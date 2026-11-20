@@ -45,7 +45,7 @@ export interface UseEntry {
 }
 
 export interface Branch {
-	alternative: string;
+	choice: string;
 	paths: Record<string, Entry[]>;
 }
 
@@ -81,13 +81,13 @@ export interface DayTemplate {
 export interface Routine {
 	settings?: {
 		day_starts_at?: string;
-		holiday?: string;
+		holiday_template?: string;
 		automatic_swedish_holidays?: boolean;
 		calendar?: 'google';
 	};
 	categories?: Record<string, Category>;
 	blocks?: Record<string, Block>;
-	days: Record<string, DayTemplate>;
+	templates: Record<string, DayTemplate>;
 }
 
 export function isBranch(entry: Entry | SharedEntry): entry is Branch {

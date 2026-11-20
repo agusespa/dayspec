@@ -1,17 +1,14 @@
 /** Acceptance cases use a test-only routine; the shipped default starts empty. */
 import { describe, expect, it } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { loadRoutine } from '../../../routine-plugin.ts';
+import { readFileSync } from 'node:fs';
+import { ROUTINE_PATH } from '../../../routine-plugin.ts';
 import { outlineDay } from './outline.ts';
 import { resolveDay, type ResolvedDay } from './resolve.ts';
 import type { Routine } from './types.ts';
 import schema from '../../../../routine.schema.json';
 import { validateRoutine } from './validate.ts';
-const routine = loadRoutine(
-	new URL('../../../../e2e/fixtures/routine.json', import.meta.url).pathname
-) as Routine;
+const read = (path: string) => JSON.parse(readFileSync(path, 'utf8')) as Routine;
+const routine = read(new URL('../../../../e2e/fixtures/routine.json', import.meta.url).pathname);
 // A week in November 2026: Monday the 16th to Sunday the 22nd.
 const MON = '2026-11-16';
 const TUE = '2026-11-17';
@@ -33,7 +30,9 @@ describe('routine fixture', () => {
 		expect(validateRoutine(routine, schema)).toEqual([]);
 	});
 	it('Tuesday, office, dance class', () => {
-		const day = resolveDay(routine, TUE, { choices: { location: 'office', evening: 'dance_class' } });
+		const day = resolveDay(routine, TUE, {
+			choices: { weekday: { location: 'office', evening: 'dance_class' } }
+		});
 		expect(day.theme).toBe('Career + Personal Development');
 		expect(day.items.find((i) => i.time === '07:25')?.note).toContain('Body trimming');
 		const all = titles(day);
@@ -51,29 +50,29 @@ describe('routine fixture', () => {
 		expect(day.choices.map((c) => c.name)).not.toContain('evening');
 		expect(day.items.find((i) => i.time === '08:00')?.note).toContain('Facial hair');
 		expect(titles(day)).toContain('Dress — go to gym — Strength training (55′)');
-		const off = resolveDay(routine, WED, { choices: { gym: 'no' } });
+		const off = resolveDay(routine, WED, { choices: { weekday: { gym: 'no' } } });
 		expect(titles(off)).not.toContain('Dress — go to gym — Strength training (55′)');
 		for (const t of SHARED_EVENING) expect(titles(off)).toContain(t);
 	});
 	it('Monday workshop replaces the shared evening', () => {
-		const day = resolveDay(routine, MON, { choices: { evening: 'workshop' } });
+		const day = resolveDay(routine, MON, { choices: { weekday: { evening: 'workshop' } } });
 		expect(titles(day)).toContain('Dance workshop + social');
 		for (const t of SHARED_EVENING) expect(titles(day)).not.toContain(t);
 	});
 	it('offers the workshop on Mondays only', () => {
 		const options = (date: string) =>
-			resolveDay(routine, date, { choices: { location: 'office' } })
+			resolveDay(routine, date, { choices: { weekday: { location: 'office' } } })
 				.choices.find((c) => c.name === 'evening')
 				?.options.map((o) => o.value);
 		expect(options(MON)).toContain('workshop');
 		expect(options(TUE)).not.toContain('workshop');
 		// A stored workshop choice on another day falls back to the default.
-		const tue = resolveDay(routine, TUE, { choices: { evening: 'workshop' } });
+		const tue = resolveDay(routine, TUE, { choices: { weekday: { evening: 'workshop' } } });
 		expect(choice(tue, 'evening')).toBe('dance_class');
 	});
 	it('Friday ends after lunch unless there are evening plans', () => {
 		expect(titles(resolveDay(routine, FRI)).at(-1)).toBe('Make lunch');
-		const out = resolveDay(routine, FRI, { choices: { evening: 'going_out' } });
+		const out = resolveDay(routine, FRI, { choices: { friday: { evening: 'going_out' } } });
 		expect(titles(out).at(-1)).toBe('Commute to city');
 	});
 	it('Saturday sorts lucid dreaming after midnight last', () => {
@@ -82,7 +81,7 @@ describe('routine fixture', () => {
 		expect(titles(day).at(-1)).toBe('Lucid dreaming');
 		expect(day.items.some((i) => i.note?.includes('Head shaving'))).toBe(false);
 		expect(
-			resolveDay(routine, SAT, { choices: { going_out: 'going_out' } }).items.some((i) =>
+			resolveDay(routine, SAT, { choices: { saturday: { going_out: 'going_out' } } }).items.some((i) =>
 				i.note?.includes('Head shaving')
 			)
 		).toBe(true);
@@ -108,31 +107,17 @@ describe('routine fixture', () => {
 		]);
 	});
 	it('every template can be outlined', () => {
-		for (const key of Object.keys(routine.days))
+		for (const key of Object.keys(routine.templates))
 			expect(outlineDay(routine, key).items.length).toBeGreaterThan(0);
 	});
 });
-describe('JSON routine loading', () => {
-	it('rejects malformed JSON and invalid routine references', () => {
-		const dir = mkdtempSync(join(tmpdir(), 'dayspec-json-'));
-		const path = join(dir, 'routine.json');
-		try {
-			writeFileSync(path, '{');
-			expect(() => loadRoutine(path)).toThrow(SyntaxError);
-			writeFileSync(path, JSON.stringify({ ...routine, settings: { holiday: 'missing' } }));
-			expect(() => loadRoutine(path)).toThrow('there is no day template "missing"');
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-		}
-	});
-});
 it('ships an empty routine that resolves safely on weekdays, weekends and holidays', () => {
-	const empty = loadRoutine() as Routine;
+	const empty = read(ROUTINE_PATH);
 	expect(empty.blocks).toBeUndefined();
 	for (const date of [MON, TUE, WED, FRI, SAT, SUN]) {
 		expect(resolveDay(empty, date).items).toEqual([]);
 		expect(resolveDay(empty, date, { holiday: true }).items).toEqual([]);
 	}
-	expect(Object.keys(empty.days)).toEqual(['daily']);
+	expect(Object.keys(empty.templates)).toEqual(['daily']);
 	expect(outlineDay(empty, 'daily').items).toEqual([]);
 });

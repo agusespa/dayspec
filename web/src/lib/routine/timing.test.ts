@@ -42,7 +42,7 @@ describe('reusable durations', () => {
 					]
 				}
 			},
-			days: {
+			templates: {
 				mon: { on: ['mon'], items: [{ use: 'morning', time: '08:00' }] },
 				tue: { on: ['tue'], items: [{ use: 'morning', time: '10:00' }] }
 			}
@@ -76,13 +76,13 @@ describe('reusable durations', () => {
 					items: [{ title: 'Tea', duration: 10 }]
 				}
 			},
-			days: {
+			templates: {
 				mon: {
 					on: ['mon'],
 					choices: { plan: { options: { include: {}, skip: {} }, default: 'skip' } },
 					items: [
 						{ use: 'sequence', time: '08:00' },
-						{ alternative: 'plan', paths: { include: [{ use: 'sequence', time: '10:00' }], skip: [] } },
+						{ choice: 'plan', paths: { include: [{ use: 'sequence', time: '10:00' }], skip: [] } },
 						{ use: 'single', time: '23:55' }
 					]
 				}

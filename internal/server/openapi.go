@@ -28,7 +28,7 @@ func openAPIDocument(raw json.RawMessage) map[string]any {
 	for _, resource := range []struct {
 		path, key string
 		shape     any
-	}{{"templates", "template", map[string]any{"$ref": "#/$defs/day"}}, {"blocks", "block", props["blocks"].(map[string]any)["additionalProperties"]}, {"settings", "settings", props["settings"]}} {
+	}{{"templates", "template", map[string]any{"$ref": "#/$defs/template"}}, {"blocks", "block", props["blocks"].(map[string]any)["additionalProperties"]}, {"settings", "settings", props["settings"]}} {
 		base := "/api/" + resource.path
 		if resource.path == "settings" {
 			paths[base] = map[string]any{"get": get("Read settings"), "put": write("Replace all settings", resource.key, resource.shape)}
@@ -40,7 +40,7 @@ func openAPIDocument(raw json.RawMessage) map[string]any {
 		paths[base+"/{id}"] = map[string]any{"parameters": []any{map[string]any{"name": "id", "in": "path", "required": true, "schema": map[string]any{"$ref": "#/$defs/id"}}}, "get": get("Read " + resource.key), "put": write("Create or replace "+resource.key, resource.key, resource.shape), "delete": deletion}
 	}
 	paths["/api/schema"] = map[string]any{"get": get("Read the complete library JSON Schema")}
-	document := map[string]any{"openapi": "3.1.0", "info": map[string]any{"title": "Dayspec HTTP API", "version": "1", "description": "Authenticated by Cloudflare Access, like Gympass. All integrations, including n8n and AI clients, use the existing Cloudflare-protected public hostname and Access service credentials. No separate application token. All writes require If-Match; returned revisions are global to the library. Per-date browser overrides are not stored here."}, "servers": []any{map[string]any{"url": "/"}}, "paths": paths, "components": map[string]any{"schemas": schema["$defs"], "securitySchemes": map[string]any{"accessClientID": map[string]any{"type": "apiKey", "in": "header", "name": "CF-Access-Client-Id"}, "accessClientSecret": map[string]any{"type": "apiKey", "in": "header", "name": "CF-Access-Client-Secret"}}}, "security": []any{map[string]any{"accessClientID": []string{}, "accessClientSecret": []string{}}}}
+	document := map[string]any{"openapi": "3.1.0", "info": map[string]any{"title": "Dayspec HTTP API", "version": "1", "description": "Authenticated by Cloudflare Access. All integrations, including n8n and AI clients, use the existing Cloudflare-protected public hostname and Access service credentials. No separate application token. All writes require If-Match; returned revisions are global to the library. Per-date browser overrides are not stored here."}, "servers": []any{map[string]any{"url": "/"}}, "paths": paths, "components": map[string]any{"schemas": schema["$defs"], "securitySchemes": map[string]any{"accessClientID": map[string]any{"type": "apiKey", "in": "header", "name": "CF-Access-Client-Id"}, "accessClientSecret": map[string]any{"type": "apiKey", "in": "header", "name": "CF-Access-Client-Secret"}}}, "security": []any{map[string]any{"accessClientID": []string{}, "accessClientSecret": []string{}}}}
 	rawDocument, _ := json.Marshal(document)
 	rawDocument = bytes.ReplaceAll(rawDocument, []byte("#/$defs/"), []byte("#/components/schemas/"))
 	var result map[string]any

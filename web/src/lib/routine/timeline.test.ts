@@ -21,7 +21,7 @@ const routine: Routine = {
 			items: [{ title: 'Tea', duration: 5 }]
 		}
 	},
-	days: {
+	templates: {
 		daily: {
 			on: ['mon'],
 			items: [
@@ -58,7 +58,7 @@ describe('shared block timeline groups', () => {
 	it('keeps nested shared blocks inside the outer occurrence and supports one-item blocks', () => {
 		const nested: Routine = {
 			...routine,
-			days: {
+			templates: {
 				daily: {
 					on: ['mon'],
 					choices: { plan: { options: { include: {}, skip: {} }, default: 'skip' } },
@@ -80,12 +80,12 @@ describe('shared block timeline groups', () => {
 	it('omits a block when its enclosing branch is inactive', () => {
 		const filtered: Routine = {
 			...routine,
-			days: {
+			templates: {
 				daily: {
 					on: ['mon'],
 					choices: { plan: { options: { include: {}, skip: {} }, default: 'skip' } },
 					items: [
-						{ alternative: 'plan', paths: { include: [{ use: 'morning', time: '07:00' }], skip: [] } },
+						{ choice: 'plan', paths: { include: [{ use: 'morning', time: '07:00' }], skip: [] } },
 						{ time: '08:00', title: 'Work', duration: 5 }
 					]
 				}
@@ -102,7 +102,7 @@ describe('shared block timeline groups', () => {
 	it('does not merge identical blocks used in different occurrences', () => {
 		const grouped: Routine = {
 			...routine,
-			days: {
+			templates: {
 				daily: {
 					on: ['mon'],
 					choices: { plan: { options: { include: {}, skip: {} }, default: 'skip' } },
@@ -119,10 +119,10 @@ describe('shared block timeline groups', () => {
 	it('handles empty timelines', () => expect(groupTimeline([])).toEqual([]));
 });
 describe('unplanned timeline time', () => {
-	function gaps(items: Routine['days'][string]['items']) {
+	function gaps(items: Routine['templates'][string]['items']) {
 		return [
 			...timelineGaps(
-				groupTimeline(resolveDay({ days: { daily: { on: ['mon'], items } } }, '2026-11-16').items)
+				groupTimeline(resolveDay({ templates: { daily: { on: ['mon'], items } } }, '2026-11-16').items)
 			).values()
 		];
 	}
@@ -174,7 +174,7 @@ describe('unplanned timeline time', () => {
 
 it('keeps a full-day activity occupied across midnight', () => {
 	const routine: Routine = {
-		days: {
+		templates: {
 			daily: {
 				on: ['mon'],
 				items: [
@@ -189,8 +189,8 @@ it('keeps a full-day activity occupied across midnight', () => {
 });
 
 describe('timeline group duration', () => {
-	function blockItems(items: Routine['days'][string]['items']) {
-		const day = resolveDay({ ...routine, days: { daily: { on: ['mon'], items } } }, '2026-11-16');
+	function blockItems(items: Routine['templates'][string]['items']) {
+		const day = resolveDay({ ...routine, templates: { daily: { on: ['mon'], items } } }, '2026-11-16');
 		return groupTimeline(day.items)[0].items;
 	}
 	it('spans the clock when the block is timed', () => {

@@ -1,6 +1,6 @@
 {
   "settings": {
-    "holiday": "daily"
+    "holiday_template": "daily"
   },
   "categories": {
     "chores": { "name": "Chores", "color": "orange" },
@@ -9,7 +9,7 @@
     "social": { "name": "Social & Leisure", "color": "pink" },
     "rest": { "name": "Rest & Sleep", "color": "indigo" }
   },
-  "days": {
+  "templates": {
     "daily": {
       "on": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
       "items": []

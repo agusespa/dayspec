@@ -13,12 +13,14 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     ...devices["iPhone 13"],
-    // iPhone preset defaults to WebKit; run it in Chromium (what CI installs).
-    browserName: "chromium",
     // The routine is in local time; pin it so the clock-based tests are stable anywhere.
     timezoneId: "Europe/Stockholm",
     trace: "retain-on-failure",
   },
+  projects: [
+    { name: "chromium", use: { browserName: "chromium" } },
+    { name: "webkit", use: { browserName: "webkit" } },
+  ],
   webServer: {
     command: "./scripts/e2e-server.sh",
     url: `http://localhost:${PORT}/`,

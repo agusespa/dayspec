@@ -20,7 +20,7 @@ const routine: Routine = {
 			]
 		}
 	},
-	days: {
+	templates: {
 		daily: {
 			on: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
 			items: [

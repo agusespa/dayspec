@@ -179,7 +179,7 @@ test("creates shared blocks even before the first template exists", async ({
     (
       await request.put("/api/routine", {
         headers: { "If-Match": current.revision },
-        data: { routine: { days: {} } },
+        data: { routine: { templates: {} } },
       })
     ).ok(),
   ).toBeTruthy();
@@ -253,7 +253,7 @@ test("creates a duration block and sets its start time only in the template", as
     { title: "Stretch", duration: 15 },
     { title: "Drink water", duration: 5 },
   ]);
-  expect(saved.days.daily.items[0]).toMatchObject({
+  expect(saved.templates.daily.items[0]).toMatchObject({
     use: "block",
     time: "09:00",
   });

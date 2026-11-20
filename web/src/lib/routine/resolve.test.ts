@@ -3,7 +3,7 @@ import { resolveDay, currentIndex, templateFor, slug, resolveLink, withCategory 
 import type { Routine } from './types.ts';
 const MON = '2026-11-16';
 const routine: Routine = {
-	settings: { automatic_swedish_holidays: false, holiday: 'off' },
+	settings: { automatic_swedish_holidays: false, holiday_template: 'off' },
 	categories: { health: { name: 'Health', color: 'green' }, chores: { name: 'Chores', color: 'orange' } },
 	blocks: {
 		inner: { name: 'Inner', items: [{ title: 'Water', duration: 5 }] },
@@ -23,7 +23,7 @@ const routine: Routine = {
 			]
 		}
 	},
-	days: {
+	templates: {
 		work: {
 			on: ['mon', 'tue', 'wed', 'thu', 'fri'],
 			choices: {
@@ -38,14 +38,14 @@ const routine: Routine = {
 				{ title: 'Breakfast', time: '06:30', duration: 15 },
 				{ use: 'morning', time: '07:00' },
 				{
-					alternative: 'location',
+					choice: 'location',
 					paths: {
 						home: [{ title: 'Home', time: '08:00', duration: 60 }],
 						office: [{ title: 'Office', time: '08:00', duration: 60 }]
 					}
 				},
 				{
-					alternative: 'evening',
+					choice: 'evening',
 					paths: {
 						gym: [{ title: 'Lift', time: '17:00', duration: 45 }],
 						workshop: [{ title: 'Workshop', time: '17:00', duration: 180 }]
@@ -85,7 +85,7 @@ describe('routine resolution', () => {
 	});
 	it('uses weekday defaults and permits independent per-date overrides', () => {
 		expect(resolveDay(routine, '2026-11-18').items.some((i) => i.title === 'Home')).toBe(true);
-		const day = resolveDay(routine, MON, { choices: { location: 'home', evening: 'workshop' } });
+		const day = resolveDay(routine, MON, { choices: { work: { location: 'home', evening: 'workshop' } } });
 		expect(day.items.map((i) => i.title)).toContain('Home');
 		expect(day.items.map((i) => i.title)).toContain('Workshop');
 		expect(day.choices.map((c) => c.value)).toEqual(['home', 'workshop']);
@@ -96,18 +96,20 @@ describe('routine resolution', () => {
 				.choices.find((c) => c.name === 'evening')!
 				.options.map((o) => o.value)
 		).toContain('workshop');
-		const day = resolveDay(routine, '2026-11-17', { choices: { evening: 'workshop', location: 'unknown' } });
+		const day = resolveDay(routine, '2026-11-17', {
+			choices: { work: { evening: 'workshop', location: 'unknown' } }
+		});
 		expect(day.choices.map((c) => c.value)).toEqual(['office', 'gym']);
 		expect(day.items.some((i) => i.title === 'Workshop')).toBe(false);
 	});
-	it('does not expose unused alternative definitions as day controls', () => {
+	it('does not expose unused choice definitions as day controls', () => {
 		const copy = structuredClone(routine);
-		copy.days.work.choices!.unused = { options: { a: {}, b: {} }, default: 'a' };
+		copy.templates.work.choices!.unused = { options: { a: {}, b: {} }, default: 'a' };
 		expect(resolveDay(copy, MON).choices.map((c) => c.name)).toEqual(['location', 'evening']);
 	});
 	it('keeps repeated activities unique without changing their notes', () => {
 		const copy: Routine = {
-			days: {
+			templates: {
 				day: {
 					on: ['mon'],
 					items: [
@@ -124,9 +126,9 @@ describe('routine resolution', () => {
 	it('uses the chosen holiday template and falls back to the weekday when none is configured', () => {
 		expect(resolveDay(routine, MON, { holiday: true }).items[0].title).toBe('Rest');
 		const copy = structuredClone(routine);
-		delete copy.settings!.holiday;
+		delete copy.settings!.holiday_template;
 		expect(resolveDay(copy, MON, { holiday: true }).template).toBe('work');
-		expect(resolveDay({ days: {} }, MON).items).toEqual([]);
+		expect(resolveDay({ templates: {} }, MON).items).toEqual([]);
 	});
 	it('uses automatic Swedish holidays unless the preference or date override disables them', () => {
 		const copy = { ...routine, settings: { ...routine.settings, automatic_swedish_holidays: true } };
@@ -136,12 +138,12 @@ describe('routine resolution', () => {
 	});
 	it('skips a fork with no options available on the viewed weekday without crashing', () => {
 		const copy: Routine = {
-			settings: { holiday: 'weekend' },
-			days: {
+			settings: { holiday_template: 'weekend' },
+			templates: {
 				weekend: {
 					on: ['sat'],
 					choices: { meal: { options: { a: { only_on: ['sat'] }, b: { only_on: ['sat'] } }, default: 'a' } },
-					items: [{ alternative: 'meal', paths: { a: [{ title: 'Lunch', time: '12:00', duration: 30 }] } }]
+					items: [{ choice: 'meal', paths: { a: [{ title: 'Lunch', time: '12:00', duration: 30 }] } }]
 				}
 			}
 		};
@@ -150,7 +152,7 @@ describe('routine resolution', () => {
 	});
 	it('does not mutate stored templates when resolving another day', () => {
 		const before = structuredClone(routine);
-		resolveDay(routine, MON, { choices: { location: 'home' } });
+		resolveDay(routine, MON, { choices: { work: { location: 'home' } } });
 		expect(routine).toEqual(before);
 	});
 });
@@ -170,7 +172,7 @@ describe('small resolver helpers', () => {
 	});
 	it('resolves direct template assignments and missing weekdays', () => {
 		expect(templateFor(routine, 'mon', false)).toBe('work');
-		expect(templateFor({ days: {} }, 'mon', false)).toBe('');
+		expect(templateFor({ templates: {} }, 'mon', false)).toBe('');
 	});
 	it('identifies upcoming, current, tied and final activities', () => {
 		const items = [480, 600, 600, 900].map((sortKey) => ({ sortKey })) as Parameters<typeof currentIndex>[0];
@@ -180,4 +182,45 @@ describe('small resolver helpers', () => {
 		expect(currentIndex(items, 1500)).toEqual({ index: 3, upcoming: false });
 		expect(currentIndex([], 700)).toEqual({ index: -1, upcoming: false });
 	});
+});
+
+it('scopes overrides to the selected template when toggling holidays', () => {
+	const choice = { options: { option: {}, option_2: {} }, default: 'option' };
+	const routine: Routine = {
+		settings: { holiday_template: 'rest', automatic_swedish_holidays: false },
+		templates: {
+			work: {
+				on: ['mon'],
+				choices: { choice },
+				items: [
+					{
+						choice: 'choice',
+						paths: {
+							option: [{ title: 'Office', time: '08:00', duration: 30 }],
+							option_2: [{ title: 'WFH', time: '08:00', duration: 30 }]
+						}
+					}
+				]
+			},
+			rest: {
+				on: ['sun'],
+				choices: { choice },
+				items: [
+					{
+						choice: 'choice',
+						paths: {
+							option: [{ title: 'Stay home', time: '18:00', duration: 30 }],
+							option_2: [{ title: 'Go out', time: '18:00', duration: 30 }]
+						}
+					}
+				]
+			}
+		}
+	};
+	const overrides = { choices: { work: { choice: 'option_2' } } };
+	expect(resolveDay(routine, MON, overrides).items[0].title).toBe('WFH');
+	expect(resolveDay(routine, MON, { ...overrides, holiday: true }).items[0].title).toBe('Stay home');
+	const both = { choices: { ...overrides.choices, rest: { choice: 'option_2' } } };
+	expect(resolveDay(routine, MON, { ...both, holiday: true }).items[0].title).toBe('Go out');
+	expect(resolveDay(routine, MON, { ...both, holiday: false }).items[0].title).toBe('WFH');
 });

@@ -28,7 +28,7 @@
 </script>
 
 <div class="details" data-testid="ItemDetails">
-	<div class="facts">
+	<div class="facts metadata-strip">
 		<div class="metadata">
 			<span class="duration" data-testid="ItemDetails-duration">{item.duration} min</span>
 			{#if range}<span class="range mono" data-testid="ItemDetails-range">{range}</span>{/if}
@@ -59,21 +59,13 @@
 	.details {
 		display: flex;
 		flex-direction: column;
-		gap: 0.1rem;
+		gap: 0.3rem;
 		margin: -0.9rem 0 0.2rem var(--indent);
 		font-size: var(--text-sm);
 		line-height: 1.4;
 	}
 	p {
 		margin: 0;
-	}
-	.facts {
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
-		min-height: 32px;
-		color: var(--muted);
-		font-size: var(--text-xs);
 	}
 	.metadata {
 		display: flex;
@@ -111,7 +103,6 @@
 	}
 	.actions {
 		display: flex;
-		margin-left: auto;
 		flex: none;
 	}
 	.note {

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-test('saves weekday defaults for all alternatives while keeping daily overrides', async ({
+test('saves weekday defaults for all choices while keeping daily overrides', async ({
 	page,
 	request,
 }) => {
@@ -7,13 +7,13 @@ test('saves weekday defaults for all alternatives while keeping daily overrides'
 	try {
 		const routine = {
 			settings: { automatic_swedish_holidays: false },
-			days: {
+			templates: {
 				work: {
 					on: ['mon', 'tue', 'wed', 'thu', 'fri'],
 					items: [
-						{ alternative: 'place', paths: {} },
-						{ alternative: 'outing', paths: {} },
-						{ alternative: 'exercise', paths: {} },
+						{ choice: 'place', paths: {} },
+						{ choice: 'outing', paths: {} },
+						{ choice: 'exercise', paths: {} },
 					],
 					choices: {
 						place: {
@@ -81,7 +81,7 @@ test('saves weekday defaults for all alternatives while keeping daily overrides'
 		await page.getByTestId('TemplateEditor-save').click();
 		await expect(page.getByTestId('Templates-saved')).toBeVisible();
 		const saved = (await (await request.get('/api/routine')).json()).routine
-			.days.work.choices;
+			.templates.work.choices;
 		expect(saved.place.default).toEqual({
 			mon: 'office',
 			tue: 'office',
@@ -172,7 +172,7 @@ test('Saturday offers named evening options in the daily view and editor', async
 	try {
 		const routine = {
 			settings: { automatic_swedish_holidays: false },
-			days: {
+			templates: {
 				saturday: {
 					on: ['sat'],
 					choices: {
@@ -188,7 +188,7 @@ test('Saturday offers named evening options in the daily view and editor', async
 					items: [
 						{ title: 'Dinner', time: '19:00', duration: 30 },
 						{
-							alternative: 'evening',
+							choice: 'evening',
 							paths: {
 								going_out: [
 									{ title: 'Get ready to go out', time: '18:30', duration: 30 },
@@ -249,10 +249,10 @@ test('Saturday offers named evening options in the daily view and editor', async
 		await page.getByTestId('TemplateEditor-save').click();
 		await expect(page.getByTestId('Templates-saved')).toBeVisible();
 		const saved = (await (await request.get('/api/routine')).json()).routine;
-		expect(saved.days.saturday.choices.evening).not.toHaveProperty('type');
-		expect(saved.days.saturday.choices.evening.default).toBe('going_out');
-		expect(saved.days.saturday.items).toEqual(
-			[...routine.days.saturday.items].reverse(),
+		expect(saved.templates.saturday.choices.evening).not.toHaveProperty('type');
+		expect(saved.templates.saturday.choices.evening.default).toBe('going_out');
+		expect(saved.templates.saturday.items).toEqual(
+			[...routine.templates.saturday.items].reverse(),
 		);
 	} finally {
 		const current = await (await request.get('/api/routine')).json();
@@ -265,4 +265,64 @@ test('Saturday offers named evening options in the daily view and editor', async
 			).ok(),
 		).toBeTruthy();
 	}
+});
+
+test("holiday templates keep their own daily selections across toggles and reloads", async ({
+  page,
+}) => {
+  const choice = { options: { option: {}, option_2: {} }, default: "option" };
+  const routine = {
+    settings: { holiday_template: "rest", automatic_swedish_holidays: false },
+    templates: {
+      work: {
+        on: ["mon"],
+        choices: { choice },
+        items: [
+          {
+            choice: "choice",
+            paths: {
+              option: [{ title: "Office", time: "08:00", duration: 30 }],
+              option_2: [{ title: "WFH", time: "08:00", duration: 30 }],
+            },
+          },
+        ],
+      },
+      rest: {
+        on: ["sun"],
+        choices: { choice },
+        items: [
+          {
+            choice: "choice",
+            paths: {
+              option: [{ title: "Stay home", time: "18:00", duration: 30 }],
+              option_2: [{ title: "Go out", time: "18:00", duration: 30 }],
+            },
+          },
+        ],
+      },
+    },
+  };
+  await page.route("**/api/routine", (route) =>
+    route.fulfill({ json: { routine, revision: '"template-scopes"' } }),
+  );
+  await page.clock.setFixedTime(new Date("2026-11-16T12:00:00+01:00"));
+  await page.goto("/");
+  const first = page.getByTestId("Day-choice-choice-option");
+  const second = page.getByTestId("Day-choice-choice-option_2");
+  const holiday = page.getByTestId("Day-holiday-toggle");
+  await second.click();
+  await expect(page.getByTestId("TimelineItem-toggle")).toHaveText(["WFH"]);
+  await holiday.check();
+  await expect(first).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByTestId("TimelineItem-toggle")).toHaveText([
+    "Stay home",
+  ]);
+  await second.click();
+  await holiday.uncheck();
+  await expect(second).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByTestId("TimelineItem-toggle")).toHaveText(["WFH"]);
+  await page.reload();
+  await expect(page.getByTestId("TimelineItem-toggle")).toHaveText(["WFH"]);
+  await holiday.check();
+  await expect(page.getByTestId("TimelineItem-toggle")).toHaveText(["Go out"]);
 });

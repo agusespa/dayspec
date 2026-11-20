@@ -13,8 +13,8 @@ import (
 
 const mcpInstructions = `Dayspec stores the user's routine templates, shared blocks and settings.
 Read get_routine and get_schema before editing. Times are local HH:MM; durations are minutes. Template IDs and shared-block IDs are stable; change a block's name without changing its ID. A weekday can belong to only one template. Block activities have durations; set the start time on the block occurrence in the template.
-Every write requires the revision from the latest read or successful write. If it conflicts, read again and reconcile your edit; never retry a stale whole-library overwrite. save_template and save_block replace only the named resource. update_routine replaces the entire library: anything omitted is deleted. save_settings replaces all settings. Forks select one alternative and contain named option paths; nest forks to express child alternatives.
-Per-date holiday and choice overrides live in the browser and are not available here. Saved changes appear in the app on its next refresh. Authentication is handled by Cloudflare Access, as with Gympass.`
+Every write requires the revision from the latest read or successful write. If it conflicts, read again and reconcile your edit; never retry a stale whole-library overwrite. save_template and save_block replace only the named resource. update_routine replaces the entire library: anything omitted is deleted. save_settings replaces all settings. A branch follows the option selected for one of its template's choices and contains a path per option; nest branches to express dependent choices.
+Per-date holiday and choice overrides live in the browser and are not available here. Saved changes appear in the app on its next refresh. Authentication is handled by Cloudflare Access.`
 
 func newMCPHandler(store *routine.Store) http.Handler {
 	if store == nil {
@@ -23,8 +23,8 @@ func newMCPHandler(store *routine.Store) http.Handler {
 	server := newMCPServer(store)
 	return mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server { return server }, &mcp.StreamableHTTPOptions{
 		Stateless: true, JSONResponse: true, MaxRequestBodyBytes: maxRequestBody,
-		// Cloudflared may connect over loopback with the public hostname. Like
-		// Gympass, the origin is private and authentication is at Cloudflare Access.
+		// Cloudflared may connect over loopback with the public hostname. The
+		// origin is private and authentication is at Cloudflare Access.
 		DisableLocalhostProtection: true,
 	})
 }
@@ -112,7 +112,7 @@ func newMCPServer(store *routine.Store) *mcp.Server {
 	for _, resource := range []struct {
 		name, section string
 		shape         any
-	}{{"template", "days", map[string]any{"$ref": "#/$defs/day"}}, {"block", "blocks", properties["blocks"].(map[string]any)["additionalProperties"]}} {
+	}{{"template", "templates", map[string]any{"$ref": "#/$defs/template"}}, {"block", "blocks", properties["blocks"].(map[string]any)["additionalProperties"]}} {
 		register("save_"+resource.name, "Create or replace one "+resource.name+" by stable ID, preserving the rest of the library. Send its complete contents; omitted fields are removed.", map[string]any{"id": id, "revision": revision, resource.name: resource.shape}, []string{"id", "revision", resource.name}, false, func(a toolArguments) (any, error) {
 			value := a.Template
 			if resource.name == "block" {

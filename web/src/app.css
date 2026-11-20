@@ -214,7 +214,7 @@ button:disabled {
 	}
 }
 
-/* Alternative paths keep the timeline's split and join visible. */
+/* Branch paths keep the timeline's split and join visible. */
 .branch-section {
 	position: relative;
 	min-width: 0;
@@ -307,7 +307,7 @@ button:disabled {
 	transform: translateY(3px);
 }
 
-/* One time column and rail for common activities and alternative paths. */
+/* One time column and rail for common activities and branch paths. */
 .template-flow {
 	display: flow-root;
 	position: relative;

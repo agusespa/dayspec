@@ -1,9 +1,10 @@
 import { expect, it } from 'vitest';
-import { outlineDay } from './outline.ts';
+import { outlineDay, outlineChoices } from './outline.ts';
+import { resolveDay } from './resolve.ts';
 import type { Routine } from './types.ts';
 it('outlines all explicit paths in chronological order without condition labels', () => {
 	const routine: Routine = {
-		days: {
+		templates: {
 			weekday: {
 				on: ['mon', 'tue'],
 				choices: {
@@ -14,7 +15,7 @@ it('outlines all explicit paths in chronological order without condition labels'
 				},
 				items: [
 					{
-						alternative: 'place',
+						choice: 'place',
 						paths: {
 							home: [{ title: 'Late', time: '09:00', duration: 5 }],
 							office: [{ title: 'Early', time: '08:00', duration: 5, note: 'Make tea' }]
@@ -37,4 +38,45 @@ it('outlines all explicit paths in chronological order without condition labels'
 	]);
 	expect(day.items[0]).not.toHaveProperty('conditions');
 	expect(routine).toEqual(before);
+});
+
+it('keeps nested block timing, categories, alerts, notes and repeated occurrences identical to Daily', () => {
+	const routine: Routine = {
+		settings: { automatic_swedish_holidays: false },
+		categories: { health: { name: 'Health', color: 'green' }, rest: { name: 'Rest', color: 'orange' } },
+		blocks: {
+			inner: {
+				name: 'Inner',
+				items: [
+					{ title: 'Stretch', duration: 7, alert: true, note: 'Slowly', link: 'https://example.com/stretch' }
+				]
+			},
+			outer: {
+				name: 'Outer',
+				category: 'health',
+				items: [{ use: 'inner' }, { title: 'Rest', duration: 4, category: 'rest' }]
+			}
+		},
+		templates: {
+			day: {
+				on: ['mon'],
+				items: [
+					{ use: 'outer', time: '23:55' },
+					{ use: 'outer', time: '01:00' }
+				]
+			}
+		}
+	};
+	const daily = resolveDay(routine, '2026-11-16').items.map(({ source, ...item }) => item);
+	const preview = outlineDay(routine, 'day').items;
+	expect(preview).toEqual(daily);
+	expect(preview.map((item) => [item.time, item.end])).toEqual([
+		['23:55', '00:02'],
+		['00:02', '00:06'],
+		['01:00', '01:07'],
+		['01:07', '01:11']
+	]);
+	expect(preview.map((item) => item.categoryName)).toEqual(['Health', 'Rest', 'Health', 'Rest']);
+	expect(new Set(preview.map((item) => item.sharedBlock?.id)).size).toBe(2);
+	expect(outlineChoices(routine.templates.day)).toEqual([]);
 });

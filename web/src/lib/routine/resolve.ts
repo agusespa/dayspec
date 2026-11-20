@@ -13,6 +13,7 @@ import {
 	type Choice,
 	type ChoiceValue,
 	type Entry,
+	type Branch,
 	type SharedEntry,
 	type Activity,
 	type CategoryColor,
@@ -21,7 +22,7 @@ import {
 } from './types.ts';
 
 export interface DayOverrides {
-	choices?: Record<string, ChoiceValue>;
+	choices?: Record<string, Record<string, ChoiceValue>>;
 	holiday?: boolean;
 }
 
@@ -101,14 +102,14 @@ export function dayStartsAt(routine: Routine): string {
 
 export function templateFor(routine: Routine, weekday: Weekday, holiday: boolean): string {
 	if (holiday) {
-		const preferred = routine.settings?.holiday ?? '';
-		if (routine.days[preferred]) return preferred;
+		const preferred = routine.settings?.holiday_template ?? '';
+		if (routine.templates[preferred]) return preferred;
 	}
-	const key = Object.keys(routine.days).find((k) => routine.days[k].on.includes(weekday));
+	const key = Object.keys(routine.templates).find((k) => routine.templates[k].on.includes(weekday));
 	return key ?? '';
 }
 
-function resolveChoice(
+export function resolveChoice(
 	name: string,
 	choice: Choice,
 	weekday: Weekday,
@@ -126,11 +127,9 @@ function resolveChoice(
 
 interface Context {
 	routine: Routine;
-	weekday: Weekday;
-	overrides: Record<string, ChoiceValue>;
-	resolved: Map<string, ResolvedChoice>;
-	/** Definitions for the alternatives referenced by forks. */
 	choices: Record<string, Choice>;
+	/** Omit for a preview of every path; Daily returns just the selected option. */
+	selectPath?: (branch: Branch) => string | undefined;
 }
 
 /** Follow selected fork paths and expand shared blocks. */
@@ -158,21 +157,18 @@ function collect(entries: (Entry | SharedEntry)[], ctx: Context, scope: Scope): 
 		const location = `${scope.location}/${index}`;
 		const source = { ...scope.source, path: [...scope.source.path, index] };
 		if (isBranch(entry)) {
-			const definition = ctx.choices[entry.alternative];
-			if (!definition) throw new Error(`Unknown alternative "${entry.alternative}"`);
-			const selected =
-				ctx.resolved.get(entry.alternative) ??
-				resolveChoice(entry.alternative, definition, ctx.weekday, ctx.overrides[entry.alternative]);
-			if (!selected) continue;
-			ctx.resolved.set(entry.alternative, selected);
-			const optionIndex = Object.keys(definition.options).indexOf(selected.value);
-			out.push(
-				...collect(entry.paths[selected.value] ?? [], ctx, {
-					...scope,
-					location: `${location}/${selected.value}`,
-					source: { ...source, path: [...source.path, optionIndex] }
-				})
-			);
+			const options = ctx.selectPath ? [ctx.selectPath(entry)] : Object.keys(entry.paths);
+			for (const option of options) {
+				if (option === undefined) continue;
+				const optionIndex = Object.keys(ctx.choices[entry.choice]?.options ?? entry.paths).indexOf(option);
+				out.push(
+					...collect(entry.paths[option] ?? [], ctx, {
+						...scope,
+						location: `${location}/${option}`,
+						source: { ...source, path: [...source.path, optionIndex] }
+					})
+				);
+			}
 		} else if (isUse(entry)) {
 			const block = ctx.routine.blocks?.[entry.use];
 			if (!block) throw new Error(`Unknown block "${entry.use}"`);
@@ -227,7 +223,13 @@ export function resolveLink(link: string | undefined): ResolvedLink | undefined 
 	return link ? { label: new URL(link).hostname, url: link } : undefined;
 }
 
-function toResolved(def: CollectedItem, ctx: Context, used: Set<string>, sortKey: number): ResolvedItem {
+function toResolved(
+	def: CollectedItem,
+	routine: Routine,
+	used: Set<string>,
+	sortKey: number,
+	sources: boolean
+): ResolvedItem {
 	const base = `${def.time ?? ''}-${slug(def.title)}`;
 	let id = base;
 	for (let n = 2; used.has(id); n++) id = `${base}~${n}`;
@@ -240,14 +242,33 @@ function toResolved(def: CollectedItem, ctx: Context, used: Set<string>, sortKey
 		duration: def.duration,
 		approx: def.approx ?? false,
 		title: def.title,
-		color: categoryColor(ctx.routine, def.category),
-		categoryName: categoryOf(ctx.routine, def.category)?.name,
-		source: def.source,
+		color: categoryColor(routine, def.category),
+		categoryName: categoryOf(routine, def.category)?.name,
+		...(sources ? { source: def.source } : {}),
 		alert: def.alert ?? false,
 		link: resolveLink(def.link),
 		note: def.note,
 		sortKey
 	};
+}
+
+/** Resolve activity details and shared-block times identically in Daily and template previews. */
+export function resolveEntries(
+	entries: Entry[],
+	routine: Routine,
+	choices: Record<string, Choice> = {},
+	selectPath?: (branch: Branch) => string | undefined
+): ResolvedItem[] {
+	const ctx: Context = { routine, choices, selectPath };
+	const used = new Set<string>();
+	let previous = -1;
+	const items = collect(entries, ctx, { location: 'root', source: { path: [] } }).map((def) => {
+		const key = def.time ? dayMinutes(def.time, dayStartsAt(routine)) : previous;
+		previous = key;
+		return toResolved(def, routine, used, key, !!selectPath);
+	});
+	// Stable sorting keeps equal start times in their saved order.
+	return items.sort((a, b) => a.sortKey - b.sortKey);
 }
 
 export function resolveDay(routine: Routine, date: string, overrides: DayOverrides = {}): ResolvedDay {
@@ -258,35 +279,27 @@ export function resolveDay(routine: Routine, date: string, overrides: DayOverrid
 			getSwedishPublicHolidayName(date) !== undefined);
 	const template = templateFor(routine, weekday, holiday);
 	if (!template) return { date, weekday, template: '', holiday, choices: [], items: [] };
-	const ctx: Context = {
-		routine,
-		weekday,
-		overrides: overrides.choices ?? {},
-		resolved: new Map(),
-		choices: routine.days[template].choices ?? {}
-	};
-	const start = dayStartsAt(routine);
-
-	const used = new Set<string>();
-	let previous = -1;
-	const items = collect(routine.days[template].items, ctx, {
-		location: 'root',
-		source: { path: [] }
-	}).map((def) => {
-		const key = def.time ? dayMinutes(def.time, start) : previous;
-		previous = key;
-		return toResolved(def, ctx, used, key);
+	const choices = routine.templates[template].choices ?? {};
+	const resolved = new Map<string, ResolvedChoice>();
+	const overridesForTemplate = overrides.choices?.[template] ?? {};
+	const items = resolveEntries(routine.templates[template].items, routine, choices, (branch) => {
+		const definition = choices[branch.choice];
+		if (!definition) throw new Error(`Unknown choice "${branch.choice}"`);
+		const selected =
+			resolved.get(branch.choice) ??
+			resolveChoice(branch.choice, definition, weekday, overridesForTemplate[branch.choice]);
+		if (!selected) return undefined;
+		resolved.set(branch.choice, selected);
+		return selected.value;
 	});
-	// Array.prototype.sort is stable, so equal times keep their file order.
-	items.sort((a, b) => a.sortKey - b.sortKey);
 
 	return {
 		date,
 		weekday,
 		template,
-		theme: routine.days[template].theme,
+		theme: routine.templates[template].theme,
 		holiday,
-		choices: [...ctx.resolved.values()],
+		choices: [...resolved.values()],
 		items
 	};
 }

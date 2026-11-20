@@ -14,7 +14,7 @@ test("template activities require a start time and save one optional link", asyn
     };
     const routine = {
       settings: { automatic_swedish_holidays: false },
-      days: {
+      templates: {
         daily: {
           on: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
           items: [activity],
@@ -36,7 +36,7 @@ test("template activities require a start time and save one optional link", asyn
     ]) {
       const invalid = {
         ...routine,
-        days: { daily: { ...routine.days.daily, items: [item] } },
+        templates: { daily: { ...routine.templates.daily, items: [item] } },
       };
       expect(
         (
@@ -71,7 +71,7 @@ test("template activities require a start time and save one optional link", asyn
     await page.getByTestId("TemplateEditor-save").click();
     await expect(page.getByTestId("Templates-saved")).toBeVisible();
     expect(
-      (await (await request.get("/api/routine")).json()).routine.days.daily
+      (await (await request.get("/api/routine")).json()).routine.templates.daily
         .items,
     ).toEqual([
       { ...activity, time: "10:30", link: "https://example.com/book" },
@@ -95,7 +95,7 @@ test("template activities require a start time and save one optional link", asyn
     await page.getByTestId("TemplateEditor-save").click();
     await expect(page.getByTestId("Templates-saved")).toBeVisible();
     expect(
-      (await (await request.get("/api/routine")).json()).routine.days.daily
+      (await (await request.get("/api/routine")).json()).routine.templates.daily
         .items,
     ).toEqual([{ ...activity, time: "10:30" }]);
   } finally {

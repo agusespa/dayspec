@@ -20,7 +20,7 @@ func (e *ValidationError) Unwrap() error { return e.Cause }
 
 // ReadResource returns a resource and revision from the same snapshot.
 func (s *Store) ReadResource(section, id string) (json.RawMessage, string, error) {
-	if section != "days" && section != "blocks" && section != "settings" {
+	if section != "templates" && section != "blocks" && section != "settings" {
 		return nil, "", ErrInvalidResource
 	}
 	current := s.Get()
@@ -51,7 +51,7 @@ func (s *Store) ChangeResource(section, id string, value json.RawMessage, revisi
 	if revision == "" {
 		return Snapshot{}, ErrRevisionRequired
 	}
-	if section != "days" && section != "blocks" && section != "settings" {
+	if section != "templates" && section != "blocks" && section != "settings" {
 		return Snapshot{}, ErrInvalidResource
 	}
 	if (section == "settings" && (id != "" || remove)) || (section != "settings" && !resourceID.MatchString(id)) {
@@ -78,13 +78,13 @@ func (s *Store) ChangeResource(section, id string, value json.RawMessage, revisi
 				return Snapshot{}, ErrNotFound
 			}
 			delete(collection, id)
-			if section == "days" {
+			if section == "templates" {
 				settings := map[string]json.RawMessage{}
 				_ = json.Unmarshal(root["settings"], &settings)
 				var holiday string
-				_ = json.Unmarshal(settings["holiday"], &holiday)
+				_ = json.Unmarshal(settings["holiday_template"], &holiday)
 				if holiday == id {
-					delete(settings, "holiday")
+					delete(settings, "holiday_template")
 					root["settings"], _ = json.Marshal(settings)
 				}
 			}

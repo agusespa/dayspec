@@ -1,14 +1,15 @@
 <script lang="ts">
 	import type { Routine, Entry } from '#lib/routine/types.ts';
-	import { outlineDay, weekdayLabel, type OutlineOption } from '#lib/routine/outline.ts';
+	import { outlineChoices, weekdayLabel, type OutlineOption } from '#lib/routine/outline.ts';
+	import { resolveEntries } from '#lib/routine/resolve.ts';
 	import { branchOptions } from '#lib/routine/branches.ts';
 	import BranchSection from './BranchSection.svelte';
 	import Timeline from './Timeline.svelte';
 	import TimelineItem from './TimelineItem.svelte';
 	let { routine, template }: { routine: Routine; template: string } = $props();
-	const day = $derived(routine.days[template]);
+	const day = $derived(routine.templates[template]);
 	const choices = $derived(day.choices ?? {});
-	const metadata = $derived(outlineDay(routine, template).choices);
+	const metadata = $derived(outlineChoices(day));
 	function optionNote(option: OutlineOption): string {
 		const notes: string[] = [];
 		if (option.defaultOn.length === day.on.length) notes.push('Default');
@@ -17,7 +18,7 @@
 		return notes.join(' · ');
 	}
 	function outline(entries: Entry[]) {
-		return outlineDay({ ...routine, days: { [template]: { ...day, items: entries } } }, template).items;
+		return resolveEntries(entries, routine, choices);
 	}
 </script>
 
@@ -30,7 +31,7 @@
 {#snippet flow(entries: Entry[])}
 	{#each entries as entry, i}
 		{#if 'paths' in entry}
-			{@const name = entry.alternative}
+			{@const name = entry.choice}
 			<BranchSection {name} choice={choices[name]}>
 				{#snippet details(value)}
 					{@const option = metadata.find((c) => c.name === name)?.options[
