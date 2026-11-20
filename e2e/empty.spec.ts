@@ -51,9 +51,16 @@ test("starts empty, saves the first item, and can return to an empty template", 
   await page.getByTestId("Templates-edit").click();
   await expect(page.getByTestId("TemplateEditor-name")).toHaveText("Daily");
   await page.getByTestId("EntryEditor-add").click();
-  await page.getByTestId("EntryEditor-event").click();
-  await expandEntries(page);
-  await page.getByTestId("EntryEditor-title").fill("My first routine item");
+  await page.getByTestId("EntryEditor-activity").click();
+  const dialog = page.getByRole("dialog", {
+    name: "Add activity",
+    exact: true,
+  });
+  await dialog.getByTestId("EntryEditor-title").fill("My first routine item");
+  await dialog.getByTestId("EntryEditor-time").fill("08:00");
+  await dialog
+    .getByRole("button", { name: "Add activity", exact: true })
+    .click();
   await page.getByTestId("TemplateEditor-save").click();
   await expect(page.getByTestId("Templates-saved")).toBeVisible();
   await page.reload();
@@ -92,9 +99,16 @@ test("lists templates and offers creation only for unassigned days", async ({
   await page.getByTestId("TemplateEditor-new-sun").check();
   await page.getByTestId("TemplateEditor-create-confirm").click();
   await page.getByTestId("EntryEditor-add").click();
-  await page.getByTestId("EntryEditor-event").click();
-  await expandEntries(page);
-  await page.getByTestId("EntryEditor-title").fill("Weekend walk");
+  await page.getByTestId("EntryEditor-activity").click();
+  const dialog = page.getByRole("dialog", {
+    name: "Add activity",
+    exact: true,
+  });
+  await dialog.getByTestId("EntryEditor-title").fill("Weekend walk");
+  await dialog.getByTestId("EntryEditor-time").fill("08:00");
+  await dialog
+    .getByRole("button", { name: "Add activity", exact: true })
+    .click();
   await page.getByTestId("TemplateEditor-save").click();
   await expect(page.getByTestId("Templates-saved")).toBeVisible();
   await expect(
@@ -212,11 +226,17 @@ test("creates a duration block and sets its start time only in the template", as
   await expandEntries(page);
   await page.getByTestId("EntryEditor-duration").fill("15");
   await page.getByTestId("EntryEditor-add").click();
-  await page.getByTestId("EntryEditor-event").click();
-  await expandEntries(page);
-  await page.getByTestId("EntryEditor-title").nth(1).fill("Drink water");
-  await expandEntries(page);
-  await page.getByTestId("EntryEditor-duration").nth(1).fill("5");
+  await page.getByTestId("EntryEditor-activity").click();
+  const activityDialog = page.getByRole("dialog", {
+    name: "Add activity",
+    exact: true,
+  });
+  await expect(activityDialog.getByTestId("EntryEditor-time")).toHaveCount(0);
+  await activityDialog.getByTestId("EntryEditor-title").fill("Drink water");
+  await activityDialog.getByTestId("EntryEditor-duration").fill("5");
+  await activityDialog
+    .getByRole("button", { name: "Add activity", exact: true })
+    .click();
   await page.getByTestId("TemplateEditor-save").click();
   await expect(page.getByTestId("Templates-saved")).toBeVisible();
   await page
@@ -225,8 +245,15 @@ test("creates a duration block and sets its start time only in the template", as
     .click();
   await page.getByTestId("EntryEditor-add").click();
   await page.getByTestId("EntryEditor-use").click();
-  await expandEntries(page);
-  await page.getByTestId("EntryEditor-time").fill("09:00");
+  const blockDialog = page.getByRole("dialog", {
+    name: "Add shared block",
+    exact: true,
+  });
+  await blockDialog.getByTestId("EntryEditor-block").selectOption("block");
+  await blockDialog.getByTestId("EntryEditor-time").fill("09:00");
+  await blockDialog
+    .getByRole("button", { name: "Add shared block", exact: true })
+    .click();
   await page.getByTestId("TemplateEditor-save").click();
   const block = page
     .getByTestId("Templates-row-daily")

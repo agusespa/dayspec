@@ -65,7 +65,7 @@ describe('template drafts', () => {
 		expect(entries[0]).toHaveProperty('use', 'shared');
 	});
 	it('allows independent entries with identical titles', () => {
-		expect(newEntry(routine)).toEqual({ title: 'New item', duration: 5 });
+		expect(newEntry(routine)).toEqual({ title: 'New activity', duration: 5 });
 	});
 });
 describe('template creation and naming', () => {
@@ -117,7 +117,7 @@ describe('shared block management', () => {
 		expect(created.key).toBe('block');
 		expect(created.routine.blocks?.block).toEqual({
 			name: 'Morning routine',
-			items: [{ title: 'New item', duration: 5 }]
+			items: [{ title: 'New activity', duration: 5 }]
 		});
 		expect(routine.blocks).not.toHaveProperty('block');
 		const other = createBlock(created.routine, 'Morning routine');

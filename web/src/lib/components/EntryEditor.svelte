@@ -8,10 +8,12 @@
 		type Choice,
 		type SharedEntry
 	} from '#lib/routine/types.ts';
-	import { blocksByName, moveEntry, newEntry, sortEntriesByTime } from '#lib/routine/edit.ts';
+	import { moveEntry, sortEntriesByTime } from '#lib/routine/edit.ts';
 	import EntryEditor from './EntryEditor.svelte';
 	import BranchSection from './BranchSection.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
+	import EntryFields from './EntryFields.svelte';
+	import AddEntryDialog from './AddEntryDialog.svelte';
 	import { branchOptions, newBranch } from '#lib/routine/branches.ts';
 	let {
 		entries = $bindable(),
@@ -32,6 +34,7 @@
 		onschedulechange?: () => void;
 	} = $props();
 	let addingBranch = $state(false);
+	let addRequest = $state<{ kind: 'activity' | 'block'; trigger: HTMLElement }>();
 	let deleteRequest = $state<{ label: string; indices: number[]; trigger: HTMLElement }>();
 	let active = $state<number>();
 	// Keep each card's DOM state attached to its entry when the timeline is reordered.
@@ -53,9 +56,16 @@
 		}
 		onschedulechange?.();
 	}
-	function add(use?: string) {
-		entries = [...entries, { ...(use ? { use } : newEntry()), ...(shared ? {} : { time: '08:00' }) }];
+	function requestAdd(kind: 'activity' | 'block', trigger: HTMLButtonElement) {
+		const menu = trigger.closest('details')!;
+		menu.open = false;
+		addRequest = { kind, trigger: menu.querySelector('summary')! };
+	}
+	function add(entry: Entry | SharedEntry) {
+		entries = [...entries, entry];
+		active = entries.length - 1;
 		sortByTime();
+		addRequest = undefined;
 	}
 
 	function dismissAddMenu(node: HTMLDetailsElement) {
@@ -112,21 +122,14 @@
 		<div class="add-item-menu">
 			<button
 				type="button"
-				data-testid="EntryEditor-event"
-				onclick={(event) => {
-					event.currentTarget.closest('details')!.open = false;
-					add();
-				}}>Event</button
+				data-testid="EntryEditor-activity"
+				onclick={(event) => requestAdd('activity', event.currentTarget)}>Activity</button
 			>
 			{#if Object.keys(routine.blocks ?? {}).length}
 				<button
 					type="button"
 					data-testid="EntryEditor-use"
-					onclick={(event) => {
-						event.currentTarget.closest('details')!.open = false;
-						const [use] = blocksByName(routine)[0];
-						add(use);
-					}}>Shared block</button
+					onclick={(event) => requestAdd('block', event.currentTarget)}>Shared block</button
 				>
 			{/if}
 		</div>
@@ -153,7 +156,7 @@
 			<summary data-testid="EntryEditor-open"
 				><span class="summary-index">{i + 1}</span><span class="summary-title"
 					>{#if isUse(entry)}{routine.blocks?.[entry.use]?.name ?? entry.use}{:else}{entry.title ||
-							'Untitled item'}{/if}</span
+							'Untitled activity'}{/if}</span
 				>{#if !shared && ('time' in entry ? entry.time : undefined)}<span class="summary-time mono"
 						>{'time' in entry ? entry.time : undefined}</span
 					>{/if}{#if isUse(entry)}<span class="badge">Shared</span>{/if}<svg
@@ -164,7 +167,7 @@
 					type="button"
 					class="entry-delete"
 					data-testid="EntryEditor-remove"
-					aria-label={`Delete ${isUse(entry) ? 'shared block' : 'event'} ${isUse(entry) ? (routine.blocks?.[entry.use]?.name ?? entry.use) : entry.title || 'Untitled item'}`}
+					aria-label={`Delete ${isUse(entry) ? 'shared block' : 'activity'} ${isUse(entry) ? (routine.blocks?.[entry.use]?.name ?? entry.use) : entry.title || 'Untitled activity'}`}
 					onclick={(event) => {
 						event.preventDefault();
 						event.stopPropagation();
@@ -174,98 +177,13 @@
 				></summary
 			>
 			<div class="entry-body shared">
-				{#if isUse(entry)}
-					<label
-						>Shared block<select
-							data-testid="EntryEditor-block"
-							value={entry.use}
-							onchange={(e) => set(i, 'use', e.currentTarget.value)}
-							>{#each blocksByName(routine) as [id, block]}<option value={id}>{block.name}</option
-								>{/each}</select
-						></label
-					>
-				{:else}
-					<label
-						>Title<input
-							data-testid="EntryEditor-title"
-							value={entry.title}
-							oninput={(e) => set(i, 'title', e.currentTarget.value)}
-							required
-						/></label
-					>
-				{/if}
-				<div class="fields">
-					{#if !shared}<label
-							>Start time<input
-								data-testid="EntryEditor-time"
-								type="time"
-								value={'time' in entry ? entry.time : ''}
-								oninput={(e) => set(i, 'time', e.currentTarget.value)}
-								onblur={sortByTime}
-								required
-							/></label
-						>{/if}
-					{#if !isUse(entry)}<label
-							>Duration (minutes)<input
-								data-testid="EntryEditor-duration"
-								type="number"
-								min="1"
-								max="1440"
-								step="1"
-								value={entry.duration ?? ''}
-								oninput={(e) =>
-									set(
-										i,
-										'duration',
-										e.currentTarget.value === '' ? undefined : e.currentTarget.valueAsNumber
-									)}
-								required
-							/></label
-						>{/if}
-				</div>
-				{#if !isUse(entry)}
-					<label
-						>Category<select
-							data-testid="EntryEditor-category"
-							value={entry.category ?? ''}
-							onchange={(e) => set(i, 'category', e.currentTarget.value)}
-							><option value="">{shared ? 'Same as block' : 'None'}</option
-							>{#each Object.entries(routine.categories ?? {}) as [id, category] (id)}<option value={id}
-									>{category.name}</option
-								>{/each}</select
-						></label
-					>
-					<label class="check"
-						><input
-							type="checkbox"
-							checked={entry.alert ?? false}
-							onchange={(e) => set(i, 'alert', e.currentTarget.checked || undefined)}
-						/>Alert</label
-					>
-					{#if !shared}<label class="check"
-							><input
-								type="checkbox"
-								checked={'approx' in entry ? (entry.approx ?? false) : false}
-								onchange={(e) => set(i, 'approx', e.currentTarget.checked || undefined)}
-							/>Approximate time</label
-						>{/if}
-					<label
-						>Note<textarea
-							data-testid="EntryEditor-note"
-							rows="2"
-							value={entry.note ?? ''}
-							oninput={(e) => set(i, 'note', e.currentTarget.value)}></textarea></label
-					>
-					<label
-						>Link<input
-							data-testid="EntryEditor-link"
-							type="url"
-							placeholder="https://www.notion.so/…"
-							value={entry.link ?? ''}
-							oninput={(e) => set(i, 'link', e.currentTarget.value.trim())}
-						/></label
-					>
-				{/if}
+				<EntryFields
+					{entry}
+					{routine}
+					{shared}
+					onchange={(field, value) => set(i, field, value)}
+					onschedulechange={sortByTime}
+				/>
 				{#if shared}
 					<div class="entry-tools">
 						<button
@@ -289,6 +207,16 @@
 	{/if}
 {/snippet}
 
+{#if addRequest}
+	<AddEntryDialog
+		{routine}
+		{shared}
+		kind={addRequest.kind}
+		returnFocus={addRequest.trigger}
+		oncancel={() => (addRequest = undefined)}
+		onadd={add}
+	/>
+{/if}
 {#if deleteRequest}
 	<ConfirmDialog
 		title="Delete branch?"

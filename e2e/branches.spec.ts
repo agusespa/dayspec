@@ -138,8 +138,8 @@ test("edits activities in both paths and saves their actual nesting", async ({
   await office.getByTestId("EntryEditor-title").fill("Office projects");
   await page.getByTestId("TemplateEditor-save").click();
   await expect(page.getByTestId("Templates-saved")).toBeVisible();
-  const saved = (await (await request.get("/api/routine")).json()).routine.templates
-    .weekday.items;
+  const saved = (await (await request.get("/api/routine")).json()).routine
+    .templates.weekday.items;
   expect(saved[1].paths.home[0].title).toBe("Home projects");
   expect(saved[1].paths.office[1].title).toBe("Office projects");
 });
@@ -159,15 +159,23 @@ test("adds an empty fork and inserts an activity only into its selected path", a
   await gym.getByRole("button", { name: "Rest", exact: true }).click();
   await expect(gym).toContainText("Continue routine");
   await gym.getByTestId("EntryEditor-add").click();
-  await gym.getByTestId("EntryEditor-event").click();
-  const item = gym.getByTestId("EntryEditor-entry");
-  await item.getByTestId("EntryEditor-open").click();
-  await item.getByTestId("EntryEditor-title").fill("Evening walk");
-  await item.getByTestId("EntryEditor-time").fill("18:00");
+  await gym.getByTestId("EntryEditor-activity").click();
+  const dialog = page.getByRole("dialog", {
+    name: "Add activity",
+    exact: true,
+  });
+  await dialog.getByTestId("EntryEditor-title").fill("Evening walk");
+  await dialog.getByTestId("EntryEditor-time").fill("18:00");
+  await dialog
+    .getByRole("button", { name: "Add activity", exact: true })
+    .click();
+  await expect(gym.getByTestId("EntryEditor-title")).toHaveValue(
+    "Evening walk",
+  );
   await page.getByTestId("TemplateEditor-save").click();
   await expect(page.getByTestId("Templates-saved")).toBeVisible();
-  const saved = (await (await request.get("/api/routine")).json()).routine.templates
-    .weekday.items;
+  const saved = (await (await request.get("/api/routine")).json()).routine
+    .templates.weekday.items;
   const fork = saved.find((entry) => entry.choice === "gym");
   expect(fork.paths).toEqual({
     train: [],
@@ -281,8 +289,8 @@ test("deleting a fork uses the app modal and removes all its paths only after sa
   );
   await page.getByTestId("TemplateEditor-save").click();
   await expect(page.getByTestId("Templates-saved")).toBeVisible();
-  const items = (await (await request.get("/api/routine")).json()).routine.templates
-    .weekday.items;
+  const items = (await (await request.get("/api/routine")).json()).routine
+    .templates.weekday.items;
   expect(items.map((entry) => entry.choice ?? entry.title)).toEqual([
     "Breakfast",
     "Lunch",
@@ -339,17 +347,17 @@ for (const width of [390, 1440]) {
     await edit(page);
     const add = page.getByTestId("EntryEditor-add").last();
     await add.click();
-    await expect(page.getByTestId("EntryEditor-event").last()).toBeVisible();
+    await expect(page.getByTestId("EntryEditor-activity").last()).toBeVisible();
     await page
       .getByRole("heading", { name: "Edit template", exact: true })
       .click();
     await expect(
-      page.getByTestId("EntryEditor-event").last(),
+      page.getByTestId("EntryEditor-activity").last(),
     ).not.toBeVisible();
     await add.click();
     await page.keyboard.press("Escape");
     await expect(
-      page.getByTestId("EntryEditor-event").last(),
+      page.getByTestId("EntryEditor-activity").last(),
     ).not.toBeVisible();
   });
 }

@@ -75,7 +75,7 @@ export function sortRoutineByTime(routine: Routine): Routine {
 
 /** New drafts start with a duration that can be adjusted before saving. */
 export function newEntry(_routine?: Routine): Activity {
-	return { title: 'New item', duration: 5 };
+	return { title: 'New activity', duration: 5 };
 }
 
 /** Display names follow assignments, while keys remain stable for links and holiday settings. */

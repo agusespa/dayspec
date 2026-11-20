@@ -139,7 +139,10 @@ test("edits only the selected template without editor navigation or JSON control
       ...testRoutine,
       templates: {
         ...testRoutine.templates,
-        saturday: { ...testRoutine.templates.saturday, theme: "Focused Saturday" },
+        saturday: {
+          ...testRoutine.templates.saturday,
+          theme: "Focused Saturday",
+        },
       },
     }),
   );
@@ -167,8 +170,8 @@ test("a stale save preserves the draft and cannot overwrite another device’s e
     "My unsaved draft",
   );
   expect(
-    (await (await request.get("/api/routine")).json()).routine.templates.saturday
-      .theme,
+    (await (await request.get("/api/routine")).json()).routine.templates
+      .saturday.theme,
   ).toBe("Changed on another device");
   await page.getByTestId("TemplateEditor-reload").click();
   const dialog = page.getByRole("dialog", { name: "Discard changes?" });
@@ -557,34 +560,41 @@ test("new activities and shared blocks follow their start times in the editor", 
   ).toBeTruthy();
   await openEditor(page);
   await page.getByTestId("EntryEditor-add").click();
-  await page.getByTestId("EntryEditor-event").click();
+  await page.getByTestId("EntryEditor-activity").click();
   const titles = page.getByTestId("EntryEditor-open").locator(".summary-title");
-  await expect(titles).toHaveText(["Early routine", "New item", "Dinner"]);
-  const activity = page
-    .getByTestId("EntryEditor-entry")
-    .filter({ hasText: "New item" });
-  await activity.getByTestId("EntryEditor-open").click();
-  await activity.getByTestId("EntryEditor-title").fill("Mid-morning break");
-  const edited = page
-    .getByTestId("EntryEditor-entry")
-    .filter({ hasText: "Mid-morning break" });
-  await edited.getByTestId("EntryEditor-time").fill("10:30");
-  await edited.getByTestId("EntryEditor-time").blur();
-  await page.getByTestId("EntryEditor-add").click();
-  await page.getByTestId("EntryEditor-use").click();
+  await expect(titles).toHaveText(["Early routine", "Dinner"]);
+  const dialog = page.getByRole("dialog", {
+    name: "Add activity",
+    exact: true,
+  });
+  await dialog.getByTestId("EntryEditor-title").fill("Mid-morning break");
+  await dialog.getByTestId("EntryEditor-time").fill("10:30");
+  await dialog
+    .getByRole("button", { name: "Add activity", exact: true })
+    .click();
   await expect(titles).toHaveText([
     "Early routine",
-    "Wake up",
     "Mid-morning break",
     "Dinner",
   ]);
+  const activity = page
+    .getByTestId("EntryEditor-entry")
+    .filter({ hasText: "Mid-morning break" });
+  await expect(activity.getByTestId("EntryEditor-time")).toBeVisible();
+  await page.getByTestId("EntryEditor-add").click();
+  await page.getByTestId("EntryEditor-use").click();
+  const blockDialog = page.getByRole("dialog", {
+    name: "Add shared block",
+    exact: true,
+  });
+  await blockDialog.getByTestId("EntryEditor-block").selectOption("wake_up");
+  await blockDialog.getByTestId("EntryEditor-time").fill("06:30");
+  await blockDialog
+    .getByRole("button", { name: "Add shared block", exact: true })
+    .click();
   const block = page
     .getByTestId("EntryEditor-entry")
     .filter({ has: page.getByTestId("EntryEditor-block") });
-  await expect(block).not.toHaveAttribute("open", "");
-  await block.getByTestId("EntryEditor-open").click();
-  await block.getByTestId("EntryEditor-time").fill("06:30");
-  await block.getByTestId("EntryEditor-time").blur();
   await expect(titles).toHaveText([
     "Wake up",
     "Early routine",
@@ -602,7 +612,7 @@ test("new activities and shared blocks follow their start times in the editor", 
     routine.templates.saturday.items[1],
   ]);
 });
-test("events and blocks have no per-item condition controls", async ({
+test("activities and blocks have no per-item condition controls", async ({
   page,
 }) => {
   await page.goto("/templates");
@@ -846,7 +856,10 @@ test("existing shared blocks are time ordered on open, including inside branches
   await page.getByTestId("TemplateEditor-theme").fill("Sorted routine");
   await save(page);
   const saved = (await (await request.get("/api/routine")).json()).routine;
-  expect(saved.templates.saturday.items[0]).toEqual({ use: "wake", time: "06:50" });
+  expect(saved.templates.saturday.items[0]).toEqual({
+    use: "wake",
+    time: "06:50",
+  });
   expect(saved.templates.saturday.items[1].paths.yes[0]).toEqual({
     use: "wake",
     time: "08:00",

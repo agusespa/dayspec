@@ -45,15 +45,20 @@ test("edits choices, conditional activities, durations and Notion links, then se
     await choice.getByTestId("ChoiceEditor-option-name").nth(0).fill("Home");
     await choice.getByTestId("ChoiceEditor-option-name").nth(1).fill("Office");
     await page.getByTestId("EntryEditor-add").click();
-    await page.getByTestId("EntryEditor-event").click();
-    const first = page.getByTestId("EntryEditor-entry").nth(0);
-    await expect(first.getByTestId("EntryEditor-title")).toBeHidden();
-    await first.getByTestId("EntryEditor-open").click();
-    await first.getByTestId("EntryEditor-title").fill("Breakfast");
-    await first.getByTestId("EntryEditor-duration").fill("15");
-    await first
+    await page.getByTestId("EntryEditor-activity").click();
+    const activityDialog = page.getByRole("dialog", {
+      name: "Add activity",
+      exact: true,
+    });
+    await activityDialog.getByTestId("EntryEditor-title").fill("Breakfast");
+    await activityDialog.getByTestId("EntryEditor-time").fill("08:00");
+    await activityDialog.getByTestId("EntryEditor-duration").fill("15");
+    await activityDialog
       .getByTestId("EntryEditor-link")
       .fill("https://www.notion.so/routine");
+    await activityDialog
+      .getByRole("button", { name: "Add activity", exact: true })
+      .click();
     await page
       .getByRole("button", { name: "+ Add branch", exact: true })
       .last()
@@ -68,12 +73,13 @@ test("edits choices, conditional activities, durations and Notion links, then se
     });
     await branch.getByRole("button", { name: "Office", exact: true }).click();
     await branch.getByTestId("EntryEditor-add").click();
-    await branch.getByTestId("EntryEditor-event").click();
-    const second = branch.getByTestId("EntryEditor-entry");
-    await second.getByTestId("EntryEditor-open").click();
-    await second.getByTestId("EntryEditor-title").fill("Commute");
-    await second.getByTestId("EntryEditor-time").fill("08:15");
-    await second.getByTestId("EntryEditor-duration").fill("20");
+    await branch.getByTestId("EntryEditor-activity").click();
+    await activityDialog.getByTestId("EntryEditor-title").fill("Commute");
+    await activityDialog.getByTestId("EntryEditor-time").fill("08:15");
+    await activityDialog.getByTestId("EntryEditor-duration").fill("20");
+    await activityDialog
+      .getByRole("button", { name: "Add activity", exact: true })
+      .click();
     await expect(
       page.locator(".editor-timeline").getByTestId("ConditionsEditor"),
     ).toHaveCount(0);
