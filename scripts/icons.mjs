@@ -4,26 +4,21 @@ import { mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from 
 import { createHash } from 'node:crypto';
 import { chromium } from '@playwright/test';
 
-// A centered sunrise arc around three aligned timeline bars.
-// Maskable icons keep the mark inside the central 80% safe circle.
-const DEFS = `<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff3df"/><stop offset="1" stop-color="#f3dfc4"/></linearGradient>
-<linearGradient id="frame" x1="0" y1="0" x2="0.8" y2="1"><stop stop-color="#d67b52"/><stop offset="1" stop-color="#b9553c"/></linearGradient>`;
+// A sun rising over three timeline bars on a dusk sky, centered on both axes
+// (x 136–376, y 101–411). Maskable icons keep the mark inside the central 80% safe circle.
+const DEFS = `<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f58a6c"/><stop offset="1" stop-color="#9c3f68"/></linearGradient>`;
 
 /** rounded: transparent corners (favicon, manifest "any"); otherwise a full square (iOS, maskable). */
 function svg(rounded, maskable = false) {
-	const scale = maskable ? 1.1 : 1.2;
+	const scale = maskable ? 0.9 : 1;
 	return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
 <defs>${DEFS}</defs>
 <rect width="512" height="512"${rounded ? ' rx="112"' : ''} fill="url(#bg)"/>
-<g transform="translate(256 256) scale(${scale}) translate(-256 -231)">
-<path d="M 149.934 358.066 A 150 150 0 0 1 200 116.807 M 312 116.807 A 150 150 0 0 1 362.066 358.066"
-  fill="none" stroke="url(#frame)" stroke-width="28" stroke-linecap="round"/>
-<circle cx="256" cy="106" r="29" fill="#db9a25"/>
-<g fill="none" stroke="#af547b" stroke-linecap="round" stroke-width="28">
-  <path d="M 210 232 H 302"/>
-  <path d="M 210 295 H 278"/>
-  <path d="M 210 358 H 302"/>
-</g>
+<g transform="translate(256 256) scale(${scale}) translate(-256 -256)">
+<path d="M 136 221 A 120 120 0 0 1 376 221 Z" fill="#ffd166"/>
+<rect x="136" y="251" width="240" height="40" rx="20" fill="#ff8a65"/>
+<rect x="136" y="311" width="164" height="40" rx="20" fill="#f5a3c7"/>
+<rect x="136" y="371" width="204" height="40" rx="20" fill="#f1e8dc"/>
 </g>
 </svg>
 `;

@@ -1,4 +1,4 @@
-<p align="center"> <img src="web/static/icon-192.png" alt="Dayspec icon" width="128"> </p>
+<p align="center"> <img src="web/static/icons/icon-192-2b3956a77e9b.png" alt="Dayspec icon" width="128"> </p>
 
 # Dayspec
 
