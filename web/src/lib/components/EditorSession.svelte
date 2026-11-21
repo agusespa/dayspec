@@ -18,19 +18,24 @@
 		routine,
 		initialDraft,
 		title,
+		backLabel = 'Templates',
 		subtitle,
 		prepare,
 		onreload,
+		onsaved,
 		onclose,
 		children
 	}: {
 		routine: Routine;
 		initialDraft?: Routine;
 		title: string;
+		/** Where the back button returns to. */
+		backLabel?: string;
 		subtitle?: Snippet<[EditorDraft]>;
 		prepare?: (routine: Routine) => Routine;
 		onreload?: (routine: Routine) => void;
-		onclose: (saved: boolean) => void;
+		onsaved?: () => void;
+		onclose: () => void;
 		children: Snippet<[EditorDraft]>;
 	} = $props();
 	const editor = $state<EditorDraft>({
@@ -40,6 +45,7 @@
 	let revision = $state(untrack(() => $routineState.revision));
 	let baseline = $state(untrack(() => JSON.stringify(routine)));
 	let saving = $state(false);
+	let savedOnce = $state(false);
 	let discardAction = $state<() => void>();
 	let discardMessage = $state('');
 	let discardReturnFocus = $state<HTMLElement>();
@@ -80,11 +86,11 @@
 			else void goto(destination.url);
 		});
 	});
-	function cancel(event: MouseEvent) {
+	function back(event: MouseEvent) {
 		requestDiscard(
 			() => {
 				baseline = JSON.stringify(editor.routine);
-				onclose(false);
+				onclose();
 			},
 			undefined,
 			event.currentTarget as HTMLElement
@@ -99,8 +105,11 @@
 			if (editor.errors.length) return;
 			saving = true;
 			await saveRoutine(candidate, revision);
+			// Stay in the editor: the next save builds on the revision this one created.
+			revision = currentRoutine().revision;
 			baseline = JSON.stringify(editor.routine);
-			onclose(true);
+			savedOnce = true;
+			onsaved?.();
 		} catch (error) {
 			// The server reports each invalid reference on its own line.
 			editor.errors =
@@ -144,23 +153,32 @@
 <section class="template-editor" data-testid="TemplateEditor">
 	<div class="editor-heading page-header masthead">
 		<div>
+			<button
+				data-testid="TemplateEditor-back"
+				type="button"
+				class="editor-back"
+				disabled={saving}
+				onclick={back}
+				><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>{backLabel}</button
+			>
 			<h1>{title}</h1>
 			{@render subtitle?.(editor)}
 		</div>
 		<div class="editor-toolbar">
-			{#if saving || dirty}<span class="save-state" role="status"
-					>{saving ? 'Saving…' : 'Unsaved changes'}</span
-				>{/if}
+			<span
+				class="save-state"
+				class:saved={!saving && !dirty && savedOnce}
+				role="status"
+				data-testid="TemplateEditor-status"
+				>{saving ? 'Saving…' : dirty ? 'Unsaved changes' : savedOnce ? 'All changes saved' : ''}</span
+			>
 			<div class="editor-actions">
-				<button data-testid="TemplateEditor-cancel" type="button" disabled={saving} onclick={cancel}
-					>Cancel</button
-				>
 				<button
 					data-testid="TemplateEditor-save"
 					class="primary"
 					type="submit"
 					form="routine-editor-form"
-					disabled={saving || !dirty}>{saving ? 'Saving…' : 'Save changes'}</button
+					disabled={saving || !dirty}>{saving ? 'Saving…' : dirty || !savedOnce ? 'Save' : 'Saved'}</button
 				>
 			</div>
 		</div>

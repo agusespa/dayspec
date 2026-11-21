@@ -129,7 +129,7 @@
 				<button
 					type="button"
 					data-testid="EntryEditor-use"
-					onclick={(event) => requestAdd('block', event.currentTarget)}>Shared block</button
+					onclick={(event) => requestAdd('block', event.currentTarget)}>Routine</button
 				>
 			{/if}
 		</div>
@@ -159,7 +159,7 @@
 							'Untitled activity'}{/if}</span
 				>{#if !shared && ('time' in entry ? entry.time : undefined)}<span class="summary-time mono"
 						>{'time' in entry ? entry.time : undefined}</span
-					>{/if}{#if isUse(entry)}<span class="badge">Shared</span>{/if}<svg
+					>{/if}{#if isUse(entry)}<span class="badge">Routine</span>{/if}<svg
 					class="chevron"
 					viewBox="0 0 24 24"
 					aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg
@@ -167,7 +167,7 @@
 					type="button"
 					class="entry-delete"
 					data-testid="EntryEditor-remove"
-					aria-label={`Delete ${isUse(entry) ? 'shared block' : 'activity'} ${isUse(entry) ? (routine.blocks?.[entry.use]?.name ?? entry.use) : entry.title || 'Untitled activity'}`}
+					aria-label={`Delete ${isUse(entry) ? 'routine' : 'activity'} ${isUse(entry) ? (routine.blocks?.[entry.use]?.name ?? entry.use) : entry.title || 'Untitled activity'}`}
 					onclick={(event) => {
 						event.preventDefault();
 						event.stopPropagation();

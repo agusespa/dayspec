@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 for (const width of [320, 390, 1440]) {
   test(`shared blocks show a compact timed timeline in Daily and template previews at ${width}px`, async ({
     page,

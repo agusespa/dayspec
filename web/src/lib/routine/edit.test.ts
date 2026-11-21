@@ -122,7 +122,7 @@ describe('shared block management', () => {
 		expect(routine.blocks).not.toHaveProperty('block');
 		const other = createBlock(created.routine, 'Morning routine');
 		expect(other.key).toBe('block_2');
-		expect(() => createBlock(routine, ' ')).toThrow('Enter a block name');
+		expect(() => createBlock(routine, ' ')).toThrow('Enter a routine name');
 	});
 	it('finds nested references in templates and other blocks before deletion', () => {
 		const used: Routine = {
@@ -202,7 +202,7 @@ describe('naming shared blocks', () => {
 		expect(source.blocks!.stable.name).toBe('Before');
 	});
 	it('rejects an empty name or missing block without changing data', () => {
-		expect(() => renameBlock(source, 'stable', ' ')).toThrow('Enter a block name');
+		expect(() => renameBlock(source, 'stable', ' ')).toThrow('Enter a routine name');
 		expect(() => renameBlock(source, 'missing', 'New')).toThrow('does not exist');
 	});
 });

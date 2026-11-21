@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 
 test("Profile edits categories and the timeline uses their colours", async ({
   page,
@@ -184,8 +184,7 @@ test("a shared block's category colours the block and the activities that don't 
     expect(await blockDot()).toBe(await colourOf("--muted"));
 
     await page.getByTestId("Nav-templates").click();
-    await page.getByTestId("Templates-blocks").click();
-    await page.getByTestId("TemplateEditor-block-morning").click();
+    await page.getByTestId("SharedBlocks-edit-morning").click();
     await page
       .getByTestId("TemplateEditor-block-category")
       .selectOption("health");
@@ -199,14 +198,17 @@ test("a shared block's category colours the block and the activities that don't 
         .first()
         .locator("option")
         .first(),
-    ).toHaveText("Same as block");
+    ).toHaveText("Same as routine");
     await page.getByTestId("TemplateEditor-save").click();
-    await expect(page.getByTestId("TemplateEditor-save")).toHaveCount(0);
+    await expect(page.getByTestId("TemplateEditor-status")).toHaveText(
+      "All changes saved",
+    );
     expect(
       (await (await request.get("/api/routine")).json()).routine.blocks.morning
         .category,
     ).toBe("health");
 
+    await page.getByTestId("TemplateEditor-back").click();
     await page.getByTestId("Nav-daily").click();
     expect(await blockDot()).toBe(await colourOf("--tone-green"));
     await block.getByTestId("Timeline-block-toggle").click();

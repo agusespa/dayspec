@@ -18,15 +18,26 @@
 	} = $props();
 </script>
 
+{#snippet approx()}
+	<label class="check"
+		><input
+			{form}
+			type="checkbox"
+			checked={'approx' in entry ? (entry.approx ?? false) : false}
+			onchange={(e) => onchange('approx', e.currentTarget.checked || undefined)}
+		/>Approximate time</label
+	>
+{/snippet}
+
 {#if isUse(entry)}
 	<label
-		>Shared block<select
+		>Routine<select
 			{form}
 			data-testid="EntryEditor-block"
 			value={entry.use}
 			required
 			onchange={(e) => onchange('use', e.currentTarget.value)}
-			>{#if form}<option value="" disabled>Select a shared block…</option
+			>{#if form}<option value="" disabled>Select a routine…</option
 				>{/if}{#each blocksByName(routine) as [id, block]}<option value={id}>{block.name}</option
 				>{/each}</select
 		></label
@@ -70,6 +81,7 @@
 			/></label
 		>{/if}
 </div>
+{#if !shared && isUse(entry)}{@render approx()}{/if}
 {#if !isUse(entry)}
 	<label
 		>Category<select
@@ -77,7 +89,7 @@
 			data-testid="EntryEditor-category"
 			value={entry.category ?? ''}
 			onchange={(e) => onchange('category', e.currentTarget.value)}
-			><option value="">{shared ? 'Same as block' : 'None'}</option
+			><option value="">{shared ? 'Same as routine' : 'None'}</option
 			>{#each Object.entries(routine.categories ?? {}) as [id, category] (id)}<option value={id}
 					>{category.name}</option
 				>{/each}</select
@@ -91,14 +103,7 @@
 			onchange={(e) => onchange('alert', e.currentTarget.checked || undefined)}
 		/>Alert</label
 	>
-	{#if !shared}<label class="check"
-			><input
-				{form}
-				type="checkbox"
-				checked={'approx' in entry ? (entry.approx ?? false) : false}
-				onchange={(e) => onchange('approx', e.currentTarget.checked || undefined)}
-			/>Approximate time</label
-		>{/if}
+	{#if !shared}{@render approx()}{/if}
 	<label
 		>Note<textarea
 			{form}

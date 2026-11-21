@@ -51,7 +51,7 @@
 </script>
 
 <Dialog
-	title={kind === 'block' ? 'Add shared block' : 'Add activity'}
+	title={kind === 'block' ? 'Add routine' : 'Add activity'}
 	width="480px"
 	{returnFocus}
 	{oncancel}
@@ -73,7 +73,7 @@
 	{#snippet actions()}
 		<button type="button" class="cancel" onclick={oncancel}>Cancel</button>
 		<button type="button" class="primary" onclick={() => void add()}
-			>{kind === 'block' ? 'Add shared block' : 'Add activity'}</button
+			>{kind === 'block' ? 'Add routine' : 'Add activity'}</button
 		>
 	{/snippet}
 </Dialog>

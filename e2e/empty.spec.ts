@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 import { readFileSync } from "node:fs";
 import type { Routine } from "../web/src/lib/routine/types.ts";
 const empty = JSON.parse(
@@ -62,7 +62,10 @@ test("starts empty, saves the first item, and can return to an empty template", 
     .getByRole("button", { name: "Add activity", exact: true })
     .click();
   await page.getByTestId("TemplateEditor-save").click();
-  await expect(page.getByTestId("Templates-saved")).toBeVisible();
+  await expect(page.getByTestId("TemplateEditor-status")).toHaveText(
+    "All changes saved",
+  );
+  await page.getByTestId("TemplateEditor-back").click();
   await page.reload();
   await page.getByTestId("Templates-edit").click();
   await expect(page.getByTestId("EntryEditor-title")).toHaveValue(
@@ -71,6 +74,11 @@ test("starts empty, saves the first item, and can return to an empty template", 
   await expandEntries(page);
   await page.getByTestId("EntryEditor-remove").click();
   await page.getByTestId("TemplateEditor-save").click();
+  await expect(page.getByTestId("TemplateEditor-status")).toHaveText(
+    "All changes saved",
+  );
+  await page.getByTestId("TemplateEditor-back").click();
+  await page.getByTestId("Templates-open").click();
   await expect(page.getByTestId("Templates-empty")).toBeVisible();
   await page.goto("/");
   await expect(page.getByTestId("Day-empty")).toBeVisible();
@@ -88,7 +96,10 @@ test("lists templates and offers creation only for unassigned days", async ({
   await page.getByTestId("TemplateEditor-day-sat").uncheck();
   await page.getByTestId("TemplateEditor-day-sun").uncheck();
   await page.getByTestId("TemplateEditor-save").click();
-  await expect(page.getByTestId("Templates-saved")).toBeVisible();
+  await expect(page.getByTestId("TemplateEditor-status")).toHaveText(
+    "All changes saved",
+  );
+  await page.getByTestId("TemplateEditor-back").click();
   await expect(daily.getByTestId("Templates-name")).toHaveText("Weekdays");
   await expect(page.getByTestId("Templates-unassigned")).toContainText(
     "Sat · Sun",
@@ -110,7 +121,10 @@ test("lists templates and offers creation only for unassigned days", async ({
     .getByRole("button", { name: "Add activity", exact: true })
     .click();
   await page.getByTestId("TemplateEditor-save").click();
-  await expect(page.getByTestId("Templates-saved")).toBeVisible();
+  await expect(page.getByTestId("TemplateEditor-status")).toHaveText(
+    "All changes saved",
+  );
+  await page.getByTestId("TemplateEditor-back").click();
   await expect(
     page.getByTestId("Templates-list").locator("article"),
   ).toHaveCount(2);
@@ -123,10 +137,14 @@ test("lists templates and offers creation only for unassigned days", async ({
     "Weekend walk",
   );
   await expect(page.getByTestId("TemplateEditor-day-mon")).toBeDisabled();
-  await page.getByTestId("TemplateEditor-cancel").click();
+  await page.getByTestId("TemplateEditor-back").click();
   await daily.getByTestId("Templates-edit").click();
   await page.getByTestId("TemplateEditor-day-tue").uncheck();
   await page.getByTestId("TemplateEditor-save").click();
+  await expect(page.getByTestId("TemplateEditor-status")).toHaveText(
+    "All changes saved",
+  );
+  await page.getByTestId("TemplateEditor-back").click();
   await expect(page.getByTestId("Templates-new")).toBeVisible();
   await page.goto("/");
   await expect(page.getByTestId("Day-empty")).toContainText(
@@ -142,7 +160,7 @@ test("deletes the last template and creates a first template from an empty libra
   );
   await page.getByTestId("Templates-edit").click();
   await expect(page.getByTestId("TemplateEditor-delete")).toHaveCount(0);
-  await page.getByTestId("TemplateEditor-cancel").click();
+  await page.getByTestId("TemplateEditor-back").click();
   await page.getByTestId("Templates-delete").click();
   await page
     .getByRole("dialog")
@@ -179,6 +197,10 @@ test("deletes the last template and creates a first template from an empty libra
   await page.getByTestId("TemplateEditor-new-mon").check();
   await page.getByTestId("TemplateEditor-create-confirm").click();
   await page.getByTestId("TemplateEditor-save").click();
+  await expect(page.getByTestId("TemplateEditor-status")).toHaveText(
+    "All changes saved",
+  );
+  await page.getByTestId("TemplateEditor-back").click();
   await expect(
     page.getByTestId("Templates-row-template").getByTestId("Templates-name"),
   ).toHaveText("Monday");
@@ -198,17 +220,19 @@ test("creates shared blocks even before the first template exists", async ({
     ).ok(),
   ).toBeTruthy();
   await page.goto("/templates");
-  await page.getByTestId("Templates-blocks").click();
   await expect(page.getByTestId("TemplateEditor-delete")).toHaveCount(0);
-  await page.getByTestId("TemplateEditor-block-new").click();
+  await page.getByTestId("SharedBlocks-new").click();
   await page.getByTestId("TemplateEditor-block-name").fill("Morning");
   await expandEntries(page);
   await page.getByTestId("EntryEditor-title").fill("Stretch");
   await page.getByTestId("TemplateEditor-save").click();
+  await expect(page.getByTestId("TemplateEditor-status")).toHaveText(
+    "All changes saved",
+  );
+  await page.getByTestId("TemplateEditor-back").click();
   await expect(page.getByTestId("Templates-empty-library")).toBeVisible();
   await page.reload();
-  await page.getByTestId("Templates-blocks").click();
-  await page.getByTestId("TemplateEditor-block-block").click();
+  await page.getByTestId("SharedBlocks-edit-block").click();
   await expect(page.getByTestId("EntryEditor-title")).toHaveValue("Stretch");
 });
 test("creates a duration block and sets its start time only in the template", async ({
@@ -216,8 +240,7 @@ test("creates a duration block and sets its start time only in the template", as
   request,
 }) => {
   await page.goto("/templates");
-  await page.getByTestId("Templates-blocks").click();
-  await page.getByTestId("TemplateEditor-block-new").click();
+  await page.getByTestId("SharedBlocks-new").click();
   await page.getByTestId("TemplateEditor-block-name").fill("Morning");
   await expect(page.getByTestId("EntryEditor-time")).toHaveCount(0);
   await expect(page.getByTestId("EntryEditor-end")).toHaveCount(0);
@@ -238,7 +261,10 @@ test("creates a duration block and sets its start time only in the template", as
     .getByRole("button", { name: "Add activity", exact: true })
     .click();
   await page.getByTestId("TemplateEditor-save").click();
-  await expect(page.getByTestId("Templates-saved")).toBeVisible();
+  await expect(page.getByTestId("TemplateEditor-status")).toHaveText(
+    "All changes saved",
+  );
+  await page.getByTestId("TemplateEditor-back").click();
   await page
     .getByTestId("Templates-row-daily")
     .getByTestId("Templates-edit")
@@ -246,15 +272,23 @@ test("creates a duration block and sets its start time only in the template", as
   await page.getByTestId("EntryEditor-add").click();
   await page.getByTestId("EntryEditor-use").click();
   const blockDialog = page.getByRole("dialog", {
-    name: "Add shared block",
+    name: "Add routine",
     exact: true,
   });
   await blockDialog.getByTestId("EntryEditor-block").selectOption("block");
   await blockDialog.getByTestId("EntryEditor-time").fill("09:00");
   await blockDialog
-    .getByRole("button", { name: "Add shared block", exact: true })
+    .getByRole("button", { name: "Add routine", exact: true })
     .click();
   await page.getByTestId("TemplateEditor-save").click();
+  await expect(page.getByTestId("TemplateEditor-status")).toHaveText(
+    "All changes saved",
+  );
+  await page.getByTestId("TemplateEditor-back").click();
+  await page
+    .getByTestId("Templates-row-daily")
+    .getByTestId("Templates-open")
+    .click();
   const block = page
     .getByTestId("Templates-row-daily")
     .getByTestId("Timeline-block");

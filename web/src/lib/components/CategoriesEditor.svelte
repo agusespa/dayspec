@@ -46,7 +46,7 @@
 
 <section class="categories" aria-labelledby="categories-heading">
 	<h2 id="categories-heading">Categories</h2>
-	<p class="help">Colour activities and shared blocks on the timeline.</p>
+	<p class="help">Colour activities and routines on the timeline.</p>
 	{#key attempt}
 		<ul>
 			{#each categories as [key, category] (key)}

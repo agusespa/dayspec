@@ -126,26 +126,31 @@
 			</span>
 		</label>
 		{#each day.choices as choice (choice.name)}
-			<div class="choice">
-				<span class="choice-label" id="choice-{choice.name}">{choice.label}</span>
-				<div class="options" role="radiogroup" aria-labelledby="choice-{choice.name}">
-					{#each choice.options as option (String(option.value))}
-						<button
-							data-testid={`Day-choice-${choice.name}-${String(option.value)}`}
-							role="radio"
-							aria-checked={option.value === choice.value}
-							onclick={() => choose(choice.name, option.value)}>{option.label}</button
-						>
-					{/each}
-				</div>
-			</div>
+			<label class="choice">
+				<span class="choice-label">{choice.label}</span>
+				<span class="choice-select">
+					<select
+						data-testid={`Day-choice-${choice.name}`}
+						value={String(choice.value)}
+						onchange={(e) => {
+							const picked = choice.options.find((o) => String(o.value) === e.currentTarget.value);
+							if (picked) choose(choice.name, picked.value);
+						}}
+					>
+						{#each choice.options as option (String(option.value))}
+							<option value={String(option.value)}>{option.label}</option>
+						{/each}
+					</select>
+					<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+				</span>
+			</label>
 		{/each}
 	</section>
 </div>
 
 {#if !day.items.length}
 	<section class="empty-state" data-testid="Day-empty">
-		<h2>{day.template ? 'Your routine starts here' : 'No template for this day'}</h2>
+		<h2>{day.template ? 'Your day starts here' : 'No template for this day'}</h2>
 		<p>Add your first item in Templates to build a day that works for you.</p>
 		<a href="/templates" data-testid="Day-create">Open templates</a>
 	</section>
@@ -240,6 +245,7 @@
 	.choice {
 		display: flex;
 		flex-wrap: wrap;
+		align-items: center;
 		position: relative;
 		max-width: 100%;
 		min-width: 0;
@@ -263,16 +269,45 @@
 		overflow-wrap: anywhere;
 	}
 
-	.options {
+	.choice-select {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
 		min-width: 0;
-		gap: 0.3rem;
 	}
 
-	.options button {
+	.choice-select select {
+		appearance: none;
+		-webkit-appearance: none;
 		min-height: 32px;
-		padding: 0.15rem 0.6rem;
+		max-width: 100%;
+		padding: 0.15rem 1.9rem 0.15rem 0.75rem;
+		border: 1px solid var(--rule);
+		border-radius: 999px;
+		background: var(--paper);
+		color: var(--text);
+		font: inherit;
 		font-size: var(--text-xs);
-		overflow-wrap: anywhere;
+		font-weight: 600;
+		text-overflow: ellipsis;
+		cursor: pointer;
+	}
+
+	.choice-select select:hover {
+		border-color: var(--surface-hover);
+	}
+
+	.choice-select svg {
+		position: absolute;
+		right: 0.6rem;
+		width: 14px;
+		height: 14px;
+		fill: none;
+		stroke: var(--muted);
+		stroke-width: 2;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+		pointer-events: none;
 	}
 
 	.strip {

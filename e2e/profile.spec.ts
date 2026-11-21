@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 test("Profile saves holiday preferences across devices and preserves settings on failure", async ({
   page,
   request,

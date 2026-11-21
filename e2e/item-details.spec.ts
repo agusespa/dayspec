@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 test("tapping an activity shows its time range, category, conditions and calendar link", async ({
   page,
   request,
@@ -164,7 +164,7 @@ test("an activity's edit link opens the editor at that activity and returns to T
     await expect(focused).toHaveAttribute("open", "");
     await expect(focused.getByTestId("EntryEditor-title")).toHaveValue("Lift");
     await expect(focused.getByTestId("EntryEditor-title")).toBeInViewport();
-    await page.getByTestId("TemplateEditor-cancel").click();
+    await page.getByTestId("TemplateEditor-back").click();
     await expect(page).toHaveURL(/\/$/);
     // Inside a shared block, the link opens the block at that activity.
     const block = page.getByTestId("Timeline-block");
@@ -178,7 +178,7 @@ test("an activity's edit link opens the editor at that activity and returns to T
     await expect(
       page.locator("[data-focused]").getByTestId("EntryEditor-title"),
     ).toHaveValue("Tidy");
-    await page.getByTestId("TemplateEditor-cancel").click();
+    await page.getByTestId("TemplateEditor-back").click();
     // The block's own link opens the block.
     await page
       .getByTestId("Timeline-block")

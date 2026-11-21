@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 import type { Routine } from "../web/src/lib/routine/types.ts";
 import { sortRoutineByTime } from "../web/src/lib/routine/edit.ts";
 const testRoutine = JSON.parse(
@@ -52,7 +52,10 @@ async function save(page: Page) {
   );
   await page.getByTestId("TemplateEditor-save").click();
   expect((await response).ok()).toBeTruthy();
-  await expect(page.getByTestId("Templates-saved")).toBeVisible();
+  await expect(page.getByTestId("TemplateEditor-status")).toHaveText(
+    "All changes saved",
+  );
+  await page.getByTestId("TemplateEditor-back").click();
 }
 test("saves template edits across reloads and devices", async ({
   page,
@@ -80,6 +83,10 @@ test("saves template edits across reloads and devices", async ({
     .fill("A new Saturday activity");
   await save(page);
   await page.reload();
+  await page
+    .getByTestId("Templates-row-saturday")
+    .getByTestId("Templates-open")
+    .click();
   await expect(page.getByText("A quieter Saturday")).toBeVisible();
   await expect(page.getByText("A new Saturday activity")).toBeVisible();
   const persisted = await (await request.get("/api/routine")).json();
@@ -101,8 +108,7 @@ test("edits a shared block and keeps the change when returning to the template",
   request,
 }) => {
   await page.goto("/templates?t=saturday");
-  await page.getByTestId("Templates-blocks").click();
-  await page.getByTestId("TemplateEditor-block-wake_up").click();
+  await page.getByTestId("SharedBlocks-edit-wake_up").click();
   await expect(page.getByTestId("EntryEditor-title")).toBeHidden();
   await expandEntries(page);
   await page.getByTestId("EntryEditor-title").fill("Wake refreshed");
@@ -112,6 +118,10 @@ test("edits a shared block and keeps the change when returning to the template",
     "Wake refreshed",
   );
   await page.reload();
+  await page
+    .getByTestId("Templates-row-saturday")
+    .getByTestId("Templates-open")
+    .click();
   await page.getByTestId("Timeline-block-toggle").first().click();
   await expect(page.getByTestId("Timeline-block-entry").first()).toContainText(
     "Wake refreshed",
@@ -197,7 +207,7 @@ test("cancel protection leaves the saved routine unchanged", async ({
 }) => {
   await openEditor(page);
   await page.getByTestId("TemplateEditor-theme").fill("Discard this");
-  await page.getByTestId("TemplateEditor-cancel").click();
+  await page.getByTestId("TemplateEditor-back").click();
   await expect(
     page.getByRole("dialog", { name: "Discard changes?" }),
   ).toBeVisible();
@@ -209,11 +219,11 @@ test("cancel protection leaves the saved routine unchanged", async ({
   await expect(page.getByTestId("TemplateEditor-theme")).toHaveValue(
     "Discard this",
   );
-  await expect(page.getByTestId("TemplateEditor-cancel")).toBeFocused();
-  await page.getByTestId("TemplateEditor-cancel").click();
+  await expect(page.getByTestId("TemplateEditor-back")).toBeFocused();
+  await page.getByTestId("TemplateEditor-back").click();
   await page.getByRole("button", { name: "Keep editing", exact: true }).click();
   await expect(page.getByTestId("TemplateEditor")).toBeVisible();
-  await page.getByTestId("TemplateEditor-cancel").click();
+  await page.getByTestId("TemplateEditor-back").click();
   await page
     .getByRole("button", { name: "Discard changes", exact: true })
     .click();
@@ -266,6 +276,10 @@ test("edits activity notes and orders entries by start time without losing detai
     { title: "First", time: "08:00", note: "Water\nWash face", duration: 5 },
   ]);
   await page.reload();
+  await page
+    .getByTestId("Templates-row-saturday")
+    .getByTestId("Templates-open")
+    .click();
   await page
     .getByTestId("TimelineItem")
     .filter({ hasText: "First" })
@@ -395,35 +409,28 @@ test("manages shared blocks directly from the library and protects blocks that a
   page,
 }) => {
   await page.goto("/templates");
-  await page.getByTestId("Templates-blocks").click();
-  const usedCard = page.getByTestId("TemplateEditor-block-card-wake_up");
-  await expect(
-    usedCard.getByTestId("TemplateEditor-block-delete"),
-  ).toBeDisabled();
-  await expect(
-    usedCard.getByTestId("TemplateEditor-block-references"),
-  ).toBeVisible();
-  await page.getByTestId("TemplateEditor-block-wake_up").click();
-  await expect(page.getByTestId("TemplateEditor-block-delete")).toHaveCount(0);
-  await expect(page.getByTestId("TemplateEditor-block-back")).toHaveCount(0);
+  const usedCard = page.getByTestId("SharedBlocks-card-wake_up");
+  await expect(usedCard.getByTestId("SharedBlocks-delete")).toBeDisabled();
+  await expect(usedCard).toContainText("Used by");
+  await page.getByTestId("SharedBlocks-edit-wake_up").click();
+  await expect(page.getByTestId("SharedBlocks-delete")).toHaveCount(0);
   await expect(page.getByTestId("TemplateEditor-block-name")).toHaveValue(
     "Wake up",
   );
   await page.getByTestId("TemplateEditor-block-name").fill("Morning start");
   await save(page);
   await page.reload();
-  await page.getByTestId("Templates-blocks").click();
-  await expect(page.getByTestId("TemplateEditor-block-wake_up")).toContainText(
+  await expect(page.getByTestId("SharedBlocks-card-wake_up")).toContainText(
     "Morning start",
   );
-  await page.getByTestId("TemplateEditor-block-wake_up").click();
+  await page.getByTestId("SharedBlocks-edit-wake_up").click();
   await expect(page.getByTestId("TemplateEditor-block-name")).toHaveValue(
     "Morning start",
   );
-  await expect(page.getByTestId("TemplateEditor-block-delete")).toHaveCount(0);
-  await page.getByTestId("TemplateEditor-cancel").click();
-  await expect(page.getByTestId("TemplateEditor-block-list")).toBeVisible();
-  await page.getByTestId("TemplateEditor-block-new").click();
+  await expect(page.getByTestId("SharedBlocks-delete")).toHaveCount(0);
+  await page.getByTestId("TemplateEditor-back").click();
+  await expect(page.getByTestId("SharedBlocks-list")).toBeVisible();
+  await page.getByTestId("SharedBlocks-new").click();
   await page.getByTestId("TemplateEditor-save").click();
   await expect(page.getByTestId("TemplateEditor-errors")).toBeVisible();
   await expect(page.getByTestId("TemplateEditor-block-name")).toBeVisible();
@@ -433,17 +440,16 @@ test("manages shared blocks directly from the library and protects blocks that a
   await page.getByTestId("EntryEditor-title").fill("Read a book");
   await save(page);
   await page.reload();
-  await page.getByTestId("Templates-blocks").click();
-  await page.getByTestId("TemplateEditor-block-block").click();
+  await page.getByTestId("SharedBlocks-edit-block").click();
   await expect(page.getByTestId("EntryEditor-title")).toHaveValue(
     "Read a book",
   );
-  await expect(page.getByTestId("TemplateEditor-block-delete")).toHaveCount(0);
-  await page.getByTestId("TemplateEditor-cancel").click();
-  const createdCard = page.getByTestId("TemplateEditor-block-card-block");
+  await expect(page.getByTestId("SharedBlocks-delete")).toHaveCount(0);
+  await page.getByTestId("TemplateEditor-back").click();
+  const createdCard = page.getByTestId("SharedBlocks-card-block");
   await createdCard
     .getByRole("button", {
-      name: "Delete shared block Evening wind down",
+      name: "Delete routine Evening wind down",
       exact: true,
     })
     .click();
@@ -461,39 +467,36 @@ test("manages shared blocks directly from the library and protects blocks that a
         })
       : route.continue(),
   );
-  await createdCard.getByTestId("TemplateEditor-block-delete").click();
+  await createdCard.getByTestId("SharedBlocks-delete").click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Delete", exact: true })
     .click();
-  await expect(page.getByTestId("TemplateEditor-errors")).toContainText(
+  await expect(page.getByTestId("SharedBlocks-error")).toContainText(
     "Could not delete block",
   );
   await expect(createdCard).toBeVisible();
   await page.unroute("**/api/routine");
-  await createdCard.getByTestId("TemplateEditor-block-delete").click();
+  await createdCard.getByTestId("SharedBlocks-delete").click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Delete", exact: true })
     .click();
   await expect(createdCard).toHaveCount(0);
-  await expect(page.getByTestId("TemplateEditor-block-list")).toBeVisible();
-  await expect(page.getByTestId("TemplateEditor-save")).toHaveCount(0);
+  await expect(page.getByTestId("SharedBlocks-list")).toBeVisible();
   await page.reload();
-  await page.getByTestId("Templates-blocks").click();
-  await expect(page.getByTestId("TemplateEditor-block-block")).toHaveCount(0);
+  await expect(page.getByTestId("SharedBlocks-edit-block")).toHaveCount(0);
 });
-test("cancel returns to shared blocks and discards only confirmed edits", async ({
+test("back returns to the library and discards only confirmed edits", async ({
   page,
   request,
 }) => {
   await page.goto("/templates");
-  await page.getByTestId("Templates-blocks").click();
-  await page.getByTestId("TemplateEditor-block-wake_up").click();
+  await page.getByTestId("SharedBlocks-edit-wake_up").click();
   await page.getByTestId("TemplateEditor-block-name").fill("Discard this name");
   await expandEntries(page);
   await page.getByTestId("EntryEditor-title").fill("Discard this activity");
-  await page.getByTestId("TemplateEditor-cancel").click();
+  await page.getByTestId("TemplateEditor-back").click();
   await expect(
     page.getByRole("dialog", { name: "Discard changes?" }),
   ).toBeVisible();
@@ -501,13 +504,13 @@ test("cancel returns to shared blocks and discards only confirmed edits", async 
   await expect(page.getByTestId("TemplateEditor-block-name")).toHaveValue(
     "Discard this name",
   );
-  await page.getByTestId("TemplateEditor-cancel").click();
+  await page.getByTestId("TemplateEditor-back").click();
   await page
     .getByRole("button", { name: "Discard changes", exact: true })
     .click();
-  await expect(page.getByTestId("TemplateEditor-block-list")).toBeVisible();
+  await expect(page.getByTestId("SharedBlocks-list")).toBeVisible();
   await expect(page.getByTestId("TemplateEditor-save")).toHaveCount(0);
-  await page.getByTestId("TemplateEditor-block-wake_up").click();
+  await page.getByTestId("SharedBlocks-edit-wake_up").click();
   await expect(page.getByTestId("TemplateEditor-block-name")).toHaveValue(
     testRoutine.blocks.wake_up.name,
   );
@@ -515,19 +518,18 @@ test("cancel returns to shared blocks and discards only confirmed edits", async 
   await expect(page.getByTestId("EntryEditor-title")).toHaveValue(
     testRoutine.blocks.wake_up.items[0].title,
   );
-  await page.getByTestId("TemplateEditor-cancel").click();
-  await page.getByTestId("TemplateEditor-block-new").click();
+  await page.getByTestId("TemplateEditor-back").click();
+  await page.getByTestId("SharedBlocks-new").click();
   await page.getByTestId("TemplateEditor-save").click();
   await expect(page.getByTestId("TemplateEditor-errors")).toBeVisible();
-  await page.getByTestId("TemplateEditor-cancel").click();
+  await page.getByTestId("TemplateEditor-back").click();
   await page
     .getByRole("button", { name: "Discard changes", exact: true })
     .click();
-  await expect(page.getByTestId("TemplateEditor-block-list")).toBeVisible();
-  await expect(page.getByTestId("TemplateEditor-block-block")).toHaveCount(0);
+  await expect(page.getByTestId("SharedBlocks-list")).toBeVisible();
+  await expect(page.getByTestId("SharedBlocks-edit-block")).toHaveCount(0);
   await expect(page.getByTestId("TemplateEditor-errors")).toHaveCount(0);
   await expect(page.getByTestId("TemplateEditor-save")).toHaveCount(0);
-  await page.getByTestId("TemplateEditor-cancel").click();
   await expect(page.getByTestId("Templates-list")).toBeVisible();
   expect((await (await request.get("/api/routine")).json()).routine).toEqual(
     testRoutine,
@@ -584,13 +586,13 @@ test("new activities and shared blocks follow their start times in the editor", 
   await page.getByTestId("EntryEditor-add").click();
   await page.getByTestId("EntryEditor-use").click();
   const blockDialog = page.getByRole("dialog", {
-    name: "Add shared block",
+    name: "Add routine",
     exact: true,
   });
   await blockDialog.getByTestId("EntryEditor-block").selectOption("wake_up");
   await blockDialog.getByTestId("EntryEditor-time").fill("06:30");
   await blockDialog
-    .getByRole("button", { name: "Add shared block", exact: true })
+    .getByRole("button", { name: "Add routine", exact: true })
     .click();
   const block = page
     .getByTestId("EntryEditor-entry")
@@ -616,18 +618,16 @@ test("activities and blocks have no per-item condition controls", async ({
   page,
 }) => {
   await page.goto("/templates");
-  await page.getByTestId("Templates-blocks").click();
   for (const key of ["wake_up", "gym_evening"]) {
-    await page.getByTestId(`TemplateEditor-block-${key}`).click();
+    await page.getByTestId(`SharedBlocks-edit-${key}`).click();
     await expandEntries(page);
     await expect(page.getByTestId("ConditionsEditor")).toHaveCount(0);
     await expect(page.getByTestId("BranchSection")).toHaveCount(0);
     await expect(
       page.getByRole("combobox", { name: "Choice for new branch" }),
     ).toHaveCount(0);
-    await page.getByTestId("TemplateEditor-cancel").click();
+    await page.getByTestId("TemplateEditor-back").click();
   }
-  await page.getByTestId("TemplateEditor-cancel").click();
   await page
     .getByTestId("Templates-row-saturday")
     .getByTestId("Templates-edit")
@@ -670,8 +670,7 @@ test("shared block contents retain sequence controls without fixed times", async
     ).ok(),
   ).toBeTruthy();
   await page.goto("/templates");
-  await page.getByTestId("Templates-blocks").click();
-  await page.getByTestId("TemplateEditor-block-morning").click();
+  await page.getByTestId("SharedBlocks-edit-morning").click();
   await expandEntries(page);
   await expect(page.getByTestId("EntryEditor-time")).toHaveCount(0);
   await expect(page.getByTestId("EntryEditor-up")).toHaveCount(2);
@@ -892,8 +891,7 @@ test("a shared block draft survives a remote edit and reloads the saved name", a
   request,
 }) => {
   await page.goto("/templates");
-  await page.getByTestId("Templates-blocks").click();
-  await page.getByTestId("TemplateEditor-block-wake_up").click();
+  await page.getByTestId("SharedBlocks-edit-wake_up").click();
   const name = page.getByTestId("TemplateEditor-block-name");
   await name.fill("My unsaved name");
   const latest = await (await request.get("/api/routine")).json();
@@ -944,8 +942,7 @@ test("reloading after another device removes a shared block returns safely to it
     ).ok(),
   ).toBeTruthy();
   await page.goto("/templates");
-  await page.getByTestId("Templates-blocks").click();
-  await page.getByTestId("TemplateEditor-block-spare").click();
+  await page.getByTestId("SharedBlocks-edit-spare").click();
   await page.getByTestId("TemplateEditor-block-name").fill("Unsaved");
   const latest = await (await request.get("/api/routine")).json();
   delete latest.routine.blocks.spare;
@@ -968,6 +965,6 @@ test("reloading after another device removes a shared block returns safely to it
     .getByRole("dialog")
     .getByRole("button", { name: "Discard changes", exact: true })
     .click();
-  await expect(page.getByTestId("TemplateEditor-block-list")).toBeVisible();
-  await expect(page.getByTestId("TemplateEditor-block-spare")).toHaveCount(0);
+  await expect(page.getByTestId("SharedBlocks-list")).toBeVisible();
+  await expect(page.getByTestId("SharedBlocks-edit-spare")).toHaveCount(0);
 });

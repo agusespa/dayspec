@@ -1,11 +1,14 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 async function save(page: Page) {
   const response = page.waitForResponse(
     (r) => r.url().endsWith("/api/routine") && r.request().method() === "PUT",
   );
   await page.getByTestId("TemplateEditor-save").click();
   expect((await response).ok()).toBeTruthy();
-  await expect(page.getByTestId("Templates-saved")).toBeVisible();
+  await expect(page.getByTestId("TemplateEditor-status")).toHaveText(
+    "All changes saved",
+  );
+  await page.getByTestId("TemplateEditor-back").click();
 }
 test("edits choices, conditional activities, durations and Notion links, then selects a holiday template", async ({
   page,
@@ -97,7 +100,7 @@ test("edits choices, conditional activities, durations and Notion links, then se
     ]);
     await page.goto("/");
     await expect(page.getByTestId("TimelineItem")).toHaveCount(1);
-    await page.getByTestId("Day-choice-choice-option_2").click();
+    await page.getByTestId("Day-choice-choice").selectOption("option_2");
     await expect(page.getByTestId("TimelineItem")).toHaveCount(2);
     await expect(page.getByTestId("TimelineItem").first()).not.toContainText(
       "15 min",
@@ -126,7 +129,7 @@ test("edits choices, conditional activities, durations and Notion links, then se
       const phone = await other.newPage();
       await phone.clock.setFixedTime(new Date("2026-11-16T08:00:00+01:00"));
       await phone.goto("/");
-      await phone.getByTestId("Day-choice-choice-option_2").click();
+      await phone.getByTestId("Day-choice-choice").selectOption("option_2");
       await expect(phone.getByTestId("TimelineItem")).toHaveCount(2);
     } finally {
       await other.close();
@@ -196,8 +199,7 @@ test("refuses a missing block duration without replacing the saved block", async
       ).ok(),
     ).toBeTruthy();
     await page.goto("/templates");
-    await page.getByTestId("Templates-blocks").click();
-    await page.getByTestId("TemplateEditor-block-stable").click();
+    await page.getByTestId("SharedBlocks-edit-stable").click();
     await page.getByTestId("EntryEditor-open").click();
     await page.getByTestId("EntryEditor-duration").fill("");
     await page.getByTestId("TemplateEditor-save").click();
@@ -207,7 +209,7 @@ test("refuses a missing block duration without replacing the saved block", async
     expect((await (await request.get("/api/routine")).json()).routine).toEqual(
       routine,
     );
-    await page.getByTestId("TemplateEditor-cancel").click();
+    await page.getByTestId("TemplateEditor-back").click();
     await page
       .getByRole("button", { name: "Discard changes", exact: true })
       .click();

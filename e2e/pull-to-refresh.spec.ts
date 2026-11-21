@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 
 // The app only adds its own pull-to-refresh in the home-screen app, so pretend to be one.
 test.beforeEach(async ({ page }) => {

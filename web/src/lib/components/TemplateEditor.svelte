@@ -6,6 +6,7 @@
 	import EditorSession, { type EditorDraft } from './EditorSession.svelte';
 	import EntryEditor from './EntryEditor.svelte';
 	import ChoiceEditor from './ChoiceEditor.svelte';
+	import { templateOverlaps } from '#lib/routine/overlaps.ts';
 	let {
 		routine,
 		templateKey,
@@ -17,7 +18,7 @@
 		templateKey: string;
 		startCreating?: boolean;
 		focus?: number[];
-		onclose: (key: string, saved: boolean) => void;
+		onclose: (key: string) => void;
 	} = $props();
 	let key = $state(untrack(() => templateKey));
 	let creating = $state(untrack(() => startCreating || !routine.templates[templateKey]));
@@ -55,7 +56,7 @@
 <EditorSession
 	{routine}
 	title={creating ? 'New template' : 'Edit template'}
-	onclose={(saved) => onclose(key, saved)}
+	onclose={() => onclose(key)}
 	onreload={reloaded}
 >
 	{#snippet subtitle(editor)}
@@ -91,6 +92,7 @@
 			</section>
 		{/if}
 		{#if !creating}
+			{@const overlaps = templateOverlaps(editor.routine, key)}
 			<div class="editor-workspace">
 				<div class="editor-settings">
 					<label
@@ -125,6 +127,22 @@
 				</div>
 				<div class="editor-timeline">
 					<h2 class="template-section-title timeline-heading">Timeline</h2>
+					{#if overlaps.length}
+						<div class="editor-warning" role="alert" data-testid="TemplateEditor-overlaps">
+							<strong
+								>{overlaps.length === 1 ? 'Two activities overlap' : `${overlaps.length} overlaps`}</strong
+							>
+							<ul>
+								{#each overlaps as overlap}<li>
+										{overlap.second.title} starts at
+										<span class="mono">{overlap.second.time}</span>, before {overlap.first.title}
+										ends at <span class="mono">{overlap.first.end}</span>{#if overlap.when.length}{' '}<span
+												class="help">· {overlap.when.join(', ')}</span
+											>{/if}
+									</li>{/each}
+							</ul>
+						</div>
+					{/if}
 					<EntryEditor
 						bind:entries={editor.routine.templates[key].items}
 						routine={editor.routine}

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 for (const width of [390, 1440]) {
   test(`delete confirmations use app dialogs and preserve cancelled changes at ${width}px`, async ({
     page,
@@ -84,14 +84,13 @@ for (const width of [390, 1440]) {
       expect(
         (await (await request.get("/api/routine")).json()).routine,
       ).toEqual(routine);
-      await page.getByTestId("Templates-blocks").click();
       const removeBlock = page.getByRole("button", {
-        name: "Delete shared block Spare block",
+        name: "Delete routine Spare block",
         exact: true,
       });
       await removeBlock.click();
       const blockDialog = page.getByRole("dialog", {
-        name: "Delete shared block?",
+        name: "Delete routine?",
         exact: true,
       });
       await expect(blockDialog).toContainText("Spare block");
@@ -110,7 +109,6 @@ for (const width of [390, 1440]) {
         .getByRole("button", { name: "Delete", exact: true })
         .click();
       await expect(removeBlock).toHaveCount(0);
-      await page.getByTestId("TemplateEditor-cancel").click();
       await page.getByTestId("Templates-edit").click();
       const branch = page.getByRole("region", { name: "Gym", exact: true });
       const removeBranch = branch.getByRole("button", {
@@ -137,14 +135,17 @@ for (const width of [390, 1440]) {
       await expect(branch).toHaveCount(0);
       // A branch deletion is still a draft until the template is saved.
       expect(
-        (await (await request.get("/api/routine")).json()).routine.templates.daily
-          .items,
+        (await (await request.get("/api/routine")).json()).routine.templates
+          .daily.items,
       ).toEqual(routine.templates.daily.items);
       await page.getByTestId("TemplateEditor-save").click();
-      await expect(page.getByTestId("Templates-saved")).toBeVisible();
+      await expect(page.getByTestId("TemplateEditor-status")).toHaveText(
+        "All changes saved",
+      );
+      await page.getByTestId("TemplateEditor-back").click();
       expect(
-        (await (await request.get("/api/routine")).json()).routine.templates.daily
-          .items,
+        (await (await request.get("/api/routine")).json()).routine.templates
+          .daily.items,
       ).toEqual([routine.templates.daily.items[0]]);
       expect(nativeDialogs).toEqual([]);
     } finally {

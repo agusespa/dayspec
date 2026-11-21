@@ -59,7 +59,8 @@
 	</div>
 	{#if value !== undefined}{@render details?.(value)}{/if}
 	<div class="branch-content">
-		{#if value !== undefined}{@render children(value)}{/if}
+		<!-- Each path starts with its activities collapsed rather than inheriting the last path's open cards. -->
+		{#if value !== undefined}{#key value}{@render children(value)}{/key}{/if}
 	</div>
 	<div class="branch-join" aria-hidden="true"><span></span></div>
 </section>

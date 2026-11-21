@@ -160,7 +160,7 @@ export function blocksByName(routine: Routine): [string, Block][] {
 
 export function createBlock(routine: Routine, name: string): { routine: Routine; key: string } {
 	const label = name.trim();
-	if (!label) throw new Error('Enter a block name.');
+	if (!label) throw new Error('Enter a routine name.');
 	let key = 'block';
 	for (let n = 2; Object.hasOwn(routine.blocks ?? {}, key); n++) key = `block_${n}`;
 	const next = cloneRoutine(routine);
@@ -171,7 +171,7 @@ export function createBlock(routine: Routine, name: string): { routine: Routine;
 export function removeBlock(routine: Routine, key: string): Routine {
 	const references = blockReferences(routine, key);
 	if (references.length)
-		throw new Error(`This block is used by ${references.join(', ')}. Remove those references first.`);
+		throw new Error(`This routine is used by ${references.join(', ')}. Remove those references first.`);
 	const next = cloneRoutine(routine);
 	if (next.blocks) delete next.blocks[key];
 	return next;
@@ -179,8 +179,8 @@ export function removeBlock(routine: Routine, key: string): Routine {
 
 /** Names are editable; stable IDs and references do not change. */
 export function renameBlock(routine: Routine, key: string, name: string): Routine {
-	if (!Object.hasOwn(routine.blocks ?? {}, key)) throw new Error('Shared block does not exist.');
-	if (!name.trim()) throw new Error('Enter a block name.');
+	if (!Object.hasOwn(routine.blocks ?? {}, key)) throw new Error('Routine does not exist.');
+	if (!name.trim()) throw new Error('Enter a routine name.');
 	const next = cloneRoutine(routine);
 	next.blocks![key].name = name.trim();
 	return next;

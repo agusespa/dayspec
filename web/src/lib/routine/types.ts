@@ -42,6 +42,8 @@ export interface ItemDef extends Activity {
 export interface UseEntry {
 	use: string;
 	time: string;
+	/** Every time in the block occurrence follows this approximate start. */
+	approx?: boolean;
 }
 
 export interface Branch {

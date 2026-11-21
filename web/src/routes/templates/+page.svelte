@@ -1,10 +1,12 @@
 <script lang="ts">
 	import BottomNav from '#lib/components/BottomNav.svelte';
-	import { availableDays, templateKeys, removeTemplate } from '#lib/routine/edit.ts';
+	import { availableDays, templateKeys, removeTemplate, createBlock } from '#lib/routine/edit.ts';
 	import { routineState, saveRoutine } from '#lib/routine/client.ts';
 	import { untrack } from 'svelte';
 	import TemplateEditor from '#lib/components/TemplateEditor.svelte';
 	import SharedBlocks from '#lib/components/SharedBlocks.svelte';
+	import BlockEditor from '#lib/components/BlockEditor.svelte';
+	import type { Routine } from '#lib/routine/types.ts';
 	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
 	import '#lib/styles/editor.css';
 	import { goto, replaceState } from '$app/navigation';
@@ -20,10 +22,10 @@
 		if (!(edit || block) || !path.every((n) => Number.isInteger(n) && n >= 0)) return undefined;
 		return { block, path };
 	});
-	let editing = $state(!!linked);
+	let editing = $state(!!linked && !linked.block);
 	let creating = $state(false);
-	let managingBlocks = $state(!!linked?.block);
-	let saved = $state(false);
+	// The routine (shared block) being edited, with the unsaved draft that adds it when it is new.
+	let block = $state<{ key: string; draft?: Routine }>();
 	let deleting = $state(false);
 	let deleteError = $state('');
 	let deleteRequest = $state<{ key: string; label: string; trigger: HTMLElement }>();
@@ -32,38 +34,43 @@
 	const remaining = $derived(availableDays(routine));
 	const holiday = $derived(routine.settings?.holiday_template ?? '');
 	let key = $state(untrack(() => page.url.searchParams.get('t') ?? ''));
+	untrack(() => {
+		if (linked?.block && routine.blocks?.[linked.block]) block = { key: linked.block };
+	});
 	const selectedKey = $derived(keys.includes(key) ? key : (keys[0] ?? ''));
 	function edit(next: string) {
 		deleteError = '';
 		key = next;
 		creating = false;
-		managingBlocks = false;
 		editing = true;
-		saved = false;
+	}
+	function addBlock() {
+		const created = createBlock(routine, 'New routine');
+		created.routine.blocks![created.key].name = '';
+		block = { key: created.key, draft: created.routine };
 	}
 	async function remove(keyToDelete: string) {
 		deleting = true;
 		deleteError = '';
-		saved = false;
 		try {
 			await saveRoutine(removeTemplate(routine, keyToDelete), $routineState.revision);
 			if (key === keyToDelete) {
 				key = '';
 				replaceState('/templates', {});
 			}
-			saved = true;
 		} catch (error) {
 			deleteError = error instanceof Error ? error.message : 'Could not delete this template. Try again.';
 		} finally {
 			deleting = false;
 		}
 	}
-	function closeEditor(next: string, didSave: boolean) {
+	function closeEditor() {
 		if (linked) return void goto('/');
-		key = next;
+		// Back on the list every preview starts collapsed.
+		key = '';
 		editing = false;
-		saved = didSave;
-		replaceState(key ? `?t=${key}` : '/templates', {});
+		block = undefined;
+		replaceState('/templates', {});
 	}
 
 	function pick(next: string) {
@@ -86,28 +93,27 @@
 		}}
 	/>
 {/if}
-{#if editing}
-	{#if managingBlocks}
-		<SharedBlocks
-			{routine}
-			startBlock={linked?.block}
-			focus={linked?.path}
-			onclose={(didSave) => closeEditor(key, didSave)}
-		/>
-	{:else}
-		<TemplateEditor
-			{routine}
-			templateKey={selectedKey}
-			startCreating={creating}
-			focus={linked?.path}
-			onclose={closeEditor}
-		/>
-	{/if}
+{#if block}
+	<BlockEditor
+		{routine}
+		initialDraft={block.draft}
+		blockKey={block.key}
+		creating={!!block.draft}
+		focus={block.key === linked?.block ? linked.path : undefined}
+		onclose={closeEditor}
+	/>
+{:else if editing}
+	<TemplateEditor
+		{routine}
+		templateKey={selectedKey}
+		startCreating={creating}
+		focus={linked?.path}
+		onclose={closeEditor}
+	/>
 {:else}
 	<section class="masthead page-header">
 		<h1>Templates</h1>
 	</section>
-	{#if saved}<p class="saved-note" role="status" data-testid="Templates-saved">Templates saved</p>{/if}
 	{#if deleteError}<p class="delete-error" role="alert" data-testid="Templates-delete-error">
 			{deleteError}
 		</p>{/if}
@@ -172,7 +178,7 @@
 				{#if key === k}
 					<div class="template-preview" id={`preview-${k}`}>
 						{#if !day.items.length}<p class="empty-preview" data-testid="Templates-empty">
-								No routine items yet.
+								No activities yet.
 							</p>{/if}
 						<h2 class="section-label template-section-title timeline-heading">
 							Timeline <span class="template-section-count">{day.items.length} items</span>
@@ -183,7 +189,7 @@
 			</article>
 		{:else}
 			<section class="empty-state" data-testid="Templates-empty-library">
-				<h2>Your routine starts here</h2>
+				<h2>Your day starts here</h2>
 			</section>
 		{/each}
 	</div>
@@ -195,35 +201,28 @@
 					.join(' · ')}
 			</p>
 		{/if}
-		<div class="template-actions">
-			<button
-				class="manage-blocks"
-				data-testid="Templates-blocks"
-				disabled={!$routineState.online || deleting}
-				onclick={() => {
-					managingBlocks = true;
-					creating = false;
-					editing = true;
-					saved = false;
-				}}>Manage shared blocks</button
-			>
-			{#if remaining.length}
+		{#if remaining.length}
+			<div class="template-actions">
 				<button
 					class="add-button"
 					data-testid="Templates-new"
 					disabled={!$routineState.online || deleting}
 					onclick={() => {
 						creating = true;
-						managingBlocks = false;
 						editing = true;
-						saved = false;
 					}}>+ Add template</button
 				>
-			{/if}
-		</div>
+			</div>
+		{/if}
 	</section>
+	<SharedBlocks
+		{routine}
+		disabled={!$routineState.online || deleting}
+		onedit={(next) => (block = { key: next })}
+		onadd={addBlock}
+	/>
 {/if}
-{#if !editing}
+{#if !editing && !block}
 	<div class="bar-room"></div>
 	<BottomNav />
 {/if}
@@ -357,11 +356,6 @@
 		border-radius: 10px;
 		font-size: var(--text-sm);
 	}
-	.manage-blocks {
-		border: 1px solid var(--rule);
-		color: var(--secondary);
-		background: var(--paper);
-	}
 	.add-button {
 		background: var(--accent);
 		color: var(--accent-text);
@@ -369,10 +363,6 @@
 	}
 	.add-button:not(:disabled):hover {
 		background: var(--accent-hover);
-	}
-	.saved-note {
-		color: var(--accent);
-		font-size: var(--text-xs);
 	}
 	@media (min-width: 1024px) {
 		.template-list {

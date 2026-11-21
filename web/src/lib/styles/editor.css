@@ -39,6 +39,48 @@
 	font: var(--text-xs) var(--sans);
 	color: var(--muted);
 }
+.template-editor .save-state.saved {
+	color: var(--accent);
+}
+.template-editor .editor-back {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.15rem;
+	min-height: 44px;
+	margin: 0 0 0.25rem -0.6rem;
+	padding: 0.4rem 0.75rem 0.4rem 0.35rem;
+	border-radius: 999px;
+	color: var(--accent);
+	font-size: var(--text-sm);
+	font-weight: 600;
+}
+.template-editor .editor-back:not(:disabled):hover {
+	background: var(--now-wash);
+}
+.template-editor .editor-back svg {
+	width: 20px;
+	height: 20px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 2;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+/* Phones keep the save state next to the floating save button. */
+@media (max-width: 1023px) {
+	.template-editor .save-state:not(:empty) {
+		position: fixed;
+		left: 50%;
+		bottom: calc(var(--nav-bottom) + 58px);
+		transform: translateX(-50%);
+		z-index: 5;
+		padding: 0.2rem 0.65rem;
+		border-radius: 999px;
+		background: var(--floating-bg);
+		-webkit-backdrop-filter: var(--floating-filter);
+		backdrop-filter: var(--floating-filter);
+	}
+}
 .template-editor .danger {
 	color: var(--danger);
 }
@@ -394,6 +436,22 @@
 
 /* ---- Errors ---- */
 
+.template-editor .editor-warning {
+	margin: 0 0 1rem;
+	padding: 0.75rem 0.85rem;
+	border: 1px solid color-mix(in srgb, var(--tertiary) 55%, transparent);
+	border-radius: var(--radius);
+	background: color-mix(in srgb, var(--tertiary) 8%, transparent);
+	color: var(--tertiary);
+	font-size: var(--text-sm);
+	line-height: 1.6;
+	overflow-wrap: anywhere;
+}
+.template-editor .editor-warning ul {
+	margin: 0.25rem 0 0;
+	padding-left: 1.25rem;
+	color: var(--text);
+}
 .template-editor .editor-errors {
 	padding: 0.85rem;
 	border: 1px solid var(--danger);
@@ -418,9 +476,7 @@
 	transform: translateX(-50%);
 	z-index: 5;
 	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: 4px;
-	width: min(calc(100% - 24px), 324px);
+	width: min(calc(100% - 24px), 240px);
 	padding: 4px;
 	border-radius: 999px;
 	background: var(--floating-bg);
@@ -515,10 +571,6 @@
 	}
 	.template-editor .editor-actions > button {
 		padding-inline: 1.25rem;
-	}
-	.template-editor .editor-actions > button:first-child {
-		border: 1px solid var(--rule);
-		background: var(--paper);
 	}
 	.template-editor .editor-workspace {
 		display: grid;

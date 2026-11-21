@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./test";
 const activity = (title: string, time: string, duration = 10) => ({
   title,
   time,
@@ -137,7 +137,10 @@ test("edits activities in both paths and saves their actual nesting", async ({
   await office.getByTestId("EntryEditor-open").click();
   await office.getByTestId("EntryEditor-title").fill("Office projects");
   await page.getByTestId("TemplateEditor-save").click();
-  await expect(page.getByTestId("Templates-saved")).toBeVisible();
+  await expect(page.getByTestId("TemplateEditor-status")).toHaveText(
+    "All changes saved",
+  );
+  await page.getByTestId("TemplateEditor-back").click();
   const saved = (await (await request.get("/api/routine")).json()).routine
     .templates.weekday.items;
   expect(saved[1].paths.home[0].title).toBe("Home projects");
@@ -173,7 +176,10 @@ test("adds an empty fork and inserts an activity only into its selected path", a
     "Evening walk",
   );
   await page.getByTestId("TemplateEditor-save").click();
-  await expect(page.getByTestId("Templates-saved")).toBeVisible();
+  await expect(page.getByTestId("TemplateEditor-status")).toHaveText(
+    "All changes saved",
+  );
+  await page.getByTestId("TemplateEditor-back").click();
   const saved = (await (await request.get("/api/routine")).json()).routine
     .templates.weekday.items;
   const fork = saved.find((entry) => entry.choice === "gym");
@@ -205,7 +211,7 @@ test("opens a deeply nested activity from Daily and returns to the same day", as
   await expect(
     region(page, "Gym").getByTestId("EntryEditor-title"),
   ).toHaveValue("Lift");
-  await page.getByTestId("TemplateEditor-cancel").click();
+  await page.getByTestId("TemplateEditor-back").click();
   await expect(
     page.getByRole("heading", { name: "Today", exact: true }),
   ).toBeVisible();
@@ -214,25 +220,17 @@ test("child choices depend on containment and later forks remain independent", a
   page,
 }) => {
   await page.goto("/");
-  await expect(
-    page.getByRole("radiogroup", { name: "Gym", exact: true }),
-  ).toBeVisible();
-  await page.getByRole("radio", { name: "Stay home", exact: true }).click();
-  await page.getByRole("radio", { name: "Office", exact: true }).click();
-  await expect(
-    page.getByRole("radiogroup", { name: "Gym", exact: true }),
-  ).toHaveCount(0);
-  await expect(
-    page.getByRole("radio", { name: "Stay home", exact: true }),
-  ).toHaveAttribute("aria-checked", "true");
+  const gym = page.getByTestId("Day-choice-gym");
+  const evening = page.getByTestId("Day-choice-evening");
+  await expect(gym).toBeVisible();
+  await evening.selectOption("stay");
+  await page.getByTestId("Day-choice-location").selectOption("office");
+  await expect(gym).toHaveCount(0);
+  await expect(evening).toHaveValue("stay");
   await expect(page.getByText("Read at home", { exact: true })).toBeVisible();
-  await page.getByRole("radio", { name: "Home", exact: true }).click();
-  await expect(
-    page.getByRole("radiogroup", { name: "Gym", exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("radio", { name: "Stay home", exact: true }),
-  ).toHaveAttribute("aria-checked", "true");
+  await page.getByTestId("Day-choice-location").selectOption("home");
+  await expect(gym).toBeVisible();
+  await expect(evening).toHaveValue("stay");
 });
 test("shows defaults in the selected path without rule subtitles or availability controls", async ({
   page,
@@ -288,7 +286,10 @@ test("deleting a fork uses the app modal and removes all its paths only after sa
     fixture,
   );
   await page.getByTestId("TemplateEditor-save").click();
-  await expect(page.getByTestId("Templates-saved")).toBeVisible();
+  await expect(page.getByTestId("TemplateEditor-status")).toHaveText(
+    "All changes saved",
+  );
+  await page.getByTestId("TemplateEditor-back").click();
   const items = (await (await request.get("/api/routine")).json()).routine
     .templates.weekday.items;
   expect(items.map((entry) => entry.choice ?? entry.title)).toEqual([

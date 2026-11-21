@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 const fixture = {
   settings: { automatic_swedish_holidays: false },
   categories: { health: { name: "Health", color: "green" } },
@@ -163,7 +163,10 @@ for (const width of [390, 1440]) {
       fixture,
     );
     await page.getByTestId("TemplateEditor-save").click();
-    await expect(page.getByTestId("Templates-saved")).toBeVisible();
+    await expect(page.getByTestId("TemplateEditor-status")).toHaveText(
+      "All changes saved",
+    );
+    await page.getByTestId("TemplateEditor-back").click();
     const saved = (await (await request.get("/api/routine")).json()).routine;
     expect(saved.templates.daily.items[1]).toEqual({
       title: "Mid-morning break",
@@ -184,13 +187,13 @@ test("shared blocks require a selected block and start time before insertion", a
   await page.getByTestId("EntryEditor-add").click();
   await page.getByTestId("EntryEditor-use").click();
   const dialog = page.getByRole("dialog", {
-    name: "Add shared block",
+    name: "Add routine",
     exact: true,
   });
   const select = dialog.getByTestId("EntryEditor-block");
   const time = dialog.getByTestId("EntryEditor-time");
   const confirm = dialog.getByRole("button", {
-    name: "Add shared block",
+    name: "Add routine",
     exact: true,
   });
   await expect(select).toHaveValue("");
@@ -215,7 +218,10 @@ test("shared blocks require a selected block and start time before insertion", a
       .getByTestId("EntryEditor-time"),
   ).toBeVisible();
   await page.getByTestId("TemplateEditor-save").click();
-  await expect(page.getByTestId("Templates-saved")).toBeVisible();
+  await expect(page.getByTestId("TemplateEditor-status")).toHaveText(
+    "All changes saved",
+  );
+  await page.getByTestId("TemplateEditor-back").click();
   expect(
     (await (await request.get("/api/routine")).json()).routine.templates.daily
       .items[2],

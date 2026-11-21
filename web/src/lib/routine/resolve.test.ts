@@ -224,3 +224,26 @@ it('scopes overrides to the selected template when toggling holidays', () => {
 	expect(resolveDay(routine, MON, { ...both, holiday: true }).items[0].title).toBe('Go out');
 	expect(resolveDay(routine, MON, { ...both, holiday: false }).items[0].title).toBe('WFH');
 });
+
+describe('approximate routine starts', () => {
+	it('marks every activity in an approximately started routine as approximate', () => {
+		const routine = {
+			version: 1,
+			blocks: {
+				morning: {
+					name: 'Morning',
+					items: [
+						{ title: 'Stretch', duration: 10 },
+						{ title: 'Shower', duration: 15 }
+					]
+				}
+			},
+			templates: { daily: { on: ['mon'], items: [{ use: 'morning', time: '07:00', approx: true }] } }
+		} as unknown as Routine;
+		const items = resolveDay(routine, '2026-11-16').items;
+		expect(items.map((i) => [i.time, i.approx])).toEqual([
+			['07:00', true],
+			['07:10', true]
+		]);
+	});
+});

@@ -54,7 +54,7 @@ The provided [`docker-compose.yml`](docker-compose.yml) runs `ghcr.io/agusespa/d
 
 7. Open `https://day.example.com` and sign in through Access. On an iPhone, use Safari's **Share → Add to Home Screen** to install the app.
 
-The app starts with an empty Daily template. Open Templates to add activities, change its weekday assignments, and create more templates for unassigned days. Shared blocks are managed from the routine library; holiday preferences are in Profile.
+The app starts with an empty Daily template. Open Templates to add activities, change its weekday assignments, and create more templates for unassigned days. Routines (reusable activity sequences, stored as shared blocks) are listed below the templates on the same page; holiday preferences are in Profile.
 
 If you already run `cloudflared`, add Dayspec to its Docker network and use that tunnel instead. Only run trusted services on this network: containers sharing it can reach Dayspec without passing through Access. Use the Cloudflare-protected hostname for your integrations.
 

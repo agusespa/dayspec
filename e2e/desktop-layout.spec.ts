@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 import routine from "./fixtures/routine.json" with { type: "json" };
 
 test.use({ isMobile: false, hasTouch: false, deviceScaleFactor: 1 });
@@ -30,15 +30,18 @@ for (const width of [1024, 1440]) {
     await page.getByTestId("TemplateEditor-theme").fill("Desktop editing");
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await expect(page.getByTestId("TemplateEditor-save")).toBeInViewport();
-    await expect(page.getByTestId("TemplateEditor-cancel")).toBeInViewport();
+    await expect(page.getByTestId("TemplateEditor-back")).toBeInViewport();
     const response = page.waitForRequest(
       (request) => request.method() === "PUT",
     );
     await page.getByTestId("TemplateEditor-save").click();
-    expect((await response).postDataJSON().routine.templates.weekday.theme).toBe(
-      "Desktop editing",
+    expect(
+      (await response).postDataJSON().routine.templates.weekday.theme,
+    ).toBe("Desktop editing");
+    await expect(page.getByTestId("TemplateEditor-status")).toHaveText(
+      "All changes saved",
     );
-    await expect(page.getByTestId("Templates-saved")).toBeVisible();
+    await page.getByTestId("TemplateEditor-back").click();
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth),
     ).toBe(width);
@@ -53,8 +56,7 @@ test("desktop shared block editing places activities beside its settings", async
     route.fulfill({ json: { routine, revision: '"desktop"' } }),
   );
   await page.goto("/templates");
-  await page.getByTestId("Templates-blocks").click();
-  await page.getByTestId("TemplateEditor-block-wake_up").click();
+  await page.getByTestId("SharedBlocks-edit-wake_up").click();
   const name = (await page
     .getByTestId("TemplateEditor-block-name")
     .boundingBox())!;
@@ -62,8 +64,8 @@ test("desktop shared block editing places activities beside its settings", async
   expect(activities.x).toBeGreaterThan(name.x + name.width);
   await page.getByTestId("EntryEditor-open").first().click();
   await expect(page.getByTestId("EntryEditor-title").first()).toBeVisible();
-  await page.getByTestId("TemplateEditor-cancel").click();
-  await expect(page.getByTestId("TemplateEditor-block-list")).toBeVisible();
+  await page.getByTestId("TemplateEditor-back").click();
+  await expect(page.getByTestId("SharedBlocks-list")).toBeVisible();
 });
 
 test("below the desktop breakpoint the library and editor retain their single column and bottom save bar", async ({

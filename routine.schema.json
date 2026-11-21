@@ -318,6 +318,10 @@
       "properties": {
         "time": {
           "$ref": "#/$defs/time"
+        },
+        "approx": {
+          "type": "boolean",
+          "description": "Show the block's times as approximate (≈)."
         }
       },
       "unevaluatedProperties": false

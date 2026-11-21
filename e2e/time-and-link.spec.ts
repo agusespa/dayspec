@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 
 test("template activities require a start time and save one optional link", async ({
   page,
@@ -69,7 +69,10 @@ test("template activities require a start time and save one optional link", asyn
     await page.getByTestId("EntryEditor-time").fill("10:30");
     await link.fill("https://example.com/book");
     await page.getByTestId("TemplateEditor-save").click();
-    await expect(page.getByTestId("Templates-saved")).toBeVisible();
+    await expect(page.getByTestId("TemplateEditor-status")).toHaveText(
+      "All changes saved",
+    );
+    await page.getByTestId("TemplateEditor-back").click();
     expect(
       (await (await request.get("/api/routine")).json()).routine.templates.daily
         .items,
@@ -93,7 +96,10 @@ test("template activities require a start time and save one optional link", asyn
     await expect(link).toHaveValue("https://example.com/book");
     await link.fill("");
     await page.getByTestId("TemplateEditor-save").click();
-    await expect(page.getByTestId("Templates-saved")).toBeVisible();
+    await expect(page.getByTestId("TemplateEditor-status")).toHaveText(
+      "All changes saved",
+    );
+    await page.getByTestId("TemplateEditor-back").click();
     expect(
       (await (await request.get("/api/routine")).json()).routine.templates.daily
         .items,

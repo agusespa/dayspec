@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { renameBlock } from '#lib/routine/edit.ts';
 	import type { Routine, SharedEntry } from '#lib/routine/types.ts';
 	import EditorSession from './EditorSession.svelte';
@@ -16,18 +17,20 @@
 		blockKey: string;
 		creating?: boolean;
 		focus?: number[];
-		onclose: (saved: boolean) => void;
+		onclose: () => void;
 	} = $props();
+	let isNew = $state(untrack(() => creating));
 </script>
 
 <EditorSession
 	{routine}
 	{initialDraft}
-	title={creating ? 'New shared block' : 'Edit shared block'}
+	title={isNew ? 'New routine' : 'Edit routine'}
 	prepare={(draft) => renameBlock(draft, blockKey, draft.blocks![blockKey].name)}
 	{onclose}
+	onsaved={() => (isNew = false)}
 	onreload={(draft) => {
-		if (!draft.blocks?.[blockKey]) onclose(false);
+		if (!draft.blocks?.[blockKey]) onclose();
 	}}
 >
 	{#snippet children(editor)}
@@ -53,7 +56,7 @@
 						>{#each Object.entries(editor.routine.categories ?? {}) as [id, category] (id)}<option value={id}
 								>{category.name}</option
 							>{/each}</select
-					><span class="help">Colours the block, and every activity in it that doesn't set its own.</span
+					><span class="help">Colours the routine, and every activity in it that doesn't set its own.</span
 					></label
 				>
 			</div>

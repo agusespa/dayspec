@@ -184,9 +184,11 @@ function collect(entries: (Entry | SharedEntry)[], ctx: Context, scope: Scope): 
 				category: block.category ?? scope.category,
 				source: { block: entry.use, path: [] }
 			});
+			const approx = 'approx' in entry && entry.approx;
 			out.push(
 				...scheduleBlock(inner, 'time' in entry ? entry.time : undefined).map((item) => ({
 					...item,
+					...(approx ? { approx: true } : {}),
 					sharedBlock
 				}))
 			);
