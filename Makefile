@@ -38,8 +38,10 @@ check-routine:
 lint:
 	golangci-lint run ./...
 
-e2e: build
+# test:e2e builds the frontend first, so this skips the full build target.
+e2e:
 	npm ci
+	npm --prefix web ci
 	npx playwright install chromium
 	npm run test:e2e
 

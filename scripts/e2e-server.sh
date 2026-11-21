@@ -1,6 +1,6 @@
 #!/bin/sh
 # Starts one production server per Playwright worker, each with its own routine file.
-# Expects the frontend to be built already (web/build), as CI does.
+# Expects the frontend in web/build; `npm run test:e2e` builds it first.
 set -e
 cd "$(dirname "$0")/.."
 
