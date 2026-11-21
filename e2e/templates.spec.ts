@@ -132,7 +132,7 @@ test("edits only the selected template without editor navigation or JSON control
   request,
 }) => {
   await openEditor(page);
-  await expect(page.getByTestId("TemplateEditor-name")).toHaveText("Saturday");
+  await expect(page.getByTestId("TemplateEditor-day-sat")).toBeChecked();
   for (const id of [
     "TemplateEditor-template",
     "TemplateEditor-blocks",

@@ -59,11 +59,6 @@
 	onclose={() => onclose(key)}
 	onreload={reloaded}
 >
-	{#snippet subtitle(editor)}
-		{#if !creating}<p class="help" data-testid="TemplateEditor-name">
-				{templateName(editor.routine.templates[key].on)}
-			</p>{/if}
-	{/snippet}
 	{#snippet children(editor)}
 		{#if creating}
 			<section class="new-template" data-testid="TemplateEditor-create">

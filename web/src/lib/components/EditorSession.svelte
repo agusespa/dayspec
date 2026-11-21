@@ -9,6 +9,7 @@
 <script lang="ts">
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { untrack, type Snippet } from 'svelte';
+	import { MediaQuery } from 'svelte/reactivity';
 	import schema from '../../../../routine.schema.json';
 	import { cloneRoutine } from '#lib/routine/edit.ts';
 	import { routineState, loadRoutine, saveRoutine, currentRoutine } from '#lib/routine/client.ts';
@@ -19,7 +20,6 @@
 		initialDraft,
 		title,
 		backLabel = 'Templates',
-		subtitle,
 		prepare,
 		onreload,
 		onsaved,
@@ -31,7 +31,6 @@
 		title: string;
 		/** Where the back button returns to. */
 		backLabel?: string;
-		subtitle?: Snippet<[EditorDraft]>;
 		prepare?: (routine: Routine) => Routine;
 		onreload?: (routine: Routine) => void;
 		onsaved?: () => void;
@@ -49,6 +48,8 @@
 	let discardAction = $state<() => void>();
 	let discardMessage = $state('');
 	let discardReturnFocus = $state<HTMLElement>();
+	// Desktop keeps back beside the title; phones put it in the bottom bar beside Save, within thumb reach.
+	const desktop = new MediaQuery('min-width: 1024px');
 	const dirty = $derived(JSON.stringify(editor.routine) !== baseline);
 	const changedElsewhere = $derived(!!$routineState.revision && $routineState.revision !== revision);
 	function warnBeforeUnload(event: BeforeUnloadEvent) {
@@ -152,24 +153,26 @@
 		onconfirm={discard}
 	/>
 {/if}
+{#snippet backButton()}
+	<button
+		data-testid="TemplateEditor-back"
+		type="button"
+		class="editor-back"
+		aria-label={`Back to ${backLabel}`}
+		title={`Back to ${backLabel}`}
+		aria-disabled={saving}
+		onclick={(event) => {
+			if (!saving) back(event);
+		}}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg></button
+	>
+{/snippet}
 <section class="template-editor" data-testid="TemplateEditor">
 	<div class="editor-heading page-header masthead">
 		<div class="editor-title">
 			<div class="editor-title-row">
-				<button
-					data-testid="TemplateEditor-back"
-					type="button"
-					class="editor-back"
-					aria-label={`Back to ${backLabel}`}
-					title={`Back to ${backLabel}`}
-					aria-disabled={saving}
-					onclick={(event) => {
-						if (!saving) back(event);
-					}}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg></button
-				>
+				{#if desktop.current}{@render backButton()}{/if}
 				<h1>{title}</h1>
 			</div>
-			{@render subtitle?.(editor)}
 		</div>
 		<div class="editor-toolbar">
 			<span
@@ -180,6 +183,7 @@
 				>{saving ? 'Saving…' : dirty ? 'Unsaved changes' : savedOnce ? 'All changes saved' : ''}</span
 			>
 			<div class="editor-actions">
+				{#if !desktop.current}{@render backButton()}{/if}
 				<button
 					data-testid="TemplateEditor-save"
 					class="primary"

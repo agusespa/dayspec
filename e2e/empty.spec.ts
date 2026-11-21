@@ -49,7 +49,7 @@ test("starts empty, saves the first item, and can return to an empty template", 
     "Edit Daily template",
   );
   await page.getByTestId("Templates-edit").click();
-  await expect(page.getByTestId("TemplateEditor-name")).toHaveText("Daily");
+  await expect(page.getByTestId("TemplateEditor-day-mon")).toBeChecked();
   await page.getByTestId("EntryEditor-add").click();
   await page.getByTestId("EntryEditor-activity").click();
   const dialog = page.getByRole("dialog", {

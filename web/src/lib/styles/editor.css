@@ -503,7 +503,9 @@
 	transform: translateX(-50%);
 	z-index: 5;
 	display: grid;
-	width: min(calc(100% - 24px), 240px);
+	grid-template-columns: auto minmax(0, 1fr);
+	gap: 4px;
+	width: min(calc(100% - 24px), 280px);
 	padding: 4px;
 	border-radius: 999px;
 	background: var(--floating-bg);
@@ -525,6 +527,18 @@
 }
 .template-editor .primary:not(:disabled):hover {
 	background: var(--accent-hover);
+}
+.template-editor .editor-actions .editor-back {
+	width: 44px;
+	height: 44px;
+	min-height: 44px;
+	margin: 0;
+	padding: 0;
+	background: rgb(255 255 255 / 8%);
+}
+.template-editor .editor-actions .editor-back svg {
+	width: 22px;
+	height: 22px;
 }
 .template-editor .editor-actions .primary:disabled {
 	background: rgb(255 255 255 / 5%);
@@ -585,6 +599,7 @@
 		gap: 0.75rem 1.25rem;
 	}
 	.template-editor .editor-actions {
+		display: flex;
 		position: static;
 		transform: none;
 		flex: none;
