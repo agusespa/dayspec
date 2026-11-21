@@ -138,7 +138,19 @@ for (const height of [500, 664]) {
     });
     await expect(todayButton).toBeVisible();
     expect(await page.evaluate(() => scrollY)).toBe(0);
+    /** True once the row sits between the sticky header and nav and the smooth scroll has come to rest. */
     async function currentIsVisible() {
+      // A row passing through mid-animation is not "revealed"; acting then races the scroll.
+      const settled = await page.evaluate(
+        () =>
+          new Promise<boolean>((resolve) => {
+            const y = scrollY;
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() => resolve(scrollY === y)),
+            );
+          }),
+      );
+      if (!settled) return false;
       const row = (await current.boundingBox())!;
       const header = (await page.locator(".page-header").boundingBox())!;
       const nav = (await page
