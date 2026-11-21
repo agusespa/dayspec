@@ -97,6 +97,7 @@
 		);
 	}
 	async function save() {
+		if (saving) return;
 		editor.errors = [];
 		try {
 			const snapshot = $state.snapshot(editor.routine);
@@ -107,7 +108,8 @@
 			await saveRoutine(candidate, revision);
 			// Stay in the editor: the next save builds on the revision this one created.
 			revision = currentRoutine().revision;
-			baseline = JSON.stringify(editor.routine);
+			// Edits made while the request was in flight stay unsaved.
+			baseline = JSON.stringify(snapshot);
 			savedOnce = true;
 			onsaved?.();
 		} catch (error) {
@@ -152,16 +154,21 @@
 {/if}
 <section class="template-editor" data-testid="TemplateEditor">
 	<div class="editor-heading page-header masthead">
-		<div>
-			<button
-				data-testid="TemplateEditor-back"
-				type="button"
-				class="editor-back"
-				disabled={saving}
-				onclick={back}
-				><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>{backLabel}</button
-			>
-			<h1>{title}</h1>
+		<div class="editor-title">
+			<div class="editor-title-row">
+				<button
+					data-testid="TemplateEditor-back"
+					type="button"
+					class="editor-back"
+					aria-label={`Back to ${backLabel}`}
+					title={`Back to ${backLabel}`}
+					aria-disabled={saving}
+					onclick={(event) => {
+						if (!saving) back(event);
+					}}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg></button
+				>
+				<h1>{title}</h1>
+			</div>
 			{@render subtitle?.(editor)}
 		</div>
 		<div class="editor-toolbar">
@@ -178,7 +185,11 @@
 					class="primary"
 					type="submit"
 					form="routine-editor-form"
-					disabled={saving || !dirty}>{saving ? 'Saving…' : dirty || !savedOnce ? 'Save' : 'Saved'}</button
+					aria-busy={saving}
+					disabled={!dirty}
+					onclick={(event) => {
+						if (saving) event.preventDefault();
+					}}>Save</button
 				>
 			</div>
 		</div>
@@ -191,7 +202,7 @@
 			void save();
 		}}
 	>
-		<fieldset disabled={saving}>
+		<fieldset>
 			{@render children(editor)}
 			{#if changedElsewhere}<p class="help" role="status" data-testid="TemplateEditor-remote-change">
 					Templates changed on another device. Your draft is kept. Reload saved templates to use the latest

@@ -10,9 +10,10 @@ import {
 	type SharedEntry,
 	type Activity,
 	type Block,
-	type Routine
+	type Routine,
+	type UseEntry
 } from './types.ts';
-import { dayMinutes } from './date.ts';
+import { dayMinutes, toMinutes } from './date.ts';
 
 /** A detached draft so cancel and failed saves never mutate the active routine. */
 export function cloneRoutine(routine: Routine): Routine {
@@ -168,13 +169,69 @@ export function createBlock(routine: Routine, name: string): { routine: Routine;
 	return { routine: next, key };
 }
 
-export function removeBlock(routine: Routine, key: string): Routine {
+/**
+ * How references to a deleted routine are handled: `explode` puts its activities where it was
+ * used, timed as they were; `remove` deletes those occurrences along with the routine.
+ */
+export type RemoveBlockMode = 'explode' | 'remove';
+
+export function removeBlock(routine: Routine, key: string, mode?: RemoveBlockMode): Routine {
 	const references = blockReferences(routine, key);
-	if (references.length)
+	if (references.length && !mode)
 		throw new Error(`This routine is used by ${references.join(', ')}. Remove those references first.`);
 	const next = cloneRoutine(routine);
-	if (next.blocks) delete next.blocks[key];
+	const block = next.blocks?.[key];
+	if (!block) return next;
+	delete next.blocks![key];
+	if (!references.length) return next;
+
+	// Inner items keep the colour they had through the routine's category.
+	const items = block.items.map((item) =>
+		'title' in item && !item.category && block.category ? { ...item, category: block.category } : item
+	);
+	const length = (entries: SharedEntry[], seen: string[] = []): number =>
+		entries.reduce((sum, entry) => {
+			if (!('use' in entry)) return sum + entry.duration;
+			const inner = next.blocks?.[entry.use];
+			return inner && !seen.includes(entry.use) ? sum + length(inner.items, [...seen, entry.use]) : sum;
+		}, 0);
+	const explodeAt = (entry: UseEntry): Entry[] => {
+		let cursor = entry.time ? toMinutes(entry.time) : NaN;
+		return items.map((item) => {
+			const time = Number.isFinite(cursor) ? clock(cursor) : '';
+			const approx = entry.approx ? { approx: true } : {};
+			if ('use' in item) {
+				cursor += length(next.blocks?.[item.use]?.items ?? []);
+				return { use: item.use, time, ...approx };
+			}
+			cursor += item.duration;
+			return { ...item, time, ...approx };
+		});
+	};
+	const inTemplate = (entries: Entry[]): Entry[] =>
+		entries.flatMap((entry) => {
+			if (isBranch(entry))
+				return [
+					{
+						...entry,
+						paths: Object.fromEntries(Object.entries(entry.paths).map(([k, v]) => [k, inTemplate(v)]))
+					}
+				];
+			if (!('use' in entry) || entry.use !== key) return [entry];
+			return mode === 'explode' ? explodeAt(entry) : [];
+		});
+	const inBlock = (entries: SharedEntry[]): SharedEntry[] =>
+		entries.flatMap((entry) =>
+			'use' in entry && entry.use === key ? (mode === 'explode' ? items : []) : [entry]
+		);
+	for (const day of Object.values(next.templates)) day.items = inTemplate(day.items);
+	for (const other of Object.values(next.blocks ?? {})) other.items = inBlock(other.items);
 	return next;
+}
+
+function clock(minutes: number): string {
+	const total = ((minutes % 1440) + 1440) % 1440;
+	return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }
 
 /** Names are editable; stable IDs and references do not change. */

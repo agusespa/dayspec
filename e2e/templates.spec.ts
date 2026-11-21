@@ -405,13 +405,18 @@ test("refresh failures show a dismissible toast with retry while preserving the 
   await expect(page.getByTestId("RoutineSync-toast")).toHaveCount(0);
   await expect(row.getByTestId("Templates-edit")).toBeEnabled();
 });
-test("manages shared blocks directly from the library and protects blocks that are in use", async ({
+test("manages shared blocks directly from the library and asks how to delete blocks that are in use", async ({
   page,
 }) => {
   await page.goto("/templates");
   const usedCard = page.getByTestId("SharedBlocks-card-wake_up");
-  await expect(usedCard.getByTestId("SharedBlocks-delete")).toBeDisabled();
   await expect(usedCard).toContainText("Used by");
+  await usedCard.getByTestId("SharedBlocks-delete").click();
+  const dialog = page.getByRole("dialog", { name: "Delete routine?" });
+  await expect(dialog.getByTestId("SharedBlocks-delete-explode")).toBeFocused();
+  await expect(dialog.getByTestId("SharedBlocks-delete-remove")).toBeVisible();
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+  await expect(dialog).toHaveCount(0);
   await page.getByTestId("SharedBlocks-edit-wake_up").click();
   await expect(page.getByTestId("SharedBlocks-delete")).toHaveCount(0);
   await expect(page.getByTestId("TemplateEditor-block-name")).toHaveValue(

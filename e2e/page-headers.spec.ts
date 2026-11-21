@@ -50,9 +50,9 @@ for (const width of [390, 1440]) {
       await expect(header.locator("h1")).toHaveText(
         view === "block" ? "Edit routine" : "Edit template",
       );
-      await expect(page.getByTestId("TemplateEditor-back")).toHaveText(
-        "Templates",
-      );
+      await expect(
+        page.getByTestId("TemplateEditor-back"),
+      ).toHaveAccessibleName("Back to Templates");
       await expect(header.locator(".eyebrow")).toHaveCount(0);
       await page.evaluate(() => {
         const spacer = document.createElement("div");

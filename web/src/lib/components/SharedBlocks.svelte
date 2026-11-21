@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { routineState, saveRoutine } from '#lib/routine/client.ts';
-	import { removeBlock, blockReferences, blocksByName } from '#lib/routine/edit.ts';
+	import { removeBlock, blockReferences, blocksByName, type RemoveBlockMode } from '#lib/routine/edit.ts';
 	import type { Routine } from '#lib/routine/types.ts';
 	import ConfirmDialog from './ConfirmDialog.svelte';
+	import Dialog from './Dialog.svelte';
 	let {
 		routine,
 		disabled = false,
@@ -16,21 +17,53 @@
 	} = $props();
 	let saving = $state(false);
 	let error = $state('');
-	let deleteRequest = $state<{ key: string; label: string; trigger: HTMLElement }>();
-	async function deleteBlock(key: string) {
+	let deleteRequest = $state<{ key: string; label: string; references: string[]; trigger: HTMLElement }>();
+	async function deleteBlock(key: string, mode?: RemoveBlockMode) {
 		saving = true;
 		error = '';
 		try {
-			await saveRoutine(removeBlock(routine, key), $routineState.revision);
+			await saveRoutine(removeBlock(routine, key, mode), $routineState.revision);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Could not delete this routine. Try again.';
 		} finally {
 			saving = false;
 		}
 	}
+	function remove(mode: RemoveBlockMode) {
+		if (!deleteRequest) return;
+		const { key } = deleteRequest;
+		deleteRequest = undefined;
+		void deleteBlock(key, mode);
+	}
 </script>
 
-{#if deleteRequest}
+{#if deleteRequest?.references.length}
+	<Dialog
+		title="Delete routine?"
+		description={`“${deleteRequest.label}” is used by ${deleteRequest.references.join(', ')}. Keep its activities there as separate items, or remove them along with the routine.`}
+		width="420px"
+		returnFocus={deleteRequest.trigger}
+		oncancel={() => (deleteRequest = undefined)}
+	>
+		{#snippet actions()}
+			<div class="delete-actions">
+				<button
+					type="button"
+					class="keep"
+					data-testid="SharedBlocks-delete-explode"
+					onclick={() => remove('explode')}>Keep activities</button
+				>
+				<button
+					type="button"
+					class="danger"
+					data-testid="SharedBlocks-delete-remove"
+					onclick={() => remove('remove')}>Remove everywhere</button
+				>
+				<button type="button" class="cancel" onclick={() => (deleteRequest = undefined)}>Cancel</button>
+			</div>
+		{/snippet}
+	</Dialog>
+{:else if deleteRequest}
 	<ConfirmDialog
 		title="Delete routine?"
 		message={`“${deleteRequest.label}” and its items will be deleted.`}
@@ -78,10 +111,10 @@
 					class="icon-button delete"
 					data-testid="SharedBlocks-delete"
 					aria-label={`Delete routine ${block.name}`}
-					title={references.length ? `Used by ${references.join(', ')}` : `Delete ${block.name}`}
-					disabled={disabled || saving || references.length > 0}
+					title={`Delete ${block.name}`}
+					disabled={disabled || saving}
 					onclick={(event) =>
-						(deleteRequest = { key: name, label: block.name, trigger: event.currentTarget })}
+						(deleteRequest = { key: name, label: block.name, references, trigger: event.currentTarget })}
 				>
 					<svg viewBox="0 0 24 24" aria-hidden="true"
 						><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6" /></svg
@@ -132,7 +165,10 @@
 		padding: 0.5rem 0;
 	}
 	.block-title {
-		font-weight: 600;
+		font-size: var(--text-lg);
+		font-weight: 650;
+		letter-spacing: -0.025em;
+		line-height: 1.25;
 		overflow-wrap: anywhere;
 	}
 	.block-meta {
@@ -182,6 +218,28 @@
 	}
 	.error {
 		font-size: var(--text-sm);
+	}
+	.delete-actions {
+		display: grid;
+		gap: 0.5rem;
+		width: 100%;
+	}
+	.delete-actions button {
+		min-height: 44px;
+		padding-inline: 1rem;
+		font-size: var(--text-sm);
+	}
+	.delete-actions .keep {
+		background: var(--accent);
+		color: var(--accent-text);
+	}
+	.delete-actions .danger {
+		background: var(--danger);
+		color: var(--accent-text);
+	}
+	.delete-actions .cancel {
+		border: 1px solid var(--rule);
+		background: var(--inset);
 	}
 	@media (min-width: 1024px) {
 		.block-list {

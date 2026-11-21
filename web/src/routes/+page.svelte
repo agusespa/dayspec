@@ -25,7 +25,7 @@
 		isToday ? currentIndex(day.items, logicalNow(now, start)) : { index: -1, upcoming: false }
 	);
 	/** Items before this index have passed; with no current item, none have. */
-	const passed = $derived(current.upcoming ? 0 : current.index);
+	const passed = $derived(current.free ?? (current.upcoming ? 0 : current.index));
 
 	function show(next: string) {
 		date = next;
@@ -160,6 +160,7 @@
 	calendarDate={date}
 	editTemplate={day.template}
 	currentId={day.items[current.index]?.id}
+	freeAfterId={current.free ? day.items[current.free - 1].id : undefined}
 >
 	{#snippet row(item)}
 		{@const i = day.items.indexOf(item)}

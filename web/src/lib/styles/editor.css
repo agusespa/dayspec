@@ -42,27 +42,44 @@
 .template-editor .save-state.saved {
 	color: var(--accent);
 }
-.template-editor .editor-back {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.15rem;
-	min-height: 44px;
-	margin: 0 0 0.25rem -0.6rem;
-	padding: 0.4rem 0.75rem 0.4rem 0.35rem;
-	border-radius: 999px;
-	color: var(--accent);
-	font-size: var(--text-sm);
-	font-weight: 600;
+/* The title row: a compact back button beside the heading instead of a row of its own. */
+.template-editor .editor-title {
+	min-width: 0;
 }
-.template-editor .editor-back:not(:disabled):hover {
+.template-editor .editor-title-row {
+	display: flex;
+	align-items: center;
+	gap: 0.35rem;
+	min-width: 0;
+}
+.template-editor .editor-title-row h1 {
+	min-width: 0;
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+.template-editor .editor-back {
+	display: grid;
+	place-items: center;
+	flex: none;
+	width: 40px;
+	height: 40px;
+	margin-left: -0.6rem;
+	padding: 0;
+	border-radius: 50%;
+	color: var(--accent);
+}
+.template-editor .editor-back:hover {
 	background: var(--now-wash);
 }
+.template-editor .editor-back[aria-disabled='true'] {
+	cursor: default;
+}
 .template-editor .editor-back svg {
-	width: 20px;
-	height: 20px;
+	width: 26px;
+	height: 26px;
 	fill: none;
 	stroke: currentColor;
-	stroke-width: 2;
+	stroke-width: 2.2;
 	stroke-linecap: round;
 	stroke-linejoin: round;
 }
@@ -264,8 +281,16 @@
 	font-size: var(--text-xs);
 	font-variant-numeric: tabular-nums;
 }
-.template-editor .summary-title {
+/* The title with its pill right beside it; the time and chevron stay at the far end. */
+.template-editor .summary-heading {
 	flex: 1;
+	min-width: 0;
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.2rem 0.45rem;
+}
+.template-editor .summary-title {
 	min-width: 0;
 	overflow-wrap: anywhere;
 }
@@ -277,6 +302,8 @@
 }
 .template-editor .badge {
 	flex: none;
+	line-height: 1.4;
+	white-space: nowrap;
 	padding: 0.1rem 0.45rem;
 	border-radius: 999px;
 	background: color-mix(in srgb, var(--secondary) 14%, transparent);

@@ -307,14 +307,23 @@ export function resolveDay(routine: Routine, date: string, overrides: DayOverrid
 }
 
 /**
- * The item happening at `now` (minutes on the day's clock): the last one that has started, or
- * the first one when nothing has started yet. -1 for an empty day.
+ * The item happening at `now` (minutes on the day's clock): the latest-started one still running,
+ * or the first one when nothing has started yet. -1 for an empty day.
+ * When every started item has ended, `index` is -1 and `free` is how many items have passed:
+ * the time is free until the next item, or the day is done.
  */
-export function currentIndex(items: ResolvedItem[], now: number): { index: number; upcoming: boolean } {
+export function currentIndex(
+	items: ResolvedItem[],
+	now: number
+): { index: number; upcoming: boolean; free?: number } {
 	if (items.length === 0) return { index: -1, upcoming: false };
-	let index = -1;
-	items.forEach((item, i) => {
-		if (item.sortKey <= now) index = i;
-	});
-	return index < 0 ? { index: 0, upcoming: true } : { index, upcoming: false };
+	let started = 0;
+	while (started < items.length && items[started].sortKey <= now) started++;
+	if (started === 0) return { index: 0, upcoming: true };
+	// An item without a duration lasts until the next one starts.
+	for (let i = started - 1; i >= 0; i--) {
+		const { sortKey, duration } = items[i];
+		if (!duration ? i === started - 1 : now < sortKey + duration) return { index: i, upcoming: false };
+	}
+	return { index: -1, upcoming: false, free: started };
 }

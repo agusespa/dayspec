@@ -180,6 +180,75 @@ describe('shared block management', () => {
 		});
 	});
 });
+describe('deleting a routine that is in use', () => {
+	const used: Routine = {
+		categories: { health: { name: 'Health', color: 'green' } },
+		blocks: {
+			inner: { name: 'Inner', items: [{ title: 'Water', duration: 5 }] },
+			morning: {
+				name: 'Morning',
+				category: 'health',
+				items: [
+					{ title: 'Stretch', duration: 15 },
+					{ use: 'inner' },
+					{ title: 'Wash', duration: 10, category: 'chores', note: 'Face' }
+				]
+			},
+			evening: { name: 'Evening', items: [{ title: 'Read', duration: 20 }, { use: 'morning' }] }
+		},
+		templates: {
+			mon: {
+				on: ['mon'],
+				choices: { place: { options: { home: {}, office: {} }, default: 'home' } },
+				items: [
+					{ use: 'morning', time: '23:50', approx: true },
+					{
+						choice: 'place',
+						paths: { home: [{ use: 'morning', time: '09:00' }], office: [] }
+					},
+					{ title: 'Lunch', time: '12:00', duration: 30 }
+				]
+			}
+		}
+	};
+	it('explodes each occurrence into timed activities that keep their colour', () => {
+		const next = removeBlock(used, 'morning', 'explode');
+		expect(next.blocks).not.toHaveProperty('morning');
+		expect(next.templates.mon.items).toEqual([
+			{ title: 'Stretch', duration: 15, category: 'health', time: '23:50', approx: true },
+			{ use: 'inner', time: '00:05', approx: true },
+			{ title: 'Wash', duration: 10, category: 'chores', note: 'Face', time: '00:10', approx: true },
+			{
+				choice: 'place',
+				paths: {
+					home: [
+						{ title: 'Stretch', duration: 15, category: 'health', time: '09:00' },
+						{ use: 'inner', time: '09:15' },
+						{ title: 'Wash', duration: 10, category: 'chores', note: 'Face', time: '09:20' }
+					],
+					office: []
+				}
+			},
+			{ title: 'Lunch', time: '12:00', duration: 30 }
+		]);
+		expect(next.blocks!.evening.items).toEqual([
+			{ title: 'Read', duration: 20 },
+			{ title: 'Stretch', duration: 15, category: 'health' },
+			{ use: 'inner' },
+			{ title: 'Wash', duration: 10, category: 'chores', note: 'Face' }
+		]);
+		expect(used.blocks).toHaveProperty('morning');
+	});
+	it('removes every occurrence along with the routine', () => {
+		const next = removeBlock(used, 'morning', 'remove');
+		expect(next.blocks).not.toHaveProperty('morning');
+		expect(next.templates.mon.items).toEqual([
+			{ choice: 'place', paths: { home: [], office: [] } },
+			{ title: 'Lunch', time: '12:00', duration: 30 }
+		]);
+		expect(next.blocks!.evening.items).toEqual([{ title: 'Read', duration: 20 }]);
+	});
+});
 describe('naming shared blocks', () => {
 	const source: Routine = {
 		blocks: {

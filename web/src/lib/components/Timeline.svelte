@@ -10,17 +10,24 @@
 		items,
 		row,
 		currentId,
+		freeAfterId,
 		calendarDate,
 		editTemplate
 	}: {
 		items: T[];
 		row: Snippet<[T]>;
 		currentId?: string;
+		/** With no current item, the last item that has ended; the free time after it is now. */
+		freeAfterId?: string;
 		calendarDate?: string;
 		/** The day's template; with it opened rows and blocks get edit links. */
 		editTemplate?: string;
 	} = $props();
-	const currentIndex = $derived(items.findIndex((item) => item.id === currentId));
+	const currentIndex = $derived(
+		freeAfterId
+			? items.findIndex((item) => item.id === freeAfterId) + 1
+			: items.findIndex((item) => item.id === currentId)
+	);
 	const groups = $derived(groupTimeline(items));
 	const gaps = $derived(timelineGaps(groups));
 	/** Activities inside an open block whose details are showing, by item ID. */
@@ -113,11 +120,20 @@
 		{/if}
 		{#if gaps.has(group.id)}
 			{@const gap = gaps.get(group.id)!}
-			<li class="item timeline-gap" data-testid="Timeline-gap">
+			{@const now = !!freeAfterId && group.items.some((item) => item.id === freeAfterId)}
+			<li
+				class="item timeline-gap"
+				class:current={now}
+				class:passed={!now && currentIndex > items.indexOf(group.items.at(-1)!)}
+				data-testid="Timeline-gap"
+				data-current={now ? '' : undefined}
+			>
 				<div class="time mono"><span class="start">{gap.time}</span></div>
 				<div class="body">
 					<div class="row">
-						<span class="gap-dot" aria-hidden="true"></span><span>{gap.duration} min free</span>
+						<span class="gap-dot" aria-hidden="true"></span><span>{gap.duration} min free</span>{#if now}<span
+								class="gap-now">Now</span
+							>{/if}
 					</div>
 				</div>
 			</li>
@@ -148,6 +164,17 @@
 	}
 	.timeline-gap :global(.start) {
 		color: var(--muted);
+	}
+	.timeline-gap.current {
+		color: var(--text);
+	}
+	.timeline-gap.current .gap-dot {
+		border: 2px solid var(--accent);
+		box-shadow: 0 0 0 4px var(--now-wash);
+	}
+	.gap-now {
+		color: var(--accent);
+		font-weight: 650;
 	}
 
 	.shared-block > details {

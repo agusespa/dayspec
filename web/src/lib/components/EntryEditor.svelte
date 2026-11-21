@@ -154,15 +154,14 @@
 			}}
 		>
 			<summary data-testid="EntryEditor-open"
-				><span class="summary-index">{i + 1}</span><span class="summary-title"
-					>{#if isUse(entry)}{routine.blocks?.[entry.use]?.name ?? entry.use}{:else}{entry.title ||
-							'Untitled activity'}{/if}</span
+				><span class="summary-index">{i + 1}</span><span class="summary-heading"
+					><span class="summary-title"
+						>{#if isUse(entry)}{routine.blocks?.[entry.use]?.name ?? entry.use}{:else}{entry.title ||
+								'Untitled activity'}{/if}</span
+					>{#if isUse(entry)}<span class="badge">Routine</span>{/if}</span
 				>{#if !shared && ('time' in entry ? entry.time : undefined)}<span class="summary-time mono"
 						>{'time' in entry ? entry.time : undefined}</span
-					>{/if}{#if isUse(entry)}<span class="badge">Routine</span>{/if}<svg
-					class="chevron"
-					viewBox="0 0 24 24"
-					aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg
+					>{/if}<svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg
 				><button
 					type="button"
 					class="entry-delete"

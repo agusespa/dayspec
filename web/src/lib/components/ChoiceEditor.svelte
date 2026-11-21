@@ -34,11 +34,9 @@
 	{#each Object.entries(routine.templates[template].choices ?? {}) as [name, choice]}
 		<details class="entry" data-testid={`ChoiceEditor-${name}`}>
 			<summary data-testid="ChoiceEditor-open"
-				><span class="summary-title">{choice.label ?? name}</span><span class="badge">Options</span><svg
-					class="chevron"
-					viewBox="0 0 24 24"
-					aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg
-				></summary
+				><span class="summary-heading"
+					><span class="summary-title">{choice.label ?? name}</span><span class="badge">Options</span></span
+				><svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></summary
 			>
 			<div class="entry-body">
 				<label

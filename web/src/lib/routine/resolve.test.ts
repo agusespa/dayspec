@@ -175,12 +175,28 @@ describe('small resolver helpers', () => {
 		expect(templateFor({ templates: {} }, 'mon', false)).toBe('');
 	});
 	it('identifies upcoming, current, tied and final activities', () => {
-		const items = [480, 600, 600, 900].map((sortKey) => ({ sortKey })) as Parameters<typeof currentIndex>[0];
+		const items = [480, 600, 600, 900].map((sortKey) => ({ sortKey, duration: 0 })) as Parameters<
+			typeof currentIndex
+		>[0];
 		expect(currentIndex(items, 300)).toEqual({ index: 0, upcoming: true });
 		expect(currentIndex(items, 480)).toEqual({ index: 0, upcoming: false });
 		expect(currentIndex(items, 700)).toEqual({ index: 2, upcoming: false });
 		expect(currentIndex(items, 1500)).toEqual({ index: 3, upcoming: false });
 		expect(currentIndex([], 700)).toEqual({ index: -1, upcoming: false });
+	});
+
+	it('reports free time once every started item has ended', () => {
+		const items = [
+			{ sortKey: 480, duration: 30 },
+			{ sortKey: 500, duration: 120 },
+			{ sortKey: 700, duration: 60 },
+			{ sortKey: 900, duration: 30 }
+		] as Parameters<typeof currentIndex>[0];
+		// The long second item is still running after the first ends.
+		expect(currentIndex(items, 515)).toEqual({ index: 1, upcoming: false });
+		expect(currentIndex(items, 650)).toEqual({ index: -1, upcoming: false, free: 2 });
+		expect(currentIndex(items, 720)).toEqual({ index: 2, upcoming: false });
+		expect(currentIndex(items, 1000)).toEqual({ index: -1, upcoming: false, free: 4 });
 	});
 });
 
