@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<clipPath id="corners"><rect width="512" height="512" rx="112"/></clipPath>
+<g clip-path="url(#corners)"><svg width="512" height="512" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<!-- The app icon. Edit this, then run `npm run icons` to regenerate every size.
+     Draw a full square without rounded corners; the script rounds them where needed.
+     Keep the mark inside the maskable safe zone: a circle of radius 204 around the centre. -->
+<!-- A retro sunset on a dusk sky: a sun graded yellow to rose, sliced by widening gaps that read as a schedule. -->
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#2a1a3e"/><stop offset="1" stop-color="#0e0a16"/></linearGradient>
+<linearGradient id="sun" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffd166"/><stop offset="1" stop-color="#ff5e7e"/></linearGradient>
+<mask id="slices"><rect width="512" height="512" fill="#fff"/><rect y="262" width="512" height="18"/><rect y="310" width="512" height="22"/><rect y="360" width="512" height="26"/></mask>
+</defs>
+<rect width="512" height="512" fill="url(#bg)"/>
+<circle cx="256" cy="256" r="150" fill="url(#sun)" mask="url(#slices)"/>
+</svg></g>
+</svg>
