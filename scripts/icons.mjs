@@ -1,5 +1,5 @@
 // Generates the app icons from the design in scripts/icon.svg: npm run icons
-// Writes the favicon SVG and the PNGs in web/static (rendered with Playwright's Chromium).
+// Writes content-hashed favicons and PNGs to web/static/icons (rendered with Playwright's Chromium).
 import { mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { chromium } from '@playwright/test';
@@ -56,6 +56,15 @@ writeFileSync(
 	readFileSync(app, 'utf8').replace(
 		/\t\t<!-- App icons -->[\s\S]*?\t\t<!-- End app icons -->/,
 		`\t\t<!-- App icons -->\n\t\t${links}\n\t\t<!-- End app icons -->`
+	)
+);
+// The README shows the 192px icon; point it at the new file.
+const readme = 'README.md';
+writeFileSync(
+	readme,
+	readFileSync(readme, 'utf8').replace(
+		/web\/static\/(?:icons\/)?icon-192(?:-[a-f0-9]{12})?\.png/g,
+		`web/static/icons/${name('icon-192')}`
 	)
 );
 const manifestPath = 'web/static/manifest.webmanifest';
