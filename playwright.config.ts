@@ -15,6 +15,9 @@ export default defineConfig({
     ...devices["iPhone 13"],
     // The routine is in local time; pin it so the clock-based tests are stable anywhere.
     timezoneId: "Europe/Stockholm",
+    // Specs hold API answers with page.route, which WebKit skips for pages a service worker
+    // controls; launch.spec.ts allows the worker to test the cached app.
+    serviceWorkers: "block",
     trace: "retain-on-failure",
   },
   projects: [

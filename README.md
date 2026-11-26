@@ -15,7 +15,7 @@ A personal web app for planning daily routines, with reusable templates and shar
 - **Multiple devices**: Edit on your computer and read on your phone. Saved routines refresh when you return to the app or reconnect.
 - **Integrations**: Manage templates, shared blocks and settings through an HTTP API or MCP.
 
-Dayspec can be added to your phone's home screen. A connection to your server is required; routines are not stored for offline use.
+Dayspec can be added to your phone's home screen. The app itself is cached on your device, so it opens instantly, but your routine always comes from your server: loading and saving it need a connection. If your Access session has expired, tap **Sign in again**.
 
 ## Requirements
 

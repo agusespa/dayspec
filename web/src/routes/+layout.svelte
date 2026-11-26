@@ -1,14 +1,18 @@
 <script lang="ts">
 	import '../app.css';
 	import { onMount } from 'svelte';
-	import { onNavigate } from '$app/navigation';
+	import { onNavigate, replaceState } from '$app/navigation';
 	import { loadRoutine, routineState, startRoutineRefresh } from '#lib/routine/client.ts';
 	import '#lib/styles/chrome.css';
 	import '#lib/styles/timeline.css';
 	import PullToRefresh from '#lib/components/PullToRefresh.svelte';
 	import type { LayoutProps } from './$types';
 
-	onMount(startRoutineRefresh);
+	onMount(() => {
+		// Back from the Access login: drop the marker that let this launch skip the cached app.
+		if (location.search === '?signin') replaceState(location.pathname, {});
+		return startRoutineRefresh();
+	});
 
 	const TABS = ['/', '/templates', '/profile'];
 
@@ -54,11 +58,18 @@
 	<aside class="sync-toast" data-testid="RoutineSync-toast" aria-label="Routine update failed">
 		<p role="status">{$routineState.message}</p>
 		<div class="toast-actions">
-			<button
-				data-testid="RoutineSync-retry"
-				disabled={$routineState.refreshing}
-				onclick={() => loadRoutine()}>{$routineState.refreshing ? 'Retrying…' : 'Retry'}</button
-			>
+			{#if $routineState.expired}
+				<!-- ?signin makes the service worker pass this launch to the network, through Access. -->
+				<a class="signin" data-testid="RoutineSync-signin" href="/?signin" data-sveltekit-reload
+					>Sign in again</a
+				>
+			{:else}
+				<button
+					data-testid="RoutineSync-retry"
+					disabled={$routineState.refreshing}
+					onclick={() => loadRoutine()}>{$routineState.refreshing ? 'Retrying…' : 'Retry'}</button
+				>
+			{/if}
 			<button
 				data-testid="RoutineSync-dismiss"
 				aria-label="Dismiss update notification"
@@ -94,10 +105,17 @@
 		gap: 0.5rem;
 		margin-top: 0.4rem;
 	}
-	.toast-actions button {
+	.toast-actions button,
+	.toast-actions .signin {
 		color: var(--accent);
 		font-size: var(--text-xs);
 		min-height: 44px;
+	}
+	.toast-actions .signin {
+		display: inline-flex;
+		align-items: center;
+		padding-inline: 0.5rem;
+		text-decoration: none;
 	}
 	.toast-actions button:disabled {
 		opacity: 0.5;

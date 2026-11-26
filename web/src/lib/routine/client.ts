@@ -10,9 +10,18 @@ interface State extends Snapshot {
 	loading: boolean;
 	refreshing: boolean;
 	online: boolean;
+	/** The Cloudflare Access session expired: the app offers "Sign in again" instead of Retry. */
+	expired: boolean;
 	message: string;
 }
 const UNAVAILABLE = 'Could not refresh your routine. Check your connection and retry.';
+const EXPIRED = 'Your session expired. Sign in again to load and save your routine.';
+
+class SessionExpired extends Error {
+	constructor() {
+		super(EXPIRED);
+	}
+}
 
 export const routineState = writable<State>({
 	routine: { templates: {} },
@@ -20,6 +29,7 @@ export const routineState = writable<State>({
 	loading: true,
 	refreshing: false,
 	online: false,
+	expired: false,
 	message: ''
 });
 
@@ -35,7 +45,28 @@ function remember(snapshot: Snapshot) {
 		loading: false,
 		refreshing: false,
 		online: true,
+		expired: false,
 		message: ''
+	}));
+}
+
+/**
+ * fetch for the API. redirect is manual: an expired Access session answers with a redirect to its
+ * login page, which a fetch can't follow across origins and would otherwise look like no connection.
+ */
+async function request(init?: RequestInit): Promise<Snapshot> {
+	const response = await fetch('/api/routine', { ...init, redirect: 'manual' });
+	if (response.type === 'opaqueredirect' || response.status === 401) throw new SessionExpired();
+	return read(response);
+}
+
+function expire() {
+	routineState.update((state) => ({
+		...state,
+		loading: false,
+		refreshing: false,
+		expired: true,
+		message: EXPIRED
 	}));
 }
 
@@ -60,10 +91,11 @@ function cancelRefresh() {
 
 async function fetchRoutine(token: number, signal: AbortSignal): Promise<void> {
 	try {
-		const snapshot = await read(await fetch('/api/routine', { cache: 'no-store', signal }));
+		const snapshot = await request({ cache: 'no-store', signal });
 		if (token === generation) remember(snapshot);
-	} catch {
-		if (token === generation) {
+	} catch (error) {
+		if (token === generation && error instanceof SessionExpired) expire();
+		else if (token === generation) {
 			routineState.update((state) => ({
 				...state,
 				loading: false,
@@ -122,15 +154,16 @@ export async function saveRoutine(routine: Routine, revision: string): Promise<v
 	// A GET started before a save must never replace the newly saved routine.
 	cancelRefresh();
 	try {
-		const snapshot = await read(
-			await fetch('/api/routine', {
-				method: 'PUT',
-				signal: AbortSignal.timeout(15_000),
-				headers: { 'Content-Type': 'application/json', 'If-Match': revision },
-				body: JSON.stringify({ routine })
-			})
-		);
+		const snapshot = await request({
+			method: 'PUT',
+			signal: AbortSignal.timeout(15_000),
+			headers: { 'Content-Type': 'application/json', 'If-Match': revision },
+			body: JSON.stringify({ routine })
+		});
 		remember(snapshot);
+	} catch (error) {
+		if (error instanceof SessionExpired) expire();
+		throw error;
 	} finally {
 		writes--;
 	}

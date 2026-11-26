@@ -87,6 +87,21 @@ test("requires the server on first load and recovers with retry", async ({
   await expect(page.getByTestId("RoutineSync-toast")).toHaveCount(0);
   await expect(page.getByTestId("Nav-templates")).toBeVisible();
 });
+test("offers to sign in again when the Access session expired", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByTestId("Nav-templates")).toBeVisible();
+  // An expired Access session refuses the API (WebKit can't fake its login redirect; the unit
+  // tests cover that).
+  await page.route("**/api/routine", (route) => route.fulfill({ status: 401 }));
+  // Coming back online refreshes the routine.
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  const signin = page.getByTestId("RoutineSync-signin");
+  await expect(signin).toHaveAttribute("href", "/?signin");
+  await expect(page.getByTestId("RoutineSync-retry")).toHaveCount(0);
+  await expect(page.getByTestId("Nav-templates")).toBeVisible();
+});
 test("automatic holidays support quiet persistent overrides", async ({
   page,
 }) => {

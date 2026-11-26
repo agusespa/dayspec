@@ -106,6 +106,32 @@ describe('routine loading and saving', () => {
 		}
 	});
 });
+describe('expired Access sessions', () => {
+	// What fetch returns for a manual redirect, here to the Access login page.
+	const redirect = () =>
+		({ type: 'opaqueredirect', status: 0, ok: false, headers: new Headers() }) as Response;
+	it('asks to sign in again when a refresh is redirected to the login page', async () => {
+		const client = await import('./client.ts');
+		fetcher.mockResolvedValueOnce(json(snapshot));
+		await client.loadRoutine();
+		fetcher.mockResolvedValueOnce(redirect());
+		await client.loadRoutine();
+		expect(fetcher).toHaveBeenLastCalledWith('/api/routine', expect.objectContaining({ redirect: 'manual' }));
+		expect(get(client.routineState)).toMatchObject({ ...snapshot, expired: true, refreshing: false });
+		fetcher.mockResolvedValueOnce(json(snapshot));
+		await client.loadRoutine();
+		expect(get(client.routineState)).toMatchObject({ expired: false, message: '' });
+	});
+	it('keeps the routine and asks to sign in again when a save is refused', async () => {
+		const client = await import('./client.ts');
+		fetcher.mockResolvedValueOnce(json(snapshot));
+		await client.loadRoutine();
+		fetcher.mockResolvedValueOnce(json({ error: 'unauthorized' }, 401));
+		await expect(client.saveRoutine(routine, snapshot.revision)).rejects.toThrow(/sign in again/i);
+		expect(client.currentRoutine()).toEqual(snapshot);
+		expect(get(client.routineState).expired).toBe(true);
+	});
+});
 describe('automatic routine refresh', () => {
 	it('keeps the displayed routine when a background refresh fails', async () => {
 		const client = await import('./client.ts');
